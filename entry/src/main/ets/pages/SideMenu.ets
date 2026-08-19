@@ -39,7 +39,7 @@ export struct SideMenu {
       // --- 3. 底部功能区 (头像 & 设置) ---
       Row() {
         // 左下角：用户头像
-        Image($r('app.media.toux')) // TODO: 记得换成头像图片
+        Image($r('app.media.toux')) //
           .width(35).height(35)
           .borderRadius(20)
           .backgroundColor('#DDD') // 占位背景色
@@ -48,7 +48,7 @@ export struct SideMenu {
         Blank() // 撑开中间距离
 
         // 右下角：通用设置
-        Image($r('app.media.shez')) // TODO: 记得换成设置齿轮图标
+        Image($r('app.media.shez')) //
           .width(35).height(35)
           .fillColor('#999')
           .onClick(() => { console.info('Settings clicked'); })
