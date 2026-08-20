@@ -8,22 +8,24 @@ export struct SideMenu {
       // --- 1. 顶部搜索栏 ---
       Row() {
         Image($r('app.media.fangdj')) // 放大镜
-          .width(28).height(28).fillColor('#999')
+          .width(25).height(25).fillColor('#999')
           .margin({ right: 8 })
 
         Text('点击搜索...')
           .fontSize(16)
           .fontColor('#999') // <--- 加上这一行！设置成灰色，就能看见了
           .layoutWeight(1)
+          .padding({ left: '12vp', bottom: '12vp' })
+
 
         Image($r('app.media.jiah')) // 加号
-          .width(28).height(28).fillColor('#333')
+          .width(25).height(25).fillColor('#333')
       }
       .width('95%')
       .height(40)
       .backgroundColor('#F0F0F0')
       .borderRadius(20)
-      .padding({ left: 12, right: 12 ,top:18,bottom:12})
+      .padding({ left: 12, right: 12 ,top:15,bottom:8})
       .margin({ bottom: 30 })
 
       // --- 2. 中间列表区域 (错题集 & 聊天记录) ---
