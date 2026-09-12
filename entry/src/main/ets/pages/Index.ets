@@ -1,68 +1,198 @@
-// Index.ets
 import router from '@ohos.router';
 import { SideMenu } from './SideMenu';
+import { FirstAidStep, ActionType ,TestQuestion} from '../mock/types';
+import { fetchRandomQuestions } from '../mock/testData';
+
+// 然后导入你的数据
+import {
+  cprData,
+  chokingUnder1Data,
+  chokingOver1Data,
+  drowningData,
+  burnData,
+  fallData,
+  ingestionData,
+  feverUnder3Data,
+  feverOver3Data
+} from '../mock/FirstAidData';
+
+
+interface ScenarioItem {
+  title: string;
+  sub?: string;
+  key: string;
+  needAgeSelect: boolean;
+  ageOptions?: AgeOptionItem[];
+}
+
+interface AgeOptionItem {
+  label: string;
+  key: string;
+}
+
+
+const SCENARIO_DATA: ScenarioItem[] = [
+  {
+    title: "气道异物梗阻",
+    key: "choking",
+    needAgeSelect: true,
+    ageOptions: [
+      { label: "未满 1 岁", key: "choking_under_1" }  as AgeOptionItem,
+      { label: "满 1 岁至 6 岁", key: "choking_over_1" } as AgeOptionItem
+    ]
+  },
+  {
+    title: "发热伴惊厥抽搐",
+    key: "fever",
+    needAgeSelect: true,
+    ageOptions: [
+      { label: "未满 3 月龄", key: "fever_under_3" } as AgeOptionItem,
+      { label: "3 月龄及以上", key: "fever_over_3" } as AgeOptionItem
+    ]
+  },
+  // 以下场景不需要选择年龄，直接传对应的 key 即可
+  { title: "跌倒与头部外伤", key: "fall", needAgeSelect: false },
+  { title: "烫伤与烧伤", key: "burn", needAgeSelect: false },
+  { title: "误服与异物摄入", key: "ingestion", needAgeSelect: false },
+  { title: "溺水", key: "drowning", needAgeSelect: false },
+];
+
 
 @Entry
 @Component
 struct Index {
   @State inputValue: string = '';
   @State isMenuVisible: boolean = false;
+  @State showOverlay: boolean = true;
 
-  // ================= 核心业务状态机 =================
-  // 阶段控制: 'idle'(主页) | 'pre_test'(摸底) | 'training'(HTML学习) | 'post_test'(结业)
-  @State currentStage: string = 'idle';
-
-  // 测试相关状态
+  // 核心业务状态机
+  @State currentStage: string = 'idle'
+  @State selectedScenario: string = '';
+  @State currentFirstAidStep: number = 0;
   @State currentQuestionIndex: number = 0;
   @State selectedOption: number = -1;
   private totalQuestions: number = 5;
+  @State questions: TestQuestion[] = [];
+  @State selectedIndex: number = -1;
+  @State currentStepIndex: number = 0
+  @State isStepCompleted: boolean = false;
+  @State showDetailInfo: boolean = false;
+  @State tempSelectedCategory: ScenarioItem | null = null; // 暂存选中的大类
+  @State showAgeSelector: boolean = false; // 是否显示年龄选择器
 
-  // 模拟题目数据
-  private questions: string[] = [
-    '1. 发现有人倒地，第一步应该做什么？',
-    '2. 心肺复苏的正确按压频率是？',
-    '3. 使用AED前需要做什么？',
-    '4. 气道异物梗阻的首选急救方法是？',
-    '5. 急救电话是多少？'
-  ];
 
-  // ================= 流程控制函数 =================
-
-  // 1. 开启急救培训流程
-  startTraining() {
-    this.currentQuestionIndex = 0;
-    this.selectedOption = -1;
-    this.currentStage = 'pre_test'; // 进入摸底测试
+  // ================= 数据获取方法 =================
+  // 注意这里，去掉了 FirstAidStep[]，改成了 any[]
+  // 确保这里是 FirstAidStep[]
+  getCurrentTrainingData(): FirstAidStep[] {
+    switch (this.selectedScenario) {
+      case 'drowning':
+        return drowningData;
+      case 'burn':
+        return burnData;
+      case 'fall':
+        return fallData;
+      case 'ingestion':
+        return ingestionData;
+      case 'fever_under_3':
+        return feverUnder3Data;
+      case 'fever_over_3':
+        return feverOver3Data;
+      case 'choking_under_1':
+        return chokingUnder1Data;
+      case 'choking_over_1':
+        return chokingOver1Data;
+      case 'cpr':
+        return cprData;
+      default:
+        return [];
+    }
   }
 
-  // 2. 测试中点击“下一题”
+  getCurrentQuestions() {
+    const scenario = this.selectedScenario;
+    if (scenario === 'drowning') {
+      return [
+        '1. 发现有人溺水，救上岸后第一步做什么？',
+        '2. 溺水者无呼吸心跳时，应先人工呼吸还是胸外按压？',
+        '3. 清理溺水者口鼻异物的正确姿势是？',
+        '4. 进行心肺复苏时，按压深度至少是？',
+        '5. AED到达后，贴好电极片接下来做什么？'
+      ];
+    } else if (scenario.includes('choking')) {
+      return [
+        '1. 婴儿气道异物梗阻首选什么急救法？',
+        '2. 1岁以上儿童气道梗阻首选什么急救法？',
+        '3. 实施背部叩击时，婴儿的体位应该是？',
+        '4. 腹部冲击法的按压部位在哪里？',
+        '5. 如果患者失去意识，接下来该做什么？'
+      ];
+    } else if (scenario.includes('fever')) {
+      return [
+        '1. 孩子惊厥发作时，家长首先应该做什么？',
+        '2. 惊厥发作时，能否往孩子嘴里塞东西？',
+        '3. 物理降温时，推荐使用的擦拭水温是？',
+        '4. 惊厥持续超过多少分钟必须叫救护车？',
+        '5. 惊厥停止后，孩子的体位应该是？'
+      ];
+    }
+    return [
+      '1. 发现有人倒地，第一步应该做什么？',
+      '2. 心肺复苏的正确按压频率是？',
+      '3. 使用AED前需要做什么？',
+      '4. 气道异物梗阻的首选急救方法是？',
+      '5. 急救电话是多少？'
+    ];
+  }
+
+  // ================= 流程控制函数 =================
+  startTraining() {
+    this.currentStage = 'select_scenario';
+  }
+
+  selectScenario(key: string) {
+    this.selectedScenario = key;
+    this._currentTrainingSteps = this.getCurrentTrainingData();
+    this.currentStage = 'training';
+    this.currentStepIndex = 0;
+    this.isStepCompleted = false;
+    this.showDetailInfo = false;
+  }
+
   nextQuestion() {
+    // 1. 如果当前不是最后一题，索引 +1
     if (this.currentQuestionIndex < this.totalQuestions - 1) {
       this.currentQuestionIndex++;
-      this.selectedOption = -1; // 重置选项
+      this.selectedOption = -1; // 切换题目时，重置选项状态
     } else {
-      // 已经是最后一题，完成当前阶段的测试
+      // 2. 如果是最后一题，点击“完成”后的逻辑
+      // 例如：提交成绩，或者切换 currentStage 退出测试弹窗
+      console.log('测试完成');
       this.finishCurrentStage();
     }
   }
 
-  // 3. 点击“跳过”或测试完成
   finishCurrentStage() {
     if (this.currentStage === 'pre_test') {
-      // 摸底结束，进入 HTML 学习
       this.currentStage = 'training';
     } else if (this.currentStage === 'post_test') {
-      // 结业结束，整个流程完成，回到主页
       this.currentStage = 'idle';
     }
   }
 
-  // 4. HTML 学习结束（点击完成或返回）
   finishTraining() {
     this.currentQuestionIndex = 0;
     this.selectedOption = -1;
-    this.currentStage = 'post_test'; // 进入结业测试
+    this.currentStage = 'post_test';
   }
+  @State private _currentTrainingSteps: FirstAidStep[] = [];
+
+  aboutToAppear() {
+    // 调用我们在 testData.ets 里写好的函数，这里以 'drowning' 为例
+    this.questions = fetchRandomQuestions('drowning');
+    console.log('成功获取题目数量：' + this.questions.length);
+  }
+
 
   build() {
     Stack({ alignContent: Alignment.TopStart }) {
@@ -76,7 +206,9 @@ struct Index {
             .fontSize(26)
             .fontColor('#999')
             .margin({ left: 16, top: 10 })
-            .onClick(() => { this.isMenuVisible = true; })
+            .onClick(() => {
+              this.isMenuVisible = true;
+            })
         }
         .width('100%')
 
@@ -84,13 +216,19 @@ struct Index {
 
         Column() {
           Row({ space: 10 }) {
-            // 【触发点】点击急救培训
             Button('急救培训')
               .fontSize(15)
               .backgroundColor('#EAEAEA')
               .fontColor('#333')
               .borderRadius(20)
-              .onClick(() => { this.startTraining(); })
+              .onClick(() => {
+                // 1. 重置培训进度
+                this.currentStepIndex = 0;
+                this.isStepCompleted = false;
+                this.showDetailInfo = false;
+                this.currentStage = 'select_scenario';
+                this.selectedScenario = '';
+              })
 
             Button('知识测试').fontSize(15).backgroundColor('#EAEAEA').fontColor('#333').borderRadius(20)
             Button('实战演练').fontSize(15).backgroundColor('#EAEAEA').fontColor('#333').borderRadius(20)
@@ -102,19 +240,16 @@ struct Index {
           Row() {
             Image($r('app.media.xiangj'))
               .width(28).height(28).fillColor('#999')
-
             TextInput({ placeholder: '点击输入...', text: this.inputValue })
               .layoutWeight(1)
               .backgroundColor(Color.Transparent)
               .fontSize(16)
               .margin({ left: 8 })
-
             Image($r('app.media.mm'))
               .width(28)
               .height(28)
               .margin({ left: 8, right: 8 })
               .fillColor('#999999')
-
             Image($r('app.media.jiah'))
               .width(28).height(28).fillColor('#999')
           }
@@ -134,120 +269,416 @@ struct Index {
       // 第二部分：侧边栏菜单
       // ==========================================
       if (this.isMenuVisible) {
-        Column() {}
-        .width('100%').height('100%').backgroundColor('rgba(0,0,0,0.5)')
-        .onClick(() => { this.isMenuVisible = false; })
+        Column() {
+        }
+        .width('100%')
+        .height('100%')
+        .backgroundColor('rgba(0,0,0,0.5)')
+        .onClick(() => {
+          this.isMenuVisible = false;
+        })
         .transition(TransitionEffect.OPACITY.animation({ duration: 200 }))
         .zIndex(99)
       }
       if (this.isMenuVisible) {
-        SideMenu({ onClose: () => { this.isMenuVisible = false; } })
-          .width('75%').height('100%').backgroundColor(Color.White)
+        SideMenu({
+          onClose: () => {
+            this.isMenuVisible = false;
+          }
+        })
+          .width('75%')
+          .height('100%')
+          .backgroundColor(Color.White)
           .translate({ x: this.isMenuVisible ? 0 : '-100%' })
           .animation({ duration: 300, curve: Curve.EaseOut })
           .zIndex(100)
       }
 
       // ==========================================
-      // 第三部分：通用测试弹窗 (摸底 & 结业复用)
+      // 第三部分：场景选择弹窗 (已修复)
       // ==========================================
-      if (this.currentStage === 'pre_test' || this.currentStage === 'post_test') {
-        // 遮罩层
-        Column() {}
-        .width('100%').height('100%').backgroundColor('rgba(0,0,0,0.6)')
-        .zIndex(200)
+      if (this.currentStage === 'select_scenario') {
+        // 遮罩层，点击可关闭弹窗
+        Column()
+          .width('100%')
+          .height('100%')
+          .backgroundColor('rgba(0,0,0,0.5)')
+          .position({ x: 0, y: 0 })
+          .zIndex(200)
+          .onClick(() => {
+            this.showOverlay = false;
+          })
 
         // 弹窗主体
         Column() {
-          // 头部：标题 + 跳过
+          Text('请选择急救场景')
+            .fontSize(22)
+            .fontWeight(FontWeight.Bold)
+            .fontColor('#333333')
+            .width('100%')
+            .padding({ left: 24, top: 24, bottom: 16 })
+
+          if (this.showAgeSelector && this.tempSelectedCategory) {
+            // 显示年龄选择
+            Column({ space: 20 }) {
+              Text(`请选择年龄段：${this.tempSelectedCategory.title}`)
+                .fontSize(18).fontWeight(FontWeight.Bold).margin({ bottom: 20 })
+
+              // 循环渲染年龄按钮
+              ForEach(this.tempSelectedCategory.ageOptions || [], (ageOpt: AgeOptionItem) => {
+                Button(ageOpt.label)
+                  .width('80%')
+                  .height(50)
+                  .fontSize(16)
+                  .backgroundColor('#E6F7FF')
+                  .fontColor('#007AFF')
+                  .onClick(() => {
+                    // 选中年龄后，开始培训
+                    this.selectScenario(ageOpt.key);
+                    this.showOverlay = false; // 关闭大弹窗
+                    this.showAgeSelector = false; // 重置状态
+                  })
+              })
+
+              Button('返回上一步')
+                .type(ButtonType.Normal)
+                .fontColor('#FFFFFF')
+                .borderRadius(25)
+                .onClick(() => {
+                  this.showAgeSelector = false; // 返回场景选择
+                })
+            }
+            .width('100%')
+            .padding(20)
+          } else {
+            // 显示场景列表
+            Scroll() {
+              Column({ space: 12 }) {
+                ForEach(SCENARIO_DATA, (item: ScenarioItem, index: number) => {
+                  Row() {
+                    Text(item.title)
+                      .fontSize(16)
+                      .fontColor('#333333')
+                      .fontWeight(FontWeight.Medium)
+
+                  }
+                  .width('100%')
+                  .alignItems(VerticalAlign.Center)
+                  .padding(16)
+                  .backgroundColor(this.selectedIndex === index ? '#E6F7FF' : '#F5F5F5')
+                  .borderRadius(12)
+                  .onClick(() => {
+                    this.selectedIndex = index;
+                  })
+                }, (item: ScenarioItem, index: number) => `${index}-${item.title}`)
+              }
+              .width('100%')
+              .padding({ left: 16, right: 16, bottom: 16 })
+            }
+            .width('100%')
+            .height(380)
+            .scrollBar(BarState.On)
+            .align(Alignment.Start)
+
+            // 底部按钮
+            Button('下一步')
+              .fontSize(16)
+              .width('90')
+              .height(40)
+              .backgroundColor(this.selectedIndex === -1 ? '#A0A0A0' : '#4CAF50')
+              .fontColor('#FFFFFF')
+              .borderRadius(25)
+              .margin({
+                top: 20,
+                bottom: 10,
+                left: 20,
+                right: 20
+              })
+              .enabled(this.selectedIndex !== -1)
+              .onClick(() => {
+                if (this.selectedIndex === -1) {
+                  console.log('请先选择一个急救场景');
+                } else {
+                  const selectedScenario = SCENARIO_DATA[this.selectedIndex];
+                  // 判断是否需要选择年龄
+                  if (selectedScenario.needAgeSelect) {
+                    this.tempSelectedCategory = selectedScenario;
+                    this.showAgeSelector = true; // 显示年龄选择器
+                  } else {
+                    // 不需要选年龄，直接开始
+                    this.selectScenario(selectedScenario.key);
+                    this.showOverlay = false;
+                  }
+                }
+              })
+          }
+        }
+
+        .width('90%')
+        .height('80%')
+        .backgroundColor('#FFFFFF')
+        .borderRadius(24)
+        .position({ x: '5%', y: '10%' })
+        .zIndex(201) // 确保弹窗内容在遮罩层之上
+        .shadow({
+          radius: 12,
+          color: 'rgba(0,0,0,0.15)',
+          offsetX: 0,
+          offsetY: 8
+        })
+      }
+
+      // ==========================================
+      // 第四部分：通用测试弹窗
+      // ==========================================
+      if (this.currentStage === 'pre_test' || this.currentStage === 'post_test') {
+        Column() {
+        }
+        .width('100%').height('100%').backgroundColor('rgba(0,0,0,0.6)')
+        .zIndex(200)
+
+        Column() {
           Row() {
             Text(this.currentStage === 'pre_test' ? '培训摸底测试' : '培训结业测试')
               .fontSize(20).fontWeight(FontWeight.Bold).fontColor('#333')
             Blank()
             Text('跳过')
               .fontSize(16).fontColor('#666')
-              .onClick(() => { this.finishCurrentStage(); })
+              .onClick(() => {
+                this.finishCurrentStage();
+              })
           }
-          .width('100%').padding({ left: 24, right: 24, top: 24, bottom: 12 })
+          .width('100%')
+          .padding({
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: 12
+          })
 
-          // 题目区域
           Scroll() {
             Column({ space: 15 }) {
-              Text(this.questions[this.currentQuestionIndex])
+              // 显示真实的题目内容
+              Text(this.questions[this.currentQuestionIndex]?.content ?? '暂无题目')
                 .fontSize(16).fontColor('#333').width('100%').textAlign(TextAlign.Start)
 
-              // 4个选项
-              ForEach([1, 2, 3, 4], (item: number) => {
+              // 循环显示真实的选项
+              ForEach(this.questions[this.currentQuestionIndex]?.options || [], (option: string, index: number) => {
                 Row() {
-                  Text(`选项 ${item}`)
+                  Text(option) // 直接显示选项内容，如 "A. 立即控水"
                     .fontSize(16)
-                    .fontColor(this.selectedOption === item ? '#FFFFFF' : '#333333')
+                    .fontColor(this.selectedOption === index ? '#FFFFFF' : '#333333')
                 }
-                .width('100%').height(50).padding({ left: 20 })
+                .width('100%')
+                .height(50)
+                .padding({ left: 20 })
                 .alignItems(VerticalAlign.Center)
-                .backgroundColor(this.selectedOption === item ? '#0D8AFF' : '#F5F5F5')
+                .backgroundColor(this.selectedOption === index ? '#0D8AFF' : '#F5F5F5')
                 .borderRadius(12)
-                .onClick(() => { this.selectedOption = item; })
-              })
+                .onClick(() => {
+                  this.selectedOption = index; // 记录选中的是第几个选项（索引）
+                })
+              }, (option: string, index: number) => index.toString())
+
+
             }
             .width('100%').padding({ left: 24, right: 24, bottom: 20 })
           }
           .layoutWeight(1).width('100%').scrollBar(BarState.Off)
 
-          // 底部按钮
           Button(this.currentQuestionIndex === this.totalQuestions - 1 ? '完成' : '下一题')
-            .width('90%').height(48).backgroundColor('#0D8AFF')
-            .borderRadius(24).fontSize(18).fontColor(Color.White).margin({ bottom: 30 })
-            .onClick(() => { this.nextQuestion(); })
+            .width('90%')
+            .height(48)
+            .backgroundColor('#0D8AFF')
+            .borderRadius(24)
+            .fontSize(18)
+            .fontColor(Color.White)
+            .margin({ bottom: 30 })
+            .onClick(() => {
+              this.nextQuestion();
+            })
         }
-        .width('90%').height('60%').backgroundColor(Color.White).borderRadius(24)
+        .width('90%')
+        .height('60%')
+        .backgroundColor(Color.White)
+        .borderRadius(24)
         .position({ x: '5%', y: '20%' })
         .zIndex(201)
-        .transition(TransitionEffect.translate({ y: 100 }).combine(TransitionEffect.opacity(1).animation({ duration: 300 })))
-      }
-
-      // ==========================================
-      // 第四部分：急救培训内容页 (HTML渲染区)
-      // ==========================================
-      if (this.currentStage === 'training') {
-        Column() {
-          Row() {
-            Text('< 返回').fontSize(16).fontColor('#333')
-              .onClick(() => { this.finishTraining(); })
-            Blank()
-            Text('急救培训过程').fontSize(18).fontWeight(FontWeight.Bold)
-            Blank()
-            Text('').width(40) // 占位
-          }
-          .width('100%').height(50).padding({ left: 20, right: 20 }).alignItems(VerticalAlign.Center)
-
-          // 【你的 HTML 渲染区域】
-          Column() {
-            Text('这里放置你的 Web 组件')
-              .fontSize(20).fontColor('#999')
-              .width(200).height(200).backgroundColor('#EEE').borderRadius(100)
-              .textAlign(TextAlign.Center).alignSelf(ItemAlign.Center).margin({ top: 100 })
-
-            Text('HTML 动画演示内容...')
-              .fontSize(16).margin({ top: 20 })
-          }
-          .layoutWeight(1).width('100%').backgroundColor('#F9F9F9')
-
-          // 学习完成按钮
-          Button('我已完成学习')
-            .width('80%').height(48).backgroundColor('#0D8AFF')
-            .borderRadius(24).fontSize(18).fontColor(Color.White).margin({ bottom: 40 })
-            .onClick(() => { this.finishTraining(); })
-        }
-        .width('100%').height('100%').backgroundColor(Color.White).zIndex(150)
-        .zIndex(150)
         .transition(
-          TransitionEffect.opacity(1)
-            .animation({ duration: 300, curve: Curve.EaseInOut })
-        )
+          TransitionEffect.translate({ y: 100 }).combine(TransitionEffect.opacity(1).animation({ duration: 300 })))
       }
 
-    } // End Stack
-    .width('100%').height('100%')
+      // ==========================================
+      // 第五部分：急救培训内容页
+
+      if (this.currentStage === 'training') {
+
+        Column() {
+          // 1. 有数据且没结束时，显示交互步骤
+          if (this._currentTrainingSteps.length > 0 && this.currentStepIndex < this._currentTrainingSteps.length) {
+
+            Column() {
+
+              Row() {
+                Text(`第${this.currentStepIndex + 1}步：${this._currentTrainingSteps[this.currentStepIndex].title}`)
+                  .fontSize(18)
+                  .fontWeight(FontWeight.Bold)
+                  .fontColor('#333')
+              }
+              .width('90%')
+              .justifyContent(FlexAlign.Start)
+              .margin({ top: 20, bottom: 10 })
+
+              Row() {
+                Text(this._currentTrainingSteps[this.currentStepIndex].description)
+                  .fontSize(18)
+                  .fontColor('#555')
+                  .padding(15)
+                  .backgroundColor('#F0F8FF')
+                  .width('95%')
+                  .height(100)
+                  .borderRadius(15)
+              }
+              .width('100%')
+              .justifyContent(FlexAlign.Start)
+            }
+            .width('100%')
+            .alignItems(HorizontalAlign.Start)
+            .padding({ left: 20 })
+
+            // 【区域2：3D/动画模拟展示区】
+            Column() {
+              Text(`🎬 正在演示：${this._currentTrainingSteps[this.currentStepIndex].title}`)
+                .fontSize(18)
+                .fontColor('#007AFF')
+              Text('（此处替换为你的3D动画或视频组件）')
+                .fontSize(14)
+                .fontColor('#999')
+                .margin({ top: 10 ,bottom:10})
+            }
+            .width('90%')
+            .height(200)
+            .justifyContent(FlexAlign.Center)
+            .alignItems(HorizontalAlign.Center)
+            .backgroundColor('#F9F9F9')
+            .borderRadius(15)
+            .margin({ top: 20, bottom: 20 })
+
+            // 【区域3：确认机制与交互区】
+            // 只有当用户没有点击“没看懂”时，才显示操作按钮
+            if (!this.showDetailInfo) {
+              Column({ space: 15 }) {
+                // 模拟交互区域
+                Column() {
+                  Text(`请${this._currentTrainingSteps[this.currentStepIndex].actionType === ActionType.TAP ? '点击' : '长按'}此处完成操作`)
+                    .fontColor('#007AFF')
+                    .fontSize(18)
+                  Text(this.isStepCompleted ? '✅ 动作已确认！' : '')
+                    .fontSize(16)
+                    .fontColor('#4CAF50')
+                    .height(20)
+                    .margin({ top: 10 })
+                }
+                .width('95%')
+                .height(100)
+                .justifyContent(FlexAlign.Center)
+                .alignItems(HorizontalAlign.Center)
+                .backgroundColor('#F0F8FF')
+                .borderRadius(15)
+                .onClick(() => {
+                  this.isStepCompleted = true;
+                })
+
+                // 确认按钮组
+                if (this.isStepCompleted) {
+                  Row({ space: 15 }) {
+                    Button('没看懂 / 慢动作')
+                      .type(ButtonType.Normal)
+                      .backgroundColor(Color.White)
+                      .fontColor('#FF9800')
+                      .border({ width: 1, color: '#FF9800' })
+                      .layoutWeight(1)
+                      .onClick(() => {
+                        this.showDetailInfo = true; // 触发子程序：显示详细解释
+                      })
+
+                    Button('已掌握，下一步')
+                      .type(ButtonType.Capsule)
+                      .backgroundColor('#007AFF')
+                      .layoutWeight(1)
+                      .onClick(() => {
+                        // 判断是不是最后一步
+                        if (this.currentStepIndex < this._currentTrainingSteps.length - 1) {
+                          this.currentStepIndex += 1;
+                          this.isStepCompleted = false; // 重置状态
+                          this.showDetailInfo = false;  // 重置解释状态
+                        } else {
+                          // 全部完成，进入小结与结业测试
+                          this.currentStage = 'post_test';
+                        }
+                      })
+                  }
+                  .width('90%')
+                }
+              }
+              .width('100%')
+              .alignItems(HorizontalAlign.Center)
+            }
+            // 如果用户点了“没看懂”，显示详细解释（子程序）
+            else {
+              Column({ space: 15 }) {
+                Row() {
+                  Text(`💡 详细解释：${this._currentTrainingSteps[this.currentStepIndex].description}（请仔细观察动画细节，确保动作规范。）`)
+                    .fontSize(15)
+                    .fontColor('#D32F2F')
+                    .padding(15)
+                    .backgroundColor('#FFF0F0')
+                    .borderRadius(15)
+                }
+                .width('90%')
+
+                Button('我明白了，返回操作')
+                  .width('80%')
+                  .height(45)
+                  .borderRadius(25)
+                  .backgroundColor('#FF9800')
+                  .onClick(() => {
+                    this.showDetailInfo = false; // 关闭解释，回到正常流程
+                  })
+              }
+              .width('100%')
+              .alignItems(HorizontalAlign.Center)
+            }
+
+          }
+          // 2. 所有步骤都完成了，显示最终完成提示（流程闭环小结）
+          else if (this._currentTrainingSteps.length > 0) {
+            Text('🎉 恭喜！您已顺利完成所有培训步骤。')
+              .fontSize(20)
+              .fontWeight(FontWeight.Bold)
+              .fontColor('#333')
+              .margin({ bottom: 20 })
+            Text('建议前往实战演练模块进行巩固')
+              .fontSize(14)
+              .fontColor('#888')
+              .margin({ bottom: 30 })
+
+            Button('前往结业测试')
+              .width('80%')
+              .height(50)
+              .borderRadius(25)
+              .backgroundColor('#4CAF50')
+              .onClick(() => {
+                this.currentStage = 'graduation_exam';
+              })
+          }
+        }
+        .width('100%')
+        .height('100%')
+        .justifyContent(FlexAlign.Start)
+        .margin({top:20,bottom:20})
+        .backgroundColor(Color.White)
+      }
+    }
   }
 }
