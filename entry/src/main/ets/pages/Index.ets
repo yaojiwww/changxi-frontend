@@ -1,20 +1,82 @@
 import router from '@ohos.router';
+import http from '@ohos.net.http';
 import { SideMenu } from './SideMenu';
-import { FirstAidStep, ActionType ,TestQuestion} from '../mock/types';
+import { UniversalAction } from './UniversalAction';
+import { FirstAidStep, ActionType, TestQuestion } from '../mock/types';
 import { fetchRandomQuestions } from '../mock/testData';
-
-// 然后导入你的数据
 import {
-  cprData,
-  chokingUnder1Data,
-  chokingOver1Data,
-  drowningData,
-  burnData,
-  fallData,
-  ingestionData,
-  feverUnder3Data,
-  feverOver3Data
+  cprData, chokingUnder1Data, chokingOver1Data,
+  drowningData, burnData, fallData, ingestionData,
+  feverUnder3Data, feverOver3Data
 } from '../mock/FirstAidData';
+
+import { TokenManager } from '../api/tokenManager';
+import { SendCodeRequest, RegisterRequest, LoginRequest,LogoutRequest } from '../api/apiTypes';
+import { ApiService } from '../api/apiService';
+
+// 1. 发送验证码
+async function sendCode() {
+  try {
+    await ApiService.httpRequest<void>(
+      '/auth/send-code',
+      http.RequestMethod.POST,
+      { number: '13800138000', purpose: 'register' } as SendCodeRequest
+    );
+    // 成功后的处理，比如提示“验证码已发送”
+  } catch (error) {
+    // 错误处理
+  }
+}
+
+// 2. 注册
+async function register() {
+  try {
+    const token = await ApiService.httpRequest<string>('/auth/register', http.RequestMethod.POST, {
+      number: '13800138000',
+      code: '123456',
+      password: 'MyPass123'
+    } as RegisterRequest);
+
+    // token 就是后端返回的 data 字段
+    // 修正：根据报错提示，方法名可能是 setToken 而不是 saveToken
+    await TokenManager.setToken(token);
+  } catch (error) {
+    // 错误处理
+  }
+}
+
+// 3. 登录
+async function login() {
+  try {
+    const token = await ApiService.httpRequest<string>('/auth/login', http.RequestMethod.POST, {
+      number: '13800138000',
+      password: 'MyPass123'
+    } as LoginRequest);
+
+    // 登录成功，token 已自动存入本地（通过响应拦截器）
+    // 跳转到主页
+  } catch (error) {
+    // 错误处理
+  }
+}
+
+// 4. 登出
+async function logout() {
+  try {
+    // 登出接口，如果不需要传参可以直接传 undefined 或空对象
+    await ApiService.httpRequest<void>('/auth/logout', http.RequestMethod.POST, {
+      number: '13800138000'
+    } as LogoutRequest);
+
+    // 清除本地 token，跳转登录页
+    await TokenManager.logout();
+  } catch (error) {
+    // 错误处理
+  }
+}
+
+// 5. 发送聊天消息（注意：聊天接口是 SSE 流式返回，不能简单用 post 方法）
+
 
 
 interface ScenarioItem {
@@ -82,8 +144,6 @@ struct Index {
 
 
   // ================= 数据获取方法 =================
-  // 注意这里，去掉了 FirstAidStep[]，改成了 any[]
-  // 确保这里是 FirstAidStep[]
   getCurrentTrainingData(): FirstAidStep[] {
     switch (this.selectedScenario) {
       case 'drowning':
@@ -109,54 +169,24 @@ struct Index {
     }
   }
 
-  getCurrentQuestions() {
-    const scenario = this.selectedScenario;
-    if (scenario === 'drowning') {
-      return [
-        '1. 发现有人溺水，救上岸后第一步做什么？',
-        '2. 溺水者无呼吸心跳时，应先人工呼吸还是胸外按压？',
-        '3. 清理溺水者口鼻异物的正确姿势是？',
-        '4. 进行心肺复苏时，按压深度至少是？',
-        '5. AED到达后，贴好电极片接下来做什么？'
-      ];
-    } else if (scenario.includes('choking')) {
-      return [
-        '1. 婴儿气道异物梗阻首选什么急救法？',
-        '2. 1岁以上儿童气道梗阻首选什么急救法？',
-        '3. 实施背部叩击时，婴儿的体位应该是？',
-        '4. 腹部冲击法的按压部位在哪里？',
-        '5. 如果患者失去意识，接下来该做什么？'
-      ];
-    } else if (scenario.includes('fever')) {
-      return [
-        '1. 孩子惊厥发作时，家长首先应该做什么？',
-        '2. 惊厥发作时，能否往孩子嘴里塞东西？',
-        '3. 物理降温时，推荐使用的擦拭水温是？',
-        '4. 惊厥持续超过多少分钟必须叫救护车？',
-        '5. 惊厥停止后，孩子的体位应该是？'
-      ];
-    }
-    return [
-      '1. 发现有人倒地，第一步应该做什么？',
-      '2. 心肺复苏的正确按压频率是？',
-      '3. 使用AED前需要做什么？',
-      '4. 气道异物梗阻的首选急救方法是？',
-      '5. 急救电话是多少？'
-    ];
-  }
 
   // ================= 流程控制函数 =================
   startTraining() {
     this.currentStage = 'select_scenario';
   }
 
+
   selectScenario(key: string) {
     this.selectedScenario = key;
     this._currentTrainingSteps = this.getCurrentTrainingData();
-    this.currentStage = 'training';
+    this.questions = fetchRandomQuestions(key);
+    this.currentQuestionIndex = 0;
+    this.selectedOption = -1;
+    this.currentStage = 'pre_test';
     this.currentStepIndex = 0;
     this.isStepCompleted = false;
     this.showDetailInfo = false;
+    console.log('已选择场景: ' + key + ', 题目数量: ' + this.questions.length);
   }
 
   nextQuestion() {
@@ -188,9 +218,8 @@ struct Index {
   @State private _currentTrainingSteps: FirstAidStep[] = [];
 
   aboutToAppear() {
-    // 调用我们在 testData.ets 里写好的函数，这里以 'drowning' 为例
-    this.questions = fetchRandomQuestions('drowning');
-    console.log('成功获取题目数量：' + this.questions.length);
+    this.questions = [];  // 初始化为空数组
+    console.log('Index页面已加载，等待用户选择场景');
   }
 
 
@@ -269,33 +298,22 @@ struct Index {
       // 第二部分：侧边栏菜单
       // ==========================================
       if (this.isMenuVisible) {
-        Column() {
-        }
-        .width('100%')
-        .height('100%')
-        .backgroundColor('rgba(0,0,0,0.5)')
-        .onClick(() => {
-          this.isMenuVisible = false;
-        })
+        Column() {}
+        .width('100%').height('100%').backgroundColor('rgba(0,0,0,0.5)')
+        .onClick(() => { this.isMenuVisible = false; })
         .transition(TransitionEffect.OPACITY.animation({ duration: 200 }))
         .zIndex(99)
       }
       if (this.isMenuVisible) {
-        SideMenu({
-          onClose: () => {
-            this.isMenuVisible = false;
-          }
-        })
-          .width('75%')
-          .height('100%')
-          .backgroundColor(Color.White)
+        SideMenu({ onClose: () => { this.isMenuVisible = false; } })
+          .width('75%').height('100%').backgroundColor(Color.White)
           .translate({ x: this.isMenuVisible ? 0 : '-100%' })
           .animation({ duration: 300, curve: Curve.EaseOut })
           .zIndex(100)
       }
 
       // ==========================================
-      // 第三部分：场景选择弹窗 (已修复)
+      // 第三部分：场景选择弹窗
       // ==========================================
       if (this.currentStage === 'select_scenario') {
         // 遮罩层，点击可关闭弹窗
@@ -465,7 +483,7 @@ struct Index {
               // 循环显示真实的选项
               ForEach(this.questions[this.currentQuestionIndex]?.options || [], (option: string, index: number) => {
                 Row() {
-                  Text(option) // 直接显示选项内容，如 "A. 立即控水"
+                  Text(option) // 直接显示选项内容
                     .fontSize(16)
                     .fontColor(this.selectedOption === index ? '#FFFFFF' : '#333333')
                 }
@@ -569,25 +587,15 @@ struct Index {
             if (!this.showDetailInfo) {
               Column({ space: 15 }) {
                 // 模拟交互区域
-                Column() {
-                  Text(`请${this._currentTrainingSteps[this.currentStepIndex].actionType === ActionType.TAP ? '点击' : '长按'}此处完成操作`)
-                    .fontColor('#007AFF')
-                    .fontSize(18)
-                  Text(this.isStepCompleted ? '✅ 动作已确认！' : '')
-                    .fontSize(16)
-                    .fontColor('#4CAF50')
-                    .height(20)
+                if (this._currentTrainingSteps[this.currentStepIndex]) {
+                  UniversalAction({
+                    currentStep: this._currentTrainingSteps[this.currentStepIndex],
+                    onStepComplete: () => {
+                      this.isStepCompleted = true;
+                    }
+                  })
                     .margin({ top: 10 })
                 }
-                .width('95%')
-                .height(100)
-                .justifyContent(FlexAlign.Center)
-                .alignItems(HorizontalAlign.Center)
-                .backgroundColor('#F0F8FF')
-                .borderRadius(15)
-                .onClick(() => {
-                  this.isStepCompleted = true;
-                })
 
                 // 确认按钮组
                 if (this.isStepCompleted) {
@@ -669,7 +677,10 @@ struct Index {
               .borderRadius(25)
               .backgroundColor('#4CAF50')
               .onClick(() => {
-                this.currentStage = 'graduation_exam';
+                this.questions = fetchRandomQuestions(this.selectedScenario);
+                this.currentQuestionIndex = 0;
+                this.selectedOption = -1;
+                this.currentStage = 'post_test';
               })
           }
         }

@@ -1,10 +1,11 @@
-// types.docx
+// ==================== 交互动作类型枚举 ====================
 export enum ActionType {
   TAP = 'TAP',
   LONG_PRESS = 'LONG_PRESS',
   DRAG = 'DRAG' // 预留拖拽类型
 }
 
+// ==================== 急救步骤接口 ====================
 export interface FirstAidStep {
   id: string;
   title: string;
@@ -12,38 +13,38 @@ export interface FirstAidStep {
   actionType: ActionType;
 }
 
-// mock/types.ets
-
+// ==================== 测试题目接口 ====================
 export interface TestQuestion {
   id: string;
-  scenario: string; // 新增：题目所属场景
-  content: string;
-  options: string[];
-  answer: number;
+  scenario: string;       // 题目所属场景
+  content: string;        // 题目内容
+  options: string[];      // 选项数组
+  answer: number;         // 正确答案索引（0-based）
 }
 
-// 【修改点】补充完整的场景枚举，和你在 FirstAidData.ets 里定义的一致
+// ==================== 场景类型枚举 ====================
 export enum ScenarioType {
-  DROWNING = 'drowning',
-  CHOKING_UNDER_1 = 'chokingUnder1',
-  CHOKING_OVER_1 = 'chokingOver1',
   CPR = 'cpr',
+  CHOKING_UNDER_1 = 'choking_under_1',
+  CHOKING_OVER_1 = 'choking_over_1',
+  DROWNING = 'drowning',
   BURN = 'burn',
   FALL = 'fall',
   INGESTION = 'ingestion',
-  FEVER_UNDER_3 = 'feverUnder3',
-  FEVER_OVER_3 = 'feverOver3'
+  FEVER_UNDER_3 = 'fever_under_3',
+  FEVER_OVER_3 = 'fever_over_3'
 }
 
-// 【修改点】补充完整的题库结构，和枚举一一对应
+// ==================== 题库结构接口 ====================
+
 export interface QuestionBank {
-  drowning: TestQuestion[];
-  chokingUnder1: TestQuestion[];
-  chokingOver1: TestQuestion[];
   cpr: TestQuestion[];
+  choking_under_1: TestQuestion[];
+  choking_over_1: TestQuestion[];
+  drowning: TestQuestion[];
   burn: TestQuestion[];
   fall: TestQuestion[];
   ingestion: TestQuestion[];
-  feverUnder3: TestQuestion[];
-  feverOver3: TestQuestion[];
+  fever_under_3: TestQuestion[];
+  fever_over_3: TestQuestion[];
 }

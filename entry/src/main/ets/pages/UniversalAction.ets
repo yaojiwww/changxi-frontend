@@ -1,25 +1,11 @@
-// UniversalAction.ets
+// 通用交互组件（支持TAP点击和LONG_PRESS长按进度条两种模式）
 
-
-// 定义交互类型枚举
-export enum ActionType {
-  TAP = 'TAP',
-  LONG_PRESS = 'LONG_PRESS'
-}
-
-// 定义急救步骤接口
-export interface FirstAidStep {
-  id: string;
-  title: string;
-  description: string;
-  actionType: ActionType;
-}
+import { FirstAidStep, ActionType } from '../mock/types';
 
 @Component
 export struct UniversalAction {
   // 接收外部传入的当前步骤数据
   @Prop currentStep: FirstAidStep;
-
   // 步骤完成后的回调
   onStepComplete?: () => void;
 
