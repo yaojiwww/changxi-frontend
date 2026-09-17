@@ -1,159 +1,98 @@
-import { startChatStream } from '../api/apiService';
-import { ChatRequest, SSECallbacks } from '../api/apiTypes';
-import { TokenManager } from '../api/tokenManager';
-
-interface UIMessage {
-  content: string;
-  isUser: boolean;
-}
+import { ChatViewModel } from '../viewmodel/ChatViewModel';
+import { ChatMessage, ChatRole } from '../model/ChatMessage';
 
 @Component
-struct UserBubble {
+struct MessageBubble {
   @Prop content: string;
+  @Prop isUser: boolean;
 
   build() {
     Row() {
-      Blank()
-      Text(this.content)
-        .padding(12)
-        .backgroundColor('#007AFF')
-        .fontColor(Color.White)
-        .borderRadius(12)
-        .width('70%')
+      if (this.isUser) {
+        Blank()
+        Text(this.content)
+          .padding(12)
+          .backgroundColor('#007AFF')
+          .fontColor(Color.White)
+          .borderRadius(12)
+          .constraintSize({ maxWidth: '70%' })
+      } else {
+        Text(this.content.length > 0 ? this.content : '正在思考...')
+          .padding(12)
+          .backgroundColor('#F2F2F7')
+          .fontColor(Color.Black)
+          .borderRadius(12)
+          .constraintSize({ maxWidth: '70%' })
+        Blank()
+      }
     }
     .width('100%')
     .padding({ left: 16, right: 16, top: 8, bottom: 8 })
   }
 }
 
-@Component
-struct AiBubble {
-  @Prop content: string;
-
-  build() {
-    Row() {
-      Text(this.content || '正在思考...')
-        .padding(12)
-        .backgroundColor('#F2F2F7')
-        .fontColor(Color.Black)
-        .borderRadius(12)
-        .width('70%')
-      Blank()
-    }
-    .width('100%')
-    .padding({ left: 16, right: 16, top: 8, bottom: 8 })
-  }
-}
-
+/**
+ * 聊天页。只剩 UI —— 所有业务在 ChatViewModel 里。
+ * （原来这里和 api/conversationStore.ets 各有一份聊天逻辑，现已合并。）
+ */
 @Entry
 @Component
 struct ChatPage {
-  @State messages: UIMessage[] = [];
-  @State inputMessage: string = '';
-  @State isSending: boolean = false;
-  @State currentConversationId: string = '';
-
+  @State vm: ChatViewModel = new ChatViewModel();
   private scroller: Scroller = new Scroller();
 
   aboutToAppear(): void {
-    this.messages = [{ content: '你好，我是你的AI助手，有什么可以帮你的吗？', isUser: false }];
+    this.vm.init();
   }
 
-  async sendMessage() {
-    const userMsg = this.inputMessage.trim();
-    if (userMsg === '' || this.isSending) {
-      return;
-    }
-
-    this.isSending = true;
-    this.messages = [...this.messages, { content: userMsg, isUser: true }];
-    this.inputMessage = '';
-    this.messages = [...this.messages, { content: '', isUser: false }];
-
-    try {
-      const token = await TokenManager.getToken();
-      if (!token) {
-        console.error('Token 获取失败');
-        this.isSending = false;
-        return;
-      }
-
-      const req: ChatRequest = {
-        message: userMsg,
-        conversationId: this.currentConversationId
-      };
-
-      const callbacks: SSECallbacks = {
-        onMessage: (content) => {
-          let lastMsg = this.messages[this.messages.length - 1];
-          lastMsg.content += content;
-          this.messages = [...this.messages.slice(0, this.messages.length - 1), lastMsg];
-          this.scrollToBottom();
-        },
-        onEnd: (convId) => {
-          if (convId) this.currentConversationId = convId;
-          this.isSending = false;
-        },
-        onError: (error) => {
-          console.error('Chat error:', error);
-          this.isSending = false;
-        },
-        onArtifact: (artifactCode) => {
-          console.log('Artifact:', artifactCode);
-        }
-      };
-
-      startChatStream(req, token, callbacks);
-
-    } catch (e) {
-      console.error('发送消息异常:', e);
-      this.isSending = false;
-    }
-  }
-
-  private scrollToBottom() {
-    setTimeout(() => {
-      this.scroller.scrollEdge(Edge.Bottom);
-    }, 50);
+  aboutToDisappear(): void {
+    // 必须断开 SSE，否则离开页面后连接还挂着
+    this.vm.dispose();
   }
 
   build() {
     Column() {
-      // ✅ 关键修复：scroller 写在 List() 的构造参数里
       List({ space: 4, scroller: this.scroller }) {
-        ForEach(this.messages, (msg: UIMessage) => {
+        ForEach(this.vm.messages, (msg: ChatMessage) => {
           ListItem() {
-            if (msg.isUser) {
-              UserBubble({ content: msg.content })
-            } else {
-              AiBubble({ content: msg.content })
-            }
+            MessageBubble({
+              content: msg.content,
+              isUser: msg.role === ChatRole.USER
+            })
           }
-        })
+        }, (msg: ChatMessage) => msg.id.toString())
       }
       .width('100%')
       .layoutWeight(1)
 
+      if (this.vm.errorMessage.length > 0) {
+        Text(this.vm.errorMessage)
+          .fontSize(13)
+          .fontColor('#D32F2F')
+          .width('100%')
+          .padding({ left: 16, right: 16, bottom: 4 })
+      }
+
       Row() {
-        TextInput({ placeholder: '请输入消息...', text: this.inputMessage })
+        TextInput({ placeholder: '请输入消息...', text: this.vm.inputText })
           .layoutWeight(1)
           .height(40)
           .backgroundColor('#F5F5F5')
           .borderRadius(20)
           .padding({ left: 16, right: 16 })
           .onChange((value: string) => {
-            this.inputMessage = value;
+            this.vm.updateInput(value);
           })
           .onSubmit(() => {
-            this.sendMessage();
+            this.submit();
           })
 
         Button('发送')
           .height(40)
           .margin({ left: 8 })
-          .enabled(!this.isSending)
+          .enabled(!this.vm.isSending)
           .onClick(() => {
-            this.sendMessage();
+            this.submit();
           })
       }
       .width('100%')
@@ -162,5 +101,18 @@ struct ChatPage {
     }
     .width('100%')
     .height('100%')
+  }
+
+  private submit(): void {
+    this.vm.send().then(() => {
+      this.scrollToBottom();
+    });
+    this.scrollToBottom();
+  }
+
+  private scrollToBottom(): void {
+    setTimeout(() => {
+      this.scroller.scrollEdge(Edge.Bottom);
+    }, 50);
   }
 }
