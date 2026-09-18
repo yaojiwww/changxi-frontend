@@ -31,7 +31,10 @@ struct Index {
           this.vm.openScenarioPicker();
         },
         onOpenChat: () => {
-          this.gotoChat();
+          this.goto('pages/ChatPage');
+        },
+        onOpenLogin: () => {
+          this.goto('pages/LoginPage');
         }
       })
 
@@ -55,7 +58,10 @@ struct Index {
             this.vm.openScenarioPicker();
           },
           onOpenChat: () => {
-            this.gotoChat();
+            this.goto('pages/ChatPage');
+          },
+          onOpenLogin: () => {
+            this.goto('pages/LoginPage');
           }
         })
           .width('75%')
@@ -85,9 +91,10 @@ struct Index {
     .height('100%')
   }
 
-  private gotoChat(): void {
-    router.pushUrl({ url: 'view/ChatPage' }).catch((err: Error) => {
-      console.error(`[Index] 跳转聊天页失败: ${err.message}`);
+  /** 页面跳转。url 必须与 main_pages.json 里登记的路径一致 */
+  private goto(url: string): void {
+    router.pushUrl({ url: url }).catch((err: Error) => {
+      console.error(`[Index] 跳转 ${url} 失败: ${err.message}`);
     });
   }
 }
