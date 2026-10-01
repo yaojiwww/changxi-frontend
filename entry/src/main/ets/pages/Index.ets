@@ -35,7 +35,7 @@ struct Index {
 
       // ===== 2. 中间问候语 =====
       Column() {
-        Text('yaojiw，需要我帮你做点什么？')
+        Text(' 需要我帮你做点什么？')
           .fontSize(28)
           .fontWeight(FontWeight.Medium)
           .fontColor('#1F1F1F')
@@ -53,7 +53,7 @@ struct Index {
             this.isSheetOpen = true;             // 只改状态，没有"打开弹窗"的代码
           })
 
-        TextInput({ placeholder: '问问 Gemini' })
+        TextInput({ placeholder: '问问小助手' })
           .placeholderColor('#9AA0A6')
           .backgroundColor(Color.Transparent)
           .layoutWeight(1)
@@ -77,7 +77,7 @@ struct Index {
       colors: [['#FFFFFF', 0.0], ['#DCE9FB', 1.0]]
     })
     .bindSheet(this.isSheetOpen, this.sheetBuilder(), {
-      height: SheetSize.MEDIUM,              // 半屏
+      height: 380,                           // 按内容实际高度写死
       dragBar: true,                         // 顶部那根灰色小拖拽条
       showClose: false,
       backgroundColor: '#F2FFFFFF',          // 半透明白
@@ -101,9 +101,9 @@ struct Index {
       .margin({ top: 16 })
 
       Column() {
-        this.listItem('图片', '生成图片与编辑')
-        this.listItem('Canvas', '编写代码、撰写内容或制作幻灯片')
-        this.listItem('学习辅导', '获取逐步帮助')
+        this.listItem('急救培训', '学习婴幼儿急救操作')
+        this.listItem('知识测试', '检验你的急救知识')
+        this.listItem('实战演练', '模拟真实急救场景')
       }
       .width('100%')
       .margin({ top: 16 })
