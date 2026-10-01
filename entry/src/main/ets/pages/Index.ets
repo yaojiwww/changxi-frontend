@@ -25,10 +25,6 @@ struct Index {
 
           Blank()
 
-
-
-
-
           Image($r('app.media.toux'))
             .width(40).height(40).borderRadius(20)
         }
