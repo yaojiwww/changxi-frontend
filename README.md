@@ -21,5 +21,5 @@ git push
 ```
 > 如果报错 `The current branch your_branch has no upstream branch` ，使用下面这条命令提交
 ```
-git push --set-upstream origin yaojiw
+git push --set-upstream origin your_name
 ```
