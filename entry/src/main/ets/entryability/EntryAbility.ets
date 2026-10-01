@@ -1,8 +1,7 @@
 import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
-import { TokenManager } from '../network/TokenManager';
-import { AppConfig } from '../network/AppConfig';
+
 
 const DOMAIN = 0x0000;
 
@@ -13,18 +12,6 @@ export default class EntryAbility extends UIAbility {
     } catch (err) {
       hilog.error(DOMAIN, 'testTag', 'Failed to set colorMode. Cause: %{public}s', JSON.stringify(err));
     }
-
-    // 必须在这里初始化本地存储，否则 TokenManager 全程返回 null，登录态无声失效
-    TokenManager.init(this.context).then(() => {
-      hilog.info(DOMAIN, 'testTag', '%{public}s', 'TokenManager 初始化完成');
-    }).catch((err: Error) => {
-      hilog.error(DOMAIN, 'testTag', 'TokenManager 初始化失败: %{public}s', err.message);
-    });
-
-    // 加载后端配置（base url / 超时 / 功能开关）。AppConfig 内部自带默认值兜底，读失败也不影响启动。
-    AppConfig.init(this.context).catch((err: Error) => {
-      hilog.error(DOMAIN, 'testTag', 'AppConfig 初始化失败: %{public}s', err.message);
-    });
 
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onCreate');
   }
@@ -44,6 +31,12 @@ export default class EntryAbility extends UIAbility {
       }
       hilog.info(DOMAIN, 'testTag', 'Succeeded in loading the content.');
     });
+    // ---- 问系统：安全区有多高 ----
+    const win = windowStage.getMainWindowSync();
+    const topPx = win.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM).topRect.height;      // 状态栏
+    const bottomPx = win.getWindowAvoidArea(window.AvoidAreaType.TYPE_NAVIGATION_INDICATOR).bottomRect.height;                                                                      // 小白条
+    hilog.info(DOMAIN, 'testTag', '状态栏 %{public}dpx / 导航条 %{public}dpx', topPx, bottomPx);
+
   }
 
   onWindowStageDestroy(): void {
