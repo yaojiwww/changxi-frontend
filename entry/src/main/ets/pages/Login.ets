@@ -1,4 +1,8 @@
-import { router } from '@kit.ArkUI';
+import { BusinessError } from '@kit.BasicServicesKit';
+import { AppConfig } from '../common/AppConfig';
+import { TokenStore } from '../common/TokenStore';
+import { AuthApi } from '../api/AuthApi';
+import { CODE_OK } from '../common/Http';
 
 @Entry
 @ComponentV2
@@ -7,15 +11,42 @@ struct Login {
   @Local password: string = '';
   @Local isLoading: boolean = false;
 
-  // ★ 后端接入点：以后只改这一个方法，UI 一行不用动
+  // 页面出现前，先把配置和本地存储准备好，避免第一次点登录时还没就绪
+  async aboutToAppear(): Promise<void> {
+    const context = this.getUIContext().getHostContext();
+    if (context === undefined) {
+      return;
+    }
+    await AppConfig.load(context);
+    await TokenStore.init(context);
+  }
+
+  // 登录：调后端 → 存 token → 进首页
   private async doLogin(): Promise<void> {
+    if (this.phone === '' || this.password === '') {
+      this.toast('手机号或密码不能为空');
+      return;
+    }
     this.isLoading = true;
-    // TODO: 后端好了，这里换成真实请求，例如：
-    //   const res = await LoginApi.login(this.phone, this.password);
-    //   if (res.code !== 0) { 提示错误; return; }
-    await new Promise<void>((resolve) => setTimeout(() => resolve(), 800)); // 假装网络耗时
-    this.isLoading = false;
-    router.replaceUrl({ url: 'pages/Index' });   // 登录成功 → 进首页
+    try {
+      const res = await AuthApi.login(this.phone, this.password);
+      if (res.code !== CODE_OK || res.data === null) {
+        this.toast(res.message);
+        return;
+      }
+      await TokenStore.save(res.data);
+      this.getUIContext().getRouter().replaceUrl({ url: 'pages/Index' });   // 登录成功 → 进首页
+    } catch (err) {
+      // 走到这里说明不是业务错误，而是网络层问题：超时、连不上服务器、断网
+      const e = err as BusinessError;
+      this.toast(`网络异常(${e.code})，请检查网络或服务器`);
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  private toast(msg: string): void {
+    this.getUIContext().getPromptAction().showToast({ message: msg, duration: 2500 });
   }
 
   build() {
