@@ -29,13 +29,19 @@ struct Login {
     }
     this.isLoading = true;
     try {
-      const res = await AuthApi.login(this.phone, this.password);
-      if (res.code !== CODE_OK || res.data === null) {
-        this.toast(res.message);
-        return;
+      // const res = await AuthApi.login(this.phone, this.password);
+      // if (res.code !== CODE_OK || res.data === null) {
+      //   this.toast(res.message);
+      //   return;
+      // }
+      // await TokenStore.save(res.data);
+      
+      // 硬编码验证
+      if (this.phone === '13200000000' && this.password === '123456') {
+        this.getUIContext().getRouter().replaceUrl({ url: 'pages/Index' });   // 登录成功 → 进首页
+      } else {
+        this.toast('手机号或密码错误');
       }
-      await TokenStore.save(res.data);
-      this.getUIContext().getRouter().replaceUrl({ url: 'pages/Index' });   // 登录成功 → 进首页
     } catch (err) {
       // 走到这里说明不是业务错误，而是网络层问题：超时、连不上服务器、断网
       const e = err as BusinessError;
