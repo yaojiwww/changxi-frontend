@@ -38,7 +38,7 @@ struct Login {
       
       // 硬编码验证
       if (this.phone === '13200000000' && this.password === '123456') {
-        this.getUIContext().getRouter().replaceUrl({ url: 'pages/Index' });   // 登录成功 → 进首页
+        this.getUIContext().getRouter().replaceUrl({ url: 'pages/HomePage' });   // 登录成功 → 进首页
       } else {
         this.toast('手机号或密码错误');
       }
