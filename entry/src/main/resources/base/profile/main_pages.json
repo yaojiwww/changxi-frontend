@@ -1,0 +1,26 @@
+{
+  "src": [
+    "pages/SplashPage",
+    "pages/LoginPage",
+    "pages/OnboardingPage",
+    "pages/HomePage",
+    "pages/SettingsPage",
+    "pages/MoreSettingsPage",
+    "pages/SettingsDetailPage",
+    "pages/ProfilePage",
+    "pages/PolicyDetailPage",
+    "pages/AIKnowledgePage",
+    "pages/PracticePage",
+    "pages/PracticeReportPage",
+    "pages/DailyPracticePage",
+    "pages/FavoritesPage",
+    "pages/WrongBookPage",
+    "pages/RetrainPage",
+    "pages/AIPracticePage",
+    "pages/ExamListPage",
+    "pages/ExamAnswerPage",
+    "pages/ExamReportPage",
+    "pages/StudyDataPage",
+    "pages/PrivacySettingsPage"
+  ]
+}

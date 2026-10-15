@@ -1,0 +1,7 @@
+{
+  "baseUrl": "http://43.138.216.228:8080",
+  "apiPrefix": "/api/v1",
+  "connectTimeout": 5000,
+  "readTimeout": 10000,
+  "featureTrainingEnabled": false
+}
