@@ -1,5 +1,9 @@
 import { http } from '@kit.NetworkKit';
+import { hilog } from '@kit.PerformanceAnalysisKit';
 import { AppConfig } from './AppConfig';
+
+const DOMAIN = 0x0000;
+const TAG = 'Http';
 
 // 后端统一响应结构，见 docs/api_spec.md
 export interface ApiResponse<T> {
@@ -23,12 +27,18 @@ export class Http {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const response = await request.request(cfg.baseUrl + cfg.apiPrefix + path, {
+      const url = cfg.baseUrl + cfg.apiPrefix + path;
+      hilog.info(DOMAIN, TAG, 'GET %{public}s', url);
+
+      const response = await request.request(url, {
         method: http.RequestMethod.GET,
         header: headers,
         connectTimeout: cfg.connectTimeout,
         readTimeout: cfg.readTimeout
       });
+
+      hilog.info(DOMAIN, TAG, '← %{public}d %{public}s',
+        response.responseCode, response.result as string);
 
       // 与 post 相同的约定：成败只看 body 里的 code
       return JSON.parse(response.result as string) as ApiResponse<T>;
@@ -51,13 +61,20 @@ export class Http {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const response = await request.request(cfg.baseUrl + cfg.apiPrefix + path, {
+      const url = cfg.baseUrl + cfg.apiPrefix + path;
+      // 故意不打 body：登录请求里带明文密码，日志会落盘
+      hilog.info(DOMAIN, TAG, 'POST %{public}s', url);
+
+      const response = await request.request(url, {
         method: http.RequestMethod.POST,
         header: headers,
         extraData: JSON.stringify(body),
         connectTimeout: cfg.connectTimeout,
         readTimeout: cfg.readTimeout
       });
+
+      hilog.info(DOMAIN, TAG, '← %{public}d %{public}s',
+        response.responseCode, response.result as string);
 
       // 约定：失败时 HTTP 状态码是 4xx，但 body 结构不变。
       // 所以这里不看 responseCode，直接解析 body，成功与否交给 code 判断。
