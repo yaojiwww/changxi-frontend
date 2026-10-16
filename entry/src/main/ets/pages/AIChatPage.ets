@@ -267,11 +267,18 @@ export struct AIView {
             .objectFit(ImageFit.Cover)
         }
         if (msg.content !== '') {
+          // ★ 这里以前有 .width('100%')，文字会溢出气泡，必须去掉。
+          //   百分号宽度要吃父容器宽度，而外层 Column 没有确定宽度——它只有
+          //   constraintSize({ maxWidth: '72%' })，宽度本身由子内容决定。循环依赖下
+          //   ArkUI 把 100% 解成了整屏宽，于是 Text 按整屏排，Column 却卡在 72%，
+          //   文字就画到气泡外面去了。不给宽度，Text 才按 Column 的上限换行。
           Text(msg.content)
             .fontSize(16.0)
             .lineHeight(21)
             .fontColor(msg.from === 'user' ? Color.White : '#1A202C')
-            .width('100%')
+            // AI 回复里经常夹长 URL 或长英文单词：NORMAL 只在空格处换行，遇到塞不下的
+            // 东西会直接撑破气泡。BREAK_WORD 优先按词换、词太长才拆字，中文仍按字换行
+            .wordBreak(WordBreak.BREAK_WORD)
         }
       }
       .padding({ left: 12, right: 12, top: 10, bottom: 10 })
