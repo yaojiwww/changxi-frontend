@@ -7,7 +7,7 @@
 本项目是一款基于 **HarmonyOS NEXT (API 24)** 开发的职业考证与在线刷题备考系统——**“育见未来（保育师考证助手）”**。采用 MVVM 架构模式与 ArkUI 声明式 UI 体系开发，遵循 HarmonyOS V2 状态管理机制。
 
 **应用基本信息：**
-- **应用名称**：育见未来（保育师考证助手）
+- **应用名称**：保育员
 - **包名**：`com.yaojiwww.changxi`
 - **目标 SDK**：HarmonyOS 6.1.1 (API Level 21) / HarmonyOS NEXT (API 24)
 - **构建工具**：Hvigor (HarmonyOS 构建系统)
@@ -64,3 +64,4 @@ hvigorw --sync
 
 --- 
 
+## 常见语法坑点
