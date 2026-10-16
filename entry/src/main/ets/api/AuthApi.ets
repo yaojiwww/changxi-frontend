@@ -14,4 +14,24 @@ export class AuthApi {
     const body: LoginRequest = { number: phone, password: password };
     return Http.post<string>('/auth/login', body);
   }
+  static register(phone: string, password: string, code: string): Promise<ApiResponse<string>> {
+    const body: RegisterRequest = { number: phone, password: password, code: code };
+    return Http.post<string>('/auth/register', body);
+  }
+
+  static sendCode(phone: string): Promise<ApiResponse<string>> {
+    const body: SendCodeRequest = { number: phone };
+    return Http.post<string>('/auth/send-code', body);
+  }
+
+}
+
+export interface RegisterRequest {
+  number: string;
+  password: string;
+  code: string;
+}
+
+export interface SendCodeRequest {
+  number: string;
 }
