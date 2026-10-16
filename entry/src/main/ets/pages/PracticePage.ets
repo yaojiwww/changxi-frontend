@@ -1,77 +1,23 @@
 // 知识点练习页：首页「基础知识/专业知识」列表点击某个知识点跳入。
-// 演示说明：「相关法律法规及其它试题」内置 5 道真实题目（本地即选即判，带解析）；
-// 页面顶部的题号与进度条按该知识点真实题库总数（358 题）计算——演示题只是题库的一小部分。
-// 后端联调后：题目由后端按 kp_id 抽取，判题与解析走接口，本文件演示数据可删。
-import { FavoritesStore, FavoriteItem } from '../common/FavoritesStore';
-import { WrongBookStore } from '../common/WrongBookStore';
+// 题目来自题库：PracticeApi 按 kpId 抽题、逐题判题并下发解析（mock 阶段读 common/QuestionBank 的本地题库）。
+// 取数、判题、收藏、错题入库都在 viewmodel/PracticeViewModel.ets，页面只负责渲染与跳转。
+// 该知识点暂无题库时显示占位页（路由与入口已接通，题库补齐后自动可用）。
+import { PracticeViewModel } from '../viewmodel/PracticeViewModel';
 
 interface PracticeParams {
   topicId?: number;
   topicName?: string;
 }
 
-// 演示题结构
-interface LawQ {
-  stem: string;
-  options: string[];
-  answer: string;   // 正确选项字母
-  tip: string;      // 解析一句话
-}
-
+// 选项字母：与 options 数组下标一一对应
 const KEYS: string[] = ['A', 'B', 'C', 'D'];
-
-// 相关法律法规：真实题库总数（与首页列表一致，演示时题目数量与进度条按它显示）
-const LAW_TOTAL: number = 358;
-
-// 法律法规演示题（比赛演示用，平时只练这几道）
-const LAW_DEMO: LawQ[] = [
-  {
-    stem: '《中华人民共和国未成年人保护法》规定，保障未成年人合法权益的第一责任人是（ ）。',
-    options: ['父母或其他监护人', '托幼机构', '社区', '政府部门'],
-    answer: 'A',
-    tip: '未成年人保护法明确父母或其他监护人对未成年人的抚养、教育和保护负有第一责任。'
-  },
-  {
-    stem: '《幼儿园工作规程》规定，正常情况下幼儿园每日户外活动时间不得少于（ ）。',
-    options: ['1 小时', '2 小时', '3 小时', '4 小时'],
-    answer: 'B',
-    tip: '幼儿园工作规程要求正常情况下每日户外活动（含户外体育活动）不少于 2 小时，寄宿制幼儿园不少于 3 小时。'
-  },
-  {
-    stem: '依据《托儿所幼儿园卫生保健工作规范》，3 岁以上婴幼儿每年健康检查的次数是（ ）。',
-    options: ['1 次', '2 次', '3 次', '4 次'],
-    answer: 'A',
-    tip: '卫生保健工作规范实行"4-2-1"体检：0～1 岁每年 4 次、1～2 岁每年 2 次、3 岁以上每年 1 次。'
-  },
-  {
-    stem: '依据《中华人民共和国食品安全法》，采购食品原料时应当查验供货者的（ ）。',
-    options: ['营业执照和税务登记证', '许可证和产品合格证明', '卫生培训证书', '健康证和体检表'],
-    answer: 'B',
-    tip: '食品安全法规定进货查验制度：查验供货者的许可证和食品出厂检验合格证或者其他合格证明。'
-  },
-  {
-    stem: '《中华人民共和国教师法》规定，取得幼儿园教师资格应当具备的学历是（ ）。',
-    options: ['幼儿师范学校毕业', '高中毕业', '初中毕业', '任何学历均可'],
-    answer: 'A',
-    tip: '教师法规定取得幼儿园教师资格，应当具备幼儿师范学校毕业及其以上学历。'
-  }
-];
 
 @Entry
 @ComponentV2
 struct Practice {
+  @Local vm: PracticeViewModel = new PracticeViewModel();
   @Local pageTitle: string = '知识点练习';
   @Local topicId: number = 0;
-  @Local isLaw: boolean = false;         // 是否为法律法规知识点（内置演示题）
-  @Local cur: number = 0;                // 当前演示题下标
-  @Local picks: string[] = [];           // 每道演示题的作答
-  @Local done: boolean = false;          // 演示题全部做完
-  @Local starred: boolean = false;       // 当前题收藏状态
-
-  // 演示题稳定 ID：law_1 ~ law_5（错题本/收藏共用）
-  private qid(i: number): string {
-    return 'law_' + (i + 1).toString();
-  }
 
   private plans: string[] = [
     '按知识点分类刷题',
@@ -90,113 +36,46 @@ struct Practice {
         this.pageTitle = params.topicName;
       }
     }
-    // 相关法律法规 → 进入演示答题模式
-    this.isLaw = this.pageTitle.indexOf('法律法规') >= 0;
-    if (this.isLaw) {
-      this.picks = LAW_DEMO.map((): string => '');
-      const ctx = this.getUIContext().getHostContext();
-      if (ctx !== undefined) {
-        await FavoritesStore.init(ctx);
-        await WrongBookStore.init(ctx);
-      }
-      this.refreshStar();
-    }
-  }
-
-  // 当前题是否已判定
-  private judged(): boolean {
-    return this.isLaw && this.picks[this.cur] !== undefined && this.picks[this.cur] !== '';
-  }
-
-  private isLast(): boolean {
-    return this.cur === LAW_DEMO.length - 1;
-  }
-
-  // 本轮答对题数
-  private correctCount(): number {
-    let n = 0;
-    for (let i = 0; i < LAW_DEMO.length; i++) {
-      if (this.picks[i] === LAW_DEMO[i].answer) {
-        n++;
-      }
-    }
-    return n;
-  }
-
-  private pick(key: string): void {
-    if (this.judged() || this.done) {
+    const ctx = this.getUIContext().getHostContext();
+    if (ctx === undefined) {
       return;
     }
-    this.picks[this.cur] = key;
-  }
-
-  private onNext(): void {
-    if (this.picks[this.cur] === undefined || this.picks[this.cur] === '') {
-      this.toast('请先选择答案');
-      return;
+    try {
+      await this.vm.init(ctx, this.pageTitle);
+    } catch (err) {
+      this.toast((err as Error).message);
     }
-    // 离开本题前终判：最终答案错误 → 静默写入错题本
-    if (this.picks[this.cur] !== LAW_DEMO[this.cur].answer) {
-      WrongBookStore.markWrong(this.qid(this.cur), LAW_DEMO[this.cur].stem,
-        LAW_DEMO[this.cur].options.slice(), KEYS.indexOf(LAW_DEMO[this.cur].answer),
-        '相关法律法规及其它试题', 'practice');
-    }
-    if (this.isLast()) {
-      this.done = true;
-    } else {
-      this.cur++;
-      this.refreshStar();
-    }
-  }
-
-  // ===== 收藏星标 =====
-  private refreshStar(): void {
-    this.starred = this.isLaw && FavoritesStore.isFavorited(this.qid(this.cur));
-  }
-
-  private async toggleStar(): Promise<void> {
-    const q = LAW_DEMO[this.cur];
-    if (q === undefined) {
-      return;
-    }
-    const id = this.qid(this.cur);
-    if (this.starred) {
-      await FavoritesStore.remove(id);
-      this.starred = false;
-      this.toast('已取消收藏');
-    } else {
-      const item: FavoriteItem = {
-        questionId: id,
-        stem: q.stem,
-        options: q.options.slice(),
-        answer: KEYS.indexOf(q.answer),
-        knowledgePoint: '相关法律法规及其它试题',
-        source: 'practice',
-        favoritedAt: Date.now()
-      };
-      await FavoritesStore.add(item);
-      this.starred = true;
-      this.toast('已加入收藏');
-    }
-  }
-
-  private prev(): void {
-    if (this.done) {
-      this.done = false;   // 完成页回退到最后一题
-      return;
-    }
-    if (this.cur > 0) {
-      this.cur--;
-    }
-  }
-
-  // 进度条宽度：按真实题库总数计算（演示题号/358）
-  private progressPct(): number {
-    return (this.cur + 1) / LAW_TOTAL * 100;
   }
 
   private toast(msg: string): void {
     this.getUIContext().getPromptAction().showToast({ message: msg, duration: 2000 });
+  }
+
+  // 选答：判题与解析走 ViewModel，失败提示
+  private async onPick(key: string): Promise<void> {
+    try {
+      await this.vm.pick(key);
+    } catch (err) {
+      this.toast((err as Error).message);
+    }
+  }
+
+  private async onNext(): Promise<void> {
+    if (!this.vm.answered()) {
+      this.toast('请先选择答案');
+      return;
+    }
+    await this.vm.next();
+  }
+
+  private async onStar(): Promise<void> {
+    const wasStarred: boolean = this.vm.starred;
+    try {
+      await this.vm.toggleStar();
+      this.toast(wasStarred ? '已取消收藏' : '已加入收藏');
+    } catch (err) {
+      this.toast((err as Error).message);
+    }
   }
 
   build() {
@@ -220,17 +99,17 @@ struct Practice {
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
 
-        if (this.isLaw) {
+        if (this.vm.hasBank) {
           // 收藏星标
-          Text(this.starred ? '★' : '☆')
+          Text(this.vm.starred ? '★' : '☆')
             .fontSize(24.0)
-            .fontColor(this.starred ? '#F5A623' : '#B9C2D0')
+            .fontColor(this.vm.starred ? '#F5A623' : '#B9C2D0')
             .padding({ left: 2, right: 2 })
             .onClick(() => {
-              this.toggleStar();
+              this.onStar();
             })
 
-          Text((this.cur + 1).toString() + '/' + LAW_TOTAL.toString())
+          Text((this.vm.cur + 1).toString() + '/' + this.vm.total.toString())
             .fontSize(14.0)
             .fontColor('#8A94A6')
             .padding({ right: 16 })
@@ -244,7 +123,7 @@ struct Practice {
       .alignItems(VerticalAlign.Center)
       .border({ width: { bottom: 1 }, color: '#F1F4F9' })
 
-      if (this.isLaw) {
+      if (this.vm.hasBank) {
         this.QuizView()
       } else {
         this.PlaceholderView()
@@ -255,16 +134,16 @@ struct Practice {
     .backgroundColor('#F5F7FA')
   }
 
-  // ==================== 演示答题视图（法律法规） ====================
+  // ==================== 答题视图 ====================
   // 注意：Scroll 内容默认垂直居中，必须显式 .align(Alignment.Top) 顶对齐
   @Builder
   QuizView() {
     Column() {
-      // 进度条（按真实题库总数 358 计算）
+      // 进度条（按知识点真实题库总数计算）
       Stack({ alignContent: Alignment.Start }) {
         Row().width('100%').height(4).borderRadius(2).backgroundColor('#E8EDF5')
         Row()
-          .width(this.progressPct() + '%')
+          .width(this.vm.progressPct() + '%')
           .height(4)
           .borderRadius(2)
           .backgroundColor('#3B6BF6')
@@ -274,19 +153,19 @@ struct Practice {
 
       Scroll() {
         Column() {
-          if (this.done) {
+          if (this.vm.done) {
             this.DoneCard()
           } else {
             // 题干卡
             Column({ space: 10 }) {
-              Text('相关法律法规及其它试题')
+              Text(this.vm.kpName)
                 .fontSize(12.0)
                 .fontColor('#3B6BF6')
                 .backgroundColor('#EAF0FF')
                 .padding({ left: 8, right: 8, top: 3, bottom: 3 })
                 .borderRadius(6)
 
-              Text(LAW_DEMO[this.cur].stem)
+              Text(this.vm.stemText())
                 .fontSize(17.5)
                 .fontWeight(FontWeight.Medium)
                 .fontColor('#1A202C')
@@ -301,12 +180,12 @@ struct Practice {
             .margin({ bottom: 12 })
 
             // 选项列表
-            ForEach(LAW_DEMO[this.cur].options, (opt: string, i: number) => {
+            ForEach(this.vm.optionList(), (opt: string, i: number) => {
               this.OptionRow(opt, i)
-            }, (opt: string, i: number) => this.cur.toString() + '-' + i.toString() + '-' + opt)
+            }, (opt: string, i: number) => this.vm.cur.toString() + '-' + i.toString() + '-' + opt)
 
             // 解析（作答后出现）
-            if (this.judged()) {
+            if (this.vm.judged()) {
               this.AnalysisCard()
             }
           }
@@ -327,22 +206,22 @@ struct Practice {
           .fontSize(17.0)
           .type(ButtonType.Capsule)
           .backgroundColor(Color.White)
-          .fontColor(this.cur === 0 && !this.done ? '#8A94A6' : '#3A4556')
+          .fontColor(this.vm.cur === 0 && !this.vm.done ? '#8A94A6' : '#3A4556')
           .border({ width: 1, color: '#D8DFEA' })
-          .enabled(this.cur > 0 || this.done)
+          .enabled(this.vm.cur > 0 || this.vm.done)
           .onClick(() => {
-            this.prev();
+            this.vm.prev();
           })
 
-        Button(this.done ? '已完成' : (this.isLast() ? '完成练习' : '下一题'))
+        Button(this.vm.done ? '已完成' : (this.vm.isLast() ? '完成练习' : '下一题'))
           .layoutWeight(1)
           .height(48)
           .fontSize(17.0)
           .fontWeight(FontWeight.Bold)
           .type(ButtonType.Capsule)
-          .backgroundColor(this.picks[this.cur] === undefined || this.picks[this.cur] === '' ? '#E7ECF4' : '#3B6BF6')
-          .fontColor(this.picks[this.cur] === undefined || this.picks[this.cur] === '' ? '#8A94A6' : Color.White)
-          .enabled(!this.done)
+          .backgroundColor(this.vm.answered() ? '#3B6BF6' : '#E7ECF4')
+          .fontColor(this.vm.answered() ? Color.White : '#8A94A6')
+          .enabled(!this.vm.done)
           .onClick(() => {
             this.onNext();
           })
@@ -360,7 +239,7 @@ struct Practice {
   OptionRow(opt: string, i: number) {
     Row({ space: 12 }) {
       // 判定后：正确选项显示绿色对勾圆标
-      if (this.judged() && KEYS[i] === LAW_DEMO[this.cur].answer) {
+      if (this.vm.judged() && KEYS[i] === this.vm.correctOption()) {
         Text('✓')
           .fontSize(16.0)
           .fontWeight(FontWeight.Bold)
@@ -374,12 +253,12 @@ struct Practice {
         Text(KEYS[i])
           .fontSize(15.0)
           .fontWeight(FontWeight.Bold)
-          .fontColor(this.picks[this.cur] === KEYS[i] ? '#3B6BF6' : '#5A6B85')
+          .fontColor(this.vm.picked() === KEYS[i] ? '#3B6BF6' : '#5A6B85')
           .width(30)
           .height(30)
           .textAlign(TextAlign.Center)
           .borderRadius(15)
-          .backgroundColor(this.picks[this.cur] === KEYS[i] ? '#EAF0FF' : '#F1F4F9')
+          .backgroundColor(this.vm.picked() === KEYS[i] ? '#EAF0FF' : '#F1F4F9')
       }
 
       Text(opt)
@@ -391,17 +270,17 @@ struct Practice {
     .width('100%')
     .padding(13)
     .borderRadius(14)
-    .backgroundColor(this.judged() && KEYS[i] === LAW_DEMO[this.cur].answer ? '#F0FAF5'
-      : (this.judged() && this.picks[this.cur] === KEYS[i] ? '#FFF6F6' : Color.White))
+    .backgroundColor(this.vm.judged() && KEYS[i] === this.vm.correctOption() ? '#F0FAF5'
+      : (this.vm.judged() && this.vm.picked() === KEYS[i] ? '#FFF6F6' : Color.White))
     .border({
       width: 1.5,
-      color: this.judged() && KEYS[i] === LAW_DEMO[this.cur].answer ? '#BFE8D2'
-        : (this.judged() && this.picks[this.cur] === KEYS[i] ? '#F2C1C1' : '#EEF2F6')
+      color: this.vm.judged() && KEYS[i] === this.vm.correctOption() ? '#BFE8D2'
+        : (this.vm.judged() && this.vm.picked() === KEYS[i] ? '#F2C1C1' : '#EEF2F6')
     })
     .margin({ bottom: 10 })
     .alignItems(VerticalAlign.Center)
     .onClick(() => {
-      this.pick(KEYS[i]);
+      this.onPick(KEYS[i]);
     })
   }
 
@@ -411,7 +290,7 @@ struct Practice {
     Column() {
       Row() {
         Column({ space: 5 }) {
-          Text(LAW_DEMO[this.cur].answer)
+          Text(this.vm.correctOption())
             .fontSize(21.0)
             .fontWeight(FontWeight.Bold)
             .fontColor('#0E9F6E')
@@ -428,10 +307,10 @@ struct Practice {
           .color('#EEF2F6')
 
         Column({ space: 5 }) {
-          Text(this.picks[this.cur])
+          Text(this.vm.picked())
             .fontSize(21.0)
             .fontWeight(FontWeight.Bold)
-            .fontColor(this.picks[this.cur] === LAW_DEMO[this.cur].answer ? '#0E9F6E' : '#E5484D')
+            .fontColor(this.vm.isCorrect() ? '#0E9F6E' : '#E5484D')
           Text('我的作答')
             .fontSize(13.0)
             .fontColor('#8A94A6')
@@ -439,15 +318,15 @@ struct Practice {
         .layoutWeight(1)
         .alignItems(HorizontalAlign.Center)
 
-        Text(this.picks[this.cur] === LAW_DEMO[this.cur].answer ? '答对' : '答错')
+        Text(this.vm.isCorrect() ? '答对' : '答错')
           .fontSize(14.0)
           .fontWeight(FontWeight.Bold)
-          .fontColor(this.picks[this.cur] === LAW_DEMO[this.cur].answer ? '#0E9F6E' : '#E5484D')
+          .fontColor(this.vm.isCorrect() ? '#0E9F6E' : '#E5484D')
           .padding({ left: 10, right: 10, top: 4, bottom: 4 })
           .borderRadius(8)
           .border({
             width: 1.2,
-            color: this.picks[this.cur] === LAW_DEMO[this.cur].answer ? '#0E9F6E' : '#E5484D'
+            color: this.vm.isCorrect() ? '#0E9F6E' : '#E5484D'
           })
           .margin({ left: 14 })
       }
@@ -457,7 +336,7 @@ struct Practice {
 
       Divider().color('#F1F4F9').strokeWidth(1)
 
-      Text('解析：' + LAW_DEMO[this.cur].tip)
+      Text('解析：' + this.vm.explanation())
         .fontSize(14.5)
         .fontColor('#3A4552')
         .lineHeight(21)
@@ -473,7 +352,7 @@ struct Practice {
     .margin({ top: 4 })
   }
 
-  // 完成卡：演示题做完
+  // 完成卡：本章节的题做完
   @Builder
   DoneCard() {
     Column({ space: 14 }) {
@@ -482,12 +361,12 @@ struct Practice {
         .fontWeight(FontWeight.Bold)
         .fontColor('#1A202C')
 
-      Text('答对 ' + this.correctCount().toString() + ' / ' + LAW_DEMO.length.toString() + ' 题')
+      Text('答对 ' + this.vm.correctCount().toString() + ' / ' + this.vm.count().toString() + ' 题')
         .fontSize(17.0)
         .fontWeight(FontWeight.Medium)
         .fontColor('#3B6BF6')
 
-      Text('完成本知识点全部 ' + LAW_TOTAL.toString() + ' 题需继续练习，题目会按掌握度智能推送。')
+      Text('完成本知识点全部 ' + this.vm.total.toString() + ' 题需继续练习，题目会按掌握度智能推送。')
         .fontSize(14.0)
         .fontColor('#8A94A6')
         .lineHeight(21)
@@ -501,7 +380,7 @@ struct Practice {
     .alignItems(HorizontalAlign.Center)
   }
 
-  // ==================== 占位视图（其它知识点） ====================
+  // ==================== 占位视图（暂无题库的知识点） ====================
   @Builder
   PlaceholderView() {
     Column() {
