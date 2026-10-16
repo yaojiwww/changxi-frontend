@@ -1,83 +1,36 @@
-import { photoAccessHelper } from '@kit.MediaLibraryKit';
-
-// 聊天消息：发送方 user/ai，类型 text/image
-export interface ChatMessage {
-  from: string;      // 'user' | 'ai'
-  type: string;      // 'text' | 'image'
-  content: string;   // 文本内容
-  imageUri: string;  // 图片本地 URI（无图为空串）
-}
-
-// AI 模拟回复文案
-const AI_REPLY: string = '好的，已收到您的提问，正在结合考纲为您拆解...';
-// 模拟 AI 回复延迟（毫秒）
-const AI_REPLY_DELAY_MS: number = 1000;
+import { ChatMessage } from '../model/ChatModels';
+import { AIChatViewModel } from '../viewmodel/AIChatViewModel';
 
 @ComponentV2
 export struct AIView {
-  @Local selectedMode: number = 0;
-  @Local inputText: string = '';
-  @Local chatList: ChatMessage[] = [];   // 聊天记录
-  @Local pendingImage: string = '';      // 已选未发送的图片 URI
+  // 聊天记录、输入态、提问编排全在 ViewModel；页面只渲染、只把异常弹出来
+  @Local vm: AIChatViewModel = new AIChatViewModel();
 
-  // 聊天记录非空时隐藏上部引导区，让位给聊天流
-  private get hasChat(): boolean {
-    return this.chatList.length > 0;
-  }
-
-  // 加号：调起系统相册选一张图片，获取本地 URI
-  private async pickImage(): Promise<void> {
-    try {
-      const picker = new photoAccessHelper.PhotoViewPicker();
-      const options: photoAccessHelper.PhotoSelectOptions = {
-        MIMEType: photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE,
-        maxSelectNumber: 1
-      };
-      const result = await picker.select(options);
-      if (result.photoUris.length > 0) {
-        this.pendingImage = result.photoUris[0];
-      }
-    } catch (e) {
-      // 用户取消或选择失败：保持原状态
-    }
-  }
-
-  // 移除已选待发图片
-  private removePendingImage(): void {
-    this.pendingImage = '';
-  }
-
-  // 发送：打包文字+图片追加到列表，清空输入与图片，1 秒后追加 AI 回复
-  private send(): void {
-    const text: string = this.inputText.trim();
-    if (text === '' && this.pendingImage === '') {
+  async aboutToAppear(): Promise<void> {
+    const ctx = this.getUIContext().getHostContext();
+    if (ctx === undefined) {
       return;
     }
-    const msg: ChatMessage = {
-      from: 'user',
-      type: this.pendingImage !== '' ? 'image' : 'text',
-      content: text,
-      imageUri: this.pendingImage
-    };
-    this.chatList.push(msg);
-    this.inputText = '';
-    this.pendingImage = '';
+    await this.vm.init(ctx);
+  }
 
-    setTimeout((): void => {
-      const reply: ChatMessage = {
-        from: 'ai',
-        type: 'text',
-        content: AI_REPLY,
-        imageUri: ''
-      };
-      this.chatList.push(reply);
-    }, AI_REPLY_DELAY_MS);
+  private toast(msg: string): void {
+    this.getUIContext().getPromptAction().showToast({ message: msg, duration: 2500 });
+  }
+
+  // 发送：交给 ViewModel 发一轮流式提问，失败提示原因
+  private async send(): Promise<void> {
+    try {
+      await this.vm.send();
+    } catch (err) {
+      this.toast((err as Error).message);
+    }
   }
 
   build() {
     Column() {
       // ============ 上部：居中引导区（有聊天记录后隐藏） ============
-      if (!this.hasChat) {
+      if (!this.vm.hasChat) {
         Scroll() {
           Column() {
             Row()
@@ -146,10 +99,10 @@ export struct AIView {
       }
 
       // ============ 中部：聊天记录区（Tab 下方、输入框上方） ============
-      if (this.hasChat) {
+      if (this.vm.hasChat) {
         Scroll() {
           Column({ space: 12 }) {
-            ForEach(this.chatList, (msg: ChatMessage, idx: number) => {
+            ForEach(this.vm.chatList, (msg: ChatMessage, idx: number) => {
               this.ChatItem(msg)
             }, (msg: ChatMessage, idx: number) => `${idx}_${msg.from}_${msg.type}_${msg.content}_${msg.imageUri}`)
           }
@@ -177,9 +130,9 @@ export struct AIView {
         .shadow({ radius: 10, color: '#0A000000', offsetY: 3 })
 
         // 已选待发图片预览条
-        if (this.pendingImage !== '') {
+        if (this.vm.pendingImage !== '') {
           Row({ space: 10 }) {
-            Image(this.pendingImage)
+            Image(this.vm.pendingImage)
               .width(56)
               .height(56)
               .borderRadius(10)
@@ -196,7 +149,7 @@ export struct AIView {
               .fontColor('#6B7280')
               .padding({ left: 8, right: 4, top: 4, bottom: 4 })
               .onClick(() => {
-                this.removePendingImage();
+                this.vm.removePendingImage();
               })
           }
           .width('100%')
@@ -225,18 +178,18 @@ export struct AIView {
               .fontWeight(FontWeight.Medium)
           }
           .onClick(() => {
-            this.pickImage();
+            this.vm.pickImage();
           })
 
           // 文本输入框
-          TextInput({ text: this.inputText, placeholder: '输入题目或粘贴题干…' })
+          TextInput({ text: this.vm.inputText, placeholder: '输入题目或粘贴题干…' })
             .placeholderColor('#9AA0AC')
             .backgroundColor(Color.Transparent)
             .layoutWeight(1)
             .fontSize(16.0)
             .margin({ left: 8, right: 8 })
             .onChange((value: string) => {
-              this.inputText = value;
+              this.vm.inputText = value;
             })
 
           // 发送/提问按钮
@@ -349,17 +302,17 @@ export struct AIView {
     Row() {
       Text(title)
         .fontSize(16.0)
-        .fontWeight(this.selectedMode === modeIndex ? FontWeight.Bold : FontWeight.Medium)
-        .fontColor(this.selectedMode === modeIndex ? '#3B6BF6' : '#6B7280')
+        .fontWeight(this.vm.selectedMode === modeIndex ? FontWeight.Bold : FontWeight.Medium)
+        .fontColor(this.vm.selectedMode === modeIndex ? '#3B6BF6' : '#6B7280')
     }
     .layoutWeight(1)
     .height(42)
     .borderRadius(22)
-    .backgroundColor(this.selectedMode === modeIndex ? '#E8F0FF' : Color.Transparent)
+    .backgroundColor(this.vm.selectedMode === modeIndex ? '#E8F0FF' : Color.Transparent)
     .justifyContent(FlexAlign.Center)
     .alignItems(VerticalAlign.Center)
     .onClick(() => {
-      this.selectedMode = modeIndex;
+      this.vm.selectedMode = modeIndex;
     })
   }
 }
