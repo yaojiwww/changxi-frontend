@@ -213,11 +213,11 @@ struct RetrainPage {
   }
 
   private optionBorder(index: number): string {
-    return index === this.selectedIndex ? '#2B57E5' : '#E5EAF2';
+    return index === this.selectedIndex ? '#E4842A' : '#FEF8E3';
   }
 
   private optionBg(index: number): string {
-    return index === this.selectedIndex ? '#EEF3FF' : '#FFFFFF';
+    return index === this.selectedIndex ? '#FEF8E3' : '#FFFFFF';
   }
 
   @Builder
@@ -226,16 +226,16 @@ struct RetrainPage {
       Text(OPTION_LETTERS[index])
         .fontSize(15.0)
         .fontWeight(FontWeight.Bold)
-        .fontColor('#2B57E5')
+        .fontColor('#E4842A')
         .width(26)
         .height(26)
         .textAlign(TextAlign.Center)
         .borderRadius(13)
-        .backgroundColor('#EEF3FF')
+        .backgroundColor('#FEF8E3')
 
       Text(this.currentQuestion.options[index])
         .fontSize(16.0)
-        .fontColor('#1A202C')
+        .fontColor('#55402F')
         .layoutWeight(1)
         .lineHeight(22)
     }
@@ -257,7 +257,7 @@ struct RetrainPage {
           Text('‹')
             .fontSize(34.0)
             .fontWeight(FontWeight.Medium)
-            .fontColor('#1A202C')
+            .fontColor('#55402F')
             .padding({ left: 16, right: 12, top: 4, bottom: 4 })
             .onClick(() => {
               this.goBack();
@@ -266,7 +266,7 @@ struct RetrainPage {
           Text(this.category !== '' && this.category !== '不限' ? this.category : this.title)
             .fontSize(18.0)
             .fontWeight(FontWeight.Bold)
-            .fontColor('#1A202C')
+            .fontColor('#55402F')
             .layoutWeight(1)
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -275,7 +275,7 @@ struct RetrainPage {
             Text('取消收藏')
               .fontSize(14.0)
               .fontWeight(FontWeight.Bold)
-              .fontColor('#EF4444')
+              .fontColor('#D9534F')
               .padding({ left: 12, right: 18, top: 6, bottom: 6 })
               .onClick(() => {
                 this.cancelCurrent();
@@ -286,11 +286,11 @@ struct RetrainPage {
         .height(56)
         .backgroundColor(Color.White)
         .alignItems(VerticalAlign.Center)
-        .border({ width: { bottom: 1 }, color: '#F1F4F9' })
+        .border({ width: { bottom: 1 }, color: '#F2ECD8' })
 
         if (this.questions.length === 0) {
           Column({ space: 10 }) {
-            Text('暂无题目').fontSize(17.0).fontColor('#8A94A6')
+            Text('暂无题目').fontSize(17.0).fontColor('#9A8A6E')
           }
           .width('100%')
           .layoutWeight(1)
@@ -301,7 +301,7 @@ struct RetrainPage {
               Text(this.currentQuestion.stem)
                 .fontSize(17.0)
                 .fontWeight(FontWeight.Medium)
-                .fontColor('#1A202C')
+                .fontColor('#55402F')
                 .lineHeight(26)
                 .width('100%')
                 .padding(16)
@@ -318,16 +318,16 @@ struct RetrainPage {
 
               if (this.submitFailed) {
                 Column({ space: 12 }) {
-                  Text('提交失败，答案未记录').fontSize(15.0).fontColor('#EF4444')
+                  Text('提交失败，答案未记录').fontSize(15.0).fontColor('#D9534F')
                   Row() {
                     Text('重新提交')
                       .fontSize(16.0)
                       .fontWeight(FontWeight.Bold)
-                      .fontColor(Color.White)
+                      .fontColor('#8A7A50')
                   }
                   .padding({ left: 26, right: 26, top: 10, bottom: 10 })
                   .borderRadius(20)
-                  .linearGradient({ angle: 90, colors: [['#4A8CF8', 0.0], ['#2B57E5', 1.0]] })
+                  .backgroundColor('#FBDE71')
                   .onClick(() => {
                     this.finish();
                   })
@@ -348,7 +348,7 @@ struct RetrainPage {
       }
       .width('100%')
       .height('100%')
-      .backgroundColor('#F5F7FA')
+      .backgroundColor('#FDFDED')
 
       // 提交中遮罩
       if (this.submitting) {
@@ -360,7 +360,7 @@ struct RetrainPage {
           .width(140)
           .height(120)
           .borderRadius(16)
-          .backgroundColor('#CC1A202C')
+          .backgroundColor('#E4842A')
           .justifyContent(FlexAlign.Center)
           .alignItems(HorizontalAlign.Center)
         }

@@ -261,8 +261,8 @@ struct ProfilePage {
       title: '退出登录',
       message: '确定要退出当前账号吗？',
       buttons: [
-        { text: '取消', color: '#667085' },
-        { text: '退出登录', color: '#F53F3F', primary: true }
+        { text: '取消', color: '#9A8A6E' },
+        { text: '退出登录', color: '#D9534F', primary: true }
       ]
     });
     if (resp.index !== 1) {
@@ -289,7 +289,7 @@ struct ProfilePage {
           Text('‹')
             .fontSize(34.0)
             .fontWeight(FontWeight.Medium)
-            .fontColor('#1A202C')
+            .fontColor('#55402F')
             .padding({ left: 16, right: 12, top: 4, bottom: 4 })
             .onClick(() => {
               this.getUIContext().getRouter().back();
@@ -298,7 +298,7 @@ struct ProfilePage {
           Text('个人信息')
             .fontSize(20.0)
             .fontWeight(FontWeight.Bold)
-            .fontColor('#1A202C')
+            .fontColor('#55402F')
             .layoutWeight(1)
             .textAlign(TextAlign.Center)
             .padding({ right: 34 })
@@ -307,7 +307,7 @@ struct ProfilePage {
         .height(56)
         .backgroundColor(Color.White)
         .alignItems(VerticalAlign.Center)
-        .border({ width: { bottom: 1 }, color: '#F1F4F9' })
+        .border({ width: { bottom: 1 }, color: '#F2ECD8' })
 
         // 列表区
         Scroll() {
@@ -317,7 +317,7 @@ struct ProfilePage {
               Text('头像')
                 .fontSize(19.0)
                 .fontWeight(FontWeight.Medium)
-                .fontColor('#1A202C')
+                .fontColor('#55402F')
                 .layoutWeight(1)
 
               Stack({ alignContent: Alignment.Center }) {
@@ -325,7 +325,7 @@ struct ProfilePage {
                   .width(42)
                   .height(42)
                   .borderRadius(21)
-                  .backgroundColor('#E8F0FF')
+                  .backgroundColor('#FEF8E3')
 
                 if (this.profile.avatarUri !== '') {
                   Image(this.profile.avatarUri)
@@ -338,7 +338,7 @@ struct ProfilePage {
                   Text(this.profile.nickname.substring(0, 1))
                     .fontSize(19.0)
                     .fontWeight(FontWeight.Bold)
-                    .fontColor('#3B6BF6')
+                    .fontColor('#E4842A')
                 }
               }
             }
@@ -348,18 +348,18 @@ struct ProfilePage {
             .onClick(() => {
               this.pickAvatar();
             })
-            Divider().color('#E9EDF3').strokeWidth(1)
+            Divider().color('#FEF8E3').strokeWidth(1)
 
             // 昵称
             Row() {
               Text('昵称')
                 .fontSize(19.0)
                 .fontWeight(FontWeight.Medium)
-                .fontColor('#1A202C')
+                .fontColor('#55402F')
                 .layoutWeight(1)
               Text(this.profile.nickname)
                 .fontSize(19.0)
-                .fontColor('#4B5563')
+                .fontColor('#9A8A6E')
             }
             .width('100%')
             .padding({ left: 24, right: 24, top: 14, bottom: 14 })
@@ -367,38 +367,38 @@ struct ProfilePage {
             .onClick(() => {
               this.openNicknameEditor();
             })
-            Divider().color('#E9EDF3').strokeWidth(1)
+            Divider().color('#FEF8E3').strokeWidth(1)
 
             // ID
             Row() {
               Text('ID')
                 .fontSize(19.0)
                 .fontWeight(FontWeight.Medium)
-                .fontColor('#1A202C')
+                .fontColor('#55402F')
                 .layoutWeight(1)
               Text(this.profile.userId !== '' ? this.profile.userId : '—')
                 .fontSize(19.0)
-                .fontColor('#8A94A6')
+                .fontColor('#9A8A6E')
             }
             .width('100%')
             .padding({ left: 24, right: 24, top: 14, bottom: 14 })
             .alignItems(VerticalAlign.Center)
-            Divider().color('#E9EDF3').strokeWidth(1)
+            Divider().color('#FEF8E3').strokeWidth(1)
 
             // 绑定手机号
             Row() {
               Text('绑定手机号')
                 .fontSize(19.0)
                 .fontWeight(FontWeight.Medium)
-                .fontColor('#1A202C')
+                .fontColor('#55402F')
                 .layoutWeight(1)
               Text(this.profile.phone !== '' ? maskPhone(this.profile.phone) : '未绑定 ')
                 .fontSize(19.0)
-                .fontColor('#4B5563')
+                .fontColor('#9A8A6E')
               Text('›')
                 .fontSize(21.0)
                 .fontWeight(FontWeight.Medium)
-                .fontColor('#CBD5E1')
+                .fontColor('#B5A98D')
                 .margin({ left: 4 })
             }
             .width('100%')
@@ -407,22 +407,22 @@ struct ProfilePage {
             .onClick(() => {
               this.openPhonePanel();
             })
-            Divider().color('#E9EDF3').strokeWidth(1)
+            Divider().color('#FEF8E3').strokeWidth(1)
 
             // 绑定微信
             Row() {
               Text('绑定微信')
                 .fontSize(19.0)
                 .fontWeight(FontWeight.Medium)
-                .fontColor('#1A202C')
+                .fontColor('#55402F')
                 .layoutWeight(1)
               Text(this.profile.wechatBound ? '已绑定 ' : '未绑定 ')
                 .fontSize(19.0)
-                .fontColor('#4B5563')
+                .fontColor('#9A8A6E')
               Text('›')
                 .fontSize(21.0)
                 .fontWeight(FontWeight.Medium)
-                .fontColor('#CBD5E1')
+                .fontColor('#B5A98D')
                 .margin({ left: 4 })
             }
             .width('100%')
@@ -446,24 +446,24 @@ struct ProfilePage {
           // 这里要替换真实图标（退出登录图标）
           Text('⟲')
             .fontSize(19.0)
-            .fontColor('#374151')
+            .fontColor('#55402F')
           Text('退出登录')
             .fontSize(19.0)
             .fontWeight(FontWeight.Medium)
-            .fontColor('#374151')
+            .fontColor('#55402F')
         }
         .width('100%')
         .height(52)
         .justifyContent(FlexAlign.Center)
         .backgroundColor(Color.White)
-        .border({ width: { top: 1 }, color: '#F1F4F9' })
+        .border({ width: { top: 1 }, color: '#F2ECD8' })
         .onClick(() => {
           this.doLogout();
         })
       }
       .width('100%')
       .height('100%')
-      .backgroundColor('#F5F7FA')
+      .backgroundColor('#FFFFFF')
 
       // ============ 昵称编辑弹层 ============
       if (this.nicknameEditing) {
@@ -472,24 +472,21 @@ struct ProfilePage {
             Text('修改昵称')
               .fontSize(19.0)
               .fontWeight(FontWeight.Bold)
-              .fontColor('#1A202C')
+              .fontColor('#55402F')
 
-            TextInput({ text: this.nicknameInput, placeholder: '请输入昵称' })
+            TextInput({ text: $$this.nicknameInput, placeholder: '请输入昵称' })
               .height(48)
               .borderRadius(12)
-              .backgroundColor('#F5F7FA')
+              .backgroundColor('#FFFFFF')
               .padding({ left: 14, right: 14 })
-              .onChange((v: string) => {
-                this.nicknameInput = v;
-              })
 
             Row({ space: 12 }) {
               Button('取消')
                 .layoutWeight(1)
                 .height(44)
                 .borderRadius(22)
-                .backgroundColor('#F1F4F9')
-                .fontColor('#4B5563')
+                .backgroundColor('#F2ECD8')
+                .fontColor('#9A8A6E')
                 .fontSize(19.0)
                 .onClick(() => {
                   this.nicknameEditing = false;
@@ -499,8 +496,8 @@ struct ProfilePage {
                 .layoutWeight(1)
                 .height(44)
                 .borderRadius(22)
-                .backgroundColor('#3B6BF6')
-                .fontColor(Color.White)
+                .backgroundColor('#FBDE71')
+                .fontColor('#8A7A50')
                 .fontSize(19.0)
                 .enabled(!this.isSavingNickname)
                 .onClick(() => {
@@ -531,36 +528,30 @@ struct ProfilePage {
             Text('更换绑定手机号')
               .fontSize(19.0)
               .fontWeight(FontWeight.Bold)
-              .fontColor('#1A202C')
+              .fontColor('#55402F')
               .alignSelf(ItemAlign.Start)
 
-            TextInput({ text: this.newPhone, placeholder: '请输入新手机号' })
+            TextInput({ text: $$this.newPhone, placeholder: '请输入新手机号' })
               .type(InputType.PhoneNumber)
               .height(48)
               .borderRadius(12)
-              .backgroundColor('#F5F7FA')
+              .backgroundColor('#FFFFFF')
               .padding({ left: 14, right: 14 })
-              .onChange((v: string) => {
-                this.newPhone = v;
-              })
 
             Row({ space: 10 }) {
-              TextInput({ text: this.smsCode, placeholder: '请输入验证码' })
+              TextInput({ text: $$this.smsCode, placeholder: '请输入验证码' })
                 .layoutWeight(1)
                 .height(48)
                 .borderRadius(12)
-                .backgroundColor('#F5F7FA')
+                .backgroundColor('#FFFFFF')
                 .padding({ left: 14, right: 14 })
-                .onChange((v: string) => {
-                  this.smsCode = v;
-                })
 
               Button(this.countdown > 0 ? `${this.countdown}s` : (this.isSending ? '发送中…' : '获取验证码'))
                 .width(110)
                 .height(48)
                 .borderRadius(12)
-                .backgroundColor(this.countdown > 0 ? '#E5E9F0' : '#E8F0FF')
-                .fontColor(this.countdown > 0 ? '#8A94A6' : '#3B6BF6')
+                .backgroundColor(this.countdown > 0 ? '#FEF8E3' : '#FEF8E3')
+                .fontColor(this.countdown > 0 ? '#9A8A6E' : '#E4842A')
                 .fontSize(19.0)
                 .enabled(this.countdown === 0 && !this.isSending)
                 .onClick(() => {
@@ -574,8 +565,8 @@ struct ProfilePage {
                 .layoutWeight(1)
                 .height(44)
                 .borderRadius(22)
-                .backgroundColor('#F1F4F9')
-                .fontColor('#4B5563')
+                .backgroundColor('#F2ECD8')
+                .fontColor('#9A8A6E')
                 .fontSize(19.0)
                 .onClick(() => {
                   this.phonePanelVisible = false;
@@ -585,8 +576,8 @@ struct ProfilePage {
                 .layoutWeight(1)
                 .height(44)
                 .borderRadius(22)
-                .backgroundColor('#3B6BF6')
-                .fontColor(Color.White)
+                .backgroundColor('#FBDE71')
+                .fontColor('#8A7A50')
                 .fontSize(19.0)
                 .enabled(!this.isUpdatingPhone)
                 .onClick(() => {
@@ -614,6 +605,6 @@ struct ProfilePage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F7FA')
+    .backgroundColor('#FDFDED')
   }
 }

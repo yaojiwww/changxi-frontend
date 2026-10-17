@@ -20,22 +20,22 @@ struct StudyDataPage {
   // 类型标签配色
   private tagBg(type: StudyRecordType): string {
     if (type === 'daily') {
-      return '#E8F0FF';
+      return '#FEF8E3';
     }
     if (type === 'exam') {
-      return '#FFF3E0';
+      return '#F2ECD8';
     }
-    return '#E6F7F0';
+    return '#F0F6EC';
   }
 
   private tagColor(type: StudyRecordType): string {
     if (type === 'daily') {
-      return '#3B6BF6';
+      return '#E4842A';
     }
     if (type === 'exam') {
-      return '#F59E0B';
+      return '#FBDE71';
     }
-    return '#00B42A';
+    return '#2E9E63';
   }
 
   // 点击记录：按类型解析 detailData 并跳转对应报告页（history 模式）
@@ -104,7 +104,7 @@ struct StudyDataPage {
         Text(r.title)
           .fontSize(16.0)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
           .layoutWeight(1)
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -112,7 +112,7 @@ struct StudyDataPage {
         Text(r.score)
           .fontSize(17.0)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#2B57E5')
+          .fontColor('#E4842A')
       }
       .width('100%')
       .alignItems(VerticalAlign.Center)
@@ -121,20 +121,20 @@ struct StudyDataPage {
       if (this.subText(r) !== '') {
         Text(this.subText(r))
           .fontSize(13.0)
-          .fontColor('#5A6B85')
+          .fontColor('#9A8A6E')
           .width('100%')
       }
 
       Text(r.date)
         .fontSize(13.0)
-        .fontColor('#8A94A6')
+        .fontColor('#9A8A6E')
         .width('100%')
     }
     .width('100%')
     .padding(16)
     .backgroundColor(Color.White)
     .borderRadius(16)
-    .border({ width: 1, color: '#EEF2F6' })
+    .border({ width: 1, color: '#F2ECD8' })
     .onClick(() => {
       this.openRecord(r);
     })
@@ -147,7 +147,7 @@ struct StudyDataPage {
         Text('‹')
           .fontSize(34.0)
           .fontWeight(FontWeight.Medium)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
           .padding({ left: 16, right: 12, top: 4, bottom: 4 })
           .onClick(() => {
             this.goBack();
@@ -156,21 +156,21 @@ struct StudyDataPage {
         Text('学习数据')
           .fontSize(18.0)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
           .layoutWeight(1)
       }
       .width('100%')
       .height(56)
       .backgroundColor(Color.White)
       .alignItems(VerticalAlign.Center)
-      .border({ width: { bottom: 1 }, color: '#F1F4F9' })
+      .border({ width: { bottom: 1 }, color: '#F2ECD8' })
 
       if (this.records.length === 0) {
         // 空态
         Column({ space: 10 }) {
           Text('暂无学习记录')
             .fontSize(16.0)
-            .fontColor('#8A94A6')
+            .fontColor('#9A8A6E')
         }
         .layoutWeight(1)
         .justifyContent(FlexAlign.Center)
@@ -193,6 +193,6 @@ struct StudyDataPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F7FA')
+    .backgroundColor('#FDFDED')
   }
 }

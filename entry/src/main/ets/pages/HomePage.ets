@@ -9,6 +9,7 @@ import { StudyCache } from '../common/StudyCache';
 import { TokenStore } from '../common/TokenStore';
 import { DashboardApi } from '../api/DashboardApi';
 import { takePendingTab } from '../common/NavSignal';
+import { SafeArea } from '../common/SafeArea';
 
 // 知识分类条目：name 为分类名，total 为题量，children 为可展开的子分类（可选）
 interface KnowledgeEntry {
@@ -170,30 +171,30 @@ struct Index {
           .width(22)
           .height(22)
           .objectFit(ImageFit.Contain)
-          .fillColor(this.currentIndex === targetIndex ? '#3B6BF6' : '#8A94A6')
+          .fillColor(this.currentIndex === targetIndex ? '#E4842A' : '#9A8A6E')
       } else if (targetIndex === 1) {
         Image($r('app.media.zhint'))
           .width(22)
           .height(22)
           .objectFit(ImageFit.Contain)
-          .fillColor(this.currentIndex === targetIndex ? '#3B6BF6' : '#8A94A6')
+          .fillColor(this.currentIndex === targetIndex ? '#E4842A' : '#9A8A6E')
       } else {
         Image($r('app.media.wo'))
           .width(22)
           .height(22)
           .objectFit(ImageFit.Contain)
-          .fillColor(this.currentIndex === targetIndex ? '#3B6BF6' : '#8A94A6')
+          .fillColor(this.currentIndex === targetIndex ? '#E4842A' : '#9A8A6E')
       }
 
       Text(title)
         .fontSize(15.0)
         .fontWeight(this.currentIndex === targetIndex ? FontWeight.Bold : FontWeight.Medium)
-        .fontColor(this.currentIndex === targetIndex ? '#3B6BF6' : '#8A94A6')
+        .fontColor(this.currentIndex === targetIndex ? '#E4842A' : '#9A8A6E')
     }
     // 背景与图标文字区域等高（不设额外固定高/内边距），宽度固定紧凑胶囊
     .width(60)
     .borderRadius(14)
-    .backgroundColor(this.currentIndex === targetIndex ? '#E8F0FF' : Color.Transparent)
+    .backgroundColor(this.currentIndex === targetIndex ? '#FEF8E3' : Color.Transparent)
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
     .onClick(() => {
@@ -240,14 +241,14 @@ struct Index {
       .backgroundColor(Color.White)
       .borderRadius({ topLeft: 24, topRight: 24 })
       .shadow({ radius: 16, color: '#14000000', offsetY: -4 })
-      .border({ width: { top: 1 }, color: { top: '#F0F3F8' } })
+      .border({ width: { top: 1 }, color: { top: '#F2ECD8' } })
       .justifyContent(FlexAlign.SpaceAround)
       .alignItems(VerticalAlign.Center)
       .padding({ left: 16, right: 16, bottom: 4 })
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F7FA')
+    .backgroundColor('#FDFDED')
   }
 }
 
@@ -262,7 +263,7 @@ struct HomeView {
   @Local collapsedKeys: string[] = [];   // 已收起的父分类 key（默认全部展开）
   // 环形进度百分比：一进页面显示 0，真实进度由后端 total_progress 下发后覆盖
   @Local completionPercentage: number = 0;
-  // 是否已开始学习：未开始主按钮显示「开始学习」，已开始显示「继续练习」
+  // 是否已开始学习：由后端真实进度驱动（进度>0 才算已开始），未开始主按钮显示「开始练习」
   @Local started: boolean = false;
 
   async aboutToAppear(): Promise<void> {
@@ -271,7 +272,6 @@ struct HomeView {
       return;
     }
     await StudyCache.init(context);
-    this.started = await StudyCache.isStarted();
     await TokenStore.init(context);
     await this.fetchDashboard();
   }
@@ -285,6 +285,8 @@ struct HomeView {
       if (res.data !== null) {
         const progress = Math.round(res.data.total_progress);
         this.completionPercentage = Math.min(100, Math.max(0, progress));
+        // 已开始 = 真实做题进度 > 0：做过题才显示「继续练习」，否则一直显示「开始练习」
+        this.started = this.completionPercentage > 0;
         // res.data.exam_countdown 为后端倒计时天数，当前首页倒计时走本地考试日期（ExamDateModel），
         // 此字段预留，联调后如需切换数据源再在此处接入
       }
@@ -345,7 +347,7 @@ struct HomeView {
             Text(this.levelName())
               .fontSize(21.0)
               .fontWeight(FontWeight.Bold)
-              .fontColor('#1A202C')
+              .fontColor('#55402F')
 
             Image($r('app.media.xiangxia'))
               .width(16)
@@ -366,13 +368,13 @@ struct HomeView {
               Text(' 基础知识')
                 .fontSize(18.0)
                 .fontWeight(this.knowledgeTab === 0 ? FontWeight.Bold : FontWeight.Medium)
-                .fontColor(this.knowledgeTab === 0 ? '#1A202C' : '#8A94A6')
+                .fontColor(this.knowledgeTab === 0 ? '#55402F' : '#9A8A6E')
 
               Row()
                 .width(28)
                 .height(3)
                 .borderRadius(1.5)
-                .backgroundColor(this.knowledgeTab === 0 ? '#3B6BF6' : Color.Transparent)
+                .backgroundColor(this.knowledgeTab === 0 ? '#FBDE71' : Color.Transparent)
             }
             .onClick(() => {
               this.knowledgeTab = 0;
@@ -383,13 +385,13 @@ struct HomeView {
               Text(this.secondTabName())
                 .fontSize(18.0)
                 .fontWeight(this.knowledgeTab === 1 ? FontWeight.Bold : FontWeight.Medium)
-                .fontColor(this.knowledgeTab === 1 ? '#1A202C' : '#8A94A6')
+                .fontColor(this.knowledgeTab === 1 ? '#55402F' : '#9A8A6E')
 
               Row()
                 .width(28)
                 .height(3)
                 .borderRadius(1.5)
-                .backgroundColor(this.knowledgeTab === 1 ? '#3B6BF6' : Color.Transparent)
+                .backgroundColor(this.knowledgeTab === 1 ? '#FBDE71' : Color.Transparent)
             }
             .onClick(() => {
               this.knowledgeTab = 1;
@@ -399,41 +401,41 @@ struct HomeView {
           .margin({ top: 8, bottom: 10 })
           .alignItems(VerticalAlign.Bottom)
 
-          // ============ 3. 蓝色问候卡片（早上好 + 倒计时 + 50% 进度环） ============
+          // ============ 3. 问候卡片（早上好 + 倒计时 + 进度环） ============
           Row() {
             Column({ space: 8 }) {
               Text(`早上好，${this.profile.nickname}`)
                 .fontSize(23.0)
                 .fontWeight(FontWeight.Bold)
-                .fontColor(Color.White)
+                .fontColor('#55402F')
 
               // 倒计时天数随设置页保存的考试日期联动：未设置显示 --，过期整句替换
               Text() {
                 if (this.examDate.dateStr === '') {
                   Span('距离考试还有 ')
-                    .fontColor('#DCE7FF')
+                    .fontColor('#55402F')
                     .fontSize(14.0)
                   Span('--')
-                    .fontColor(Color.White)
+                    .fontColor('#55402F')
                     .fontSize(16.0)
                     .fontWeight(FontWeight.Bold)
                   Span(' 天，稳稳向前')
-                    .fontColor('#DCE7FF')
+                    .fontColor('#55402F')
                     .fontSize(14.0)
                 } else if (daysUntil(this.examDate.dateStr) < 0) {
                   Span('考试日期已过期，请更新考试时间')
-                    .fontColor('#DCE7FF')
+                    .fontColor('#55402F')
                     .fontSize(14.0)
                 } else {
                   Span('距离考试还有 ')
-                    .fontColor('#DCE7FF')
+                    .fontColor('#55402F')
                     .fontSize(14.0)
                   Span(daysUntil(this.examDate.dateStr).toString())
-                    .fontColor(Color.White)
+                    .fontColor('#E4842A')
                     .fontSize(16.0)
                     .fontWeight(FontWeight.Bold)
                   Span(' 天，稳稳向前')
-                    .fontColor('#DCE7FF')
+                    .fontColor('#55402F')
                     .fontSize(14.0)
                 }
               }
@@ -441,24 +443,23 @@ struct HomeView {
 
               Text('每一次练习都算数')
                 .fontSize(14.0)
-                .fontColor('#DCE7FF')
+                .fontColor('#55402F')
                 .lineHeight(20)
 
-              // 白底胶囊按钮：未开始显示「开始学习」（进基础知识第一个知识点），已开始显示「继续练习」
+              // 主 CTA 胶囊按钮：未开始（进度0%）显示「开始练习」，已开始显示「继续练习」
               Row({ space: 6 }) {
-                Text(this.started ? '继续练习' : '开始学习')
+                Text(this.started ? '继续练习' : '开始练习')
                   .fontSize(14.0)
                   .fontWeight(FontWeight.Bold)
-                  .fontColor('#2B57E5')
+                  .fontColor('#8A7A50')
                 Text('→')
                   .fontSize(16.0)
                   .fontWeight(FontWeight.Bold)
-                  .fontColor('#2B57E5')
+                  .fontColor('#8A7A50')
               }
-              .backgroundColor(Color.White)
+              .backgroundColor('#FBDE71')
               .padding({ left: 18, right: 18, top: 9, bottom: 9 })
               .borderRadius(20)
-              .shadow({ radius: 6, color: '#1A000000', offsetY: 2 })
               .margin({ top: 8 })
               .onClick(() => {
                 this.startStudy();
@@ -472,25 +473,23 @@ struct HomeView {
               Progress({ value: this.completionPercentage, total: 100, type: ProgressType.Ring })
                 .width(84)
                 .height(84)
-                .color(Color.White)
-                .backgroundColor('#4DFFFFFF')
+                .color('#E4842A')
+                .backgroundColor('#FEF8E3')
                 .style({ strokeWidth: 8 })
 
               Text(`${this.completionPercentage}%`)
                 .fontSize(21.0)
                 .fontWeight(FontWeight.Bold)
-                .fontColor(Color.White)
+                .fontColor('#55402F')
             }
             .margin({ left: 10 })
           }
           .width('100%')
           .padding({ left: 20, right: 20, top: 24, bottom: 24 })
           .borderRadius(20)
-          .linearGradient({
-            angle: 135,
-            colors: [['#4A7BF8', 0.0], ['#2B57E5', 1.0]]
-          })
-          .shadow({ radius: 12, color: '#333B6BF6', offsetY: 6 })
+          .backgroundColor(Color.White)
+          .border({ width: 1, color: '#F2ECD8' })
+          .shadow({ radius: 10, color: '#0A000000', offsetY: 3 })
           .alignItems(VerticalAlign.Center)
           .margin({ bottom: 20 })
 
@@ -509,7 +508,7 @@ struct HomeView {
           Text(' 知识点练习')
             .fontSize(18.0)
             .fontWeight(FontWeight.Bold)
-            .fontColor('#1A202C')
+            .fontColor('#55402F')
             .width('100%')
             .margin({ bottom: 12 })
 
@@ -522,8 +521,8 @@ struct HomeView {
                   Progress({ value: 0, total: 100, type: ProgressType.Ring })
                     .width(96)
                     .height(96)
-                    .color('#3B6BF6')
-                    .backgroundColor('#E4EBF8')
+                    .color('#E4842A')
+                    .backgroundColor('#FEF8E3')
                     .style({ strokeWidth: 9 })
                 }
                 .width(96)
@@ -533,7 +532,7 @@ struct HomeView {
                 Text('0/' + this.currentTotal().toString())
                   .fontSize(16.0)
                   .fontWeight(FontWeight.Bold)
-                  .fontColor('#1A202C')
+                  .fontColor('#55402F')
                   .margin({ top: 4 })
               }
 
@@ -542,24 +541,24 @@ struct HomeView {
                 Row() {
                   Text('总进度')
                     .fontSize(14.0)
-                    .fontColor('#8A94A6')
+                    .fontColor('#9A8A6E')
                     .layoutWeight(1)
                   Text('0.0%')
                     .fontSize(16.0)
                     .fontWeight(FontWeight.Bold)
-                    .fontColor('#1A202C')
+                    .fontColor('#55402F')
                 }
                 .width('100%')
 
                 Row() {
                   Text('正确率')
                     .fontSize(14.0)
-                    .fontColor('#8A94A6')
+                    .fontColor('#9A8A6E')
                     .layoutWeight(1)
                   Text('--%')
                     .fontSize(16.0)
                     .fontWeight(FontWeight.Bold)
-                    .fontColor('#1A202C')
+                    .fontColor('#55402F')
                 }
                 .width('100%')
               }
@@ -572,7 +571,7 @@ struct HomeView {
                 .width(20)
                 .height(20)
                 .commands('M14.5 3.5L20.5 9.5M13 5L19 11M16.5 8L8 16.5M6 14.5L9.5 18L4.5 20Z')
-                .stroke('#8A94A6')
+                .stroke('#9A8A6E')
                 .strokeWidth(1.6)
                 .fill(Color.Transparent)
                 .strokeLineCap(LineCapStyle.Round)
@@ -581,12 +580,12 @@ struct HomeView {
             .width('100%')
             .alignItems(VerticalAlign.Top)
 
-            // 淡蓝内嵌区块 + 开始练习按钮（高亮分类随页签/级别联动）
+            // 内嵌区块 + 开始练习按钮（高亮分类随页签/级别联动）
             Column() {
               Text(this.currentFirstLeaf())
                 .fontSize(16.0)
                 .fontWeight(FontWeight.Bold)
-                .fontColor('#1A202C')
+                .fontColor('#55402F')
                 .width('100%')
                 .margin({ bottom: 12 })
 
@@ -594,15 +593,12 @@ struct HomeView {
                 Text('开始练习')
                   .fontSize(16.0)
                   .fontWeight(FontWeight.Bold)
-                  .fontColor(Color.White)
+                  .fontColor('#8A7A50')
               }
               .width('100%')
               .height(42)
               .borderRadius(21)
-              .linearGradient({
-                angle: 90,
-                colors: [['#4A8CF8', 0.0], ['#2B57E5', 1.0]]
-              })
+              .backgroundColor('#FBDE71')
               .justifyContent(FlexAlign.Center)
               .alignItems(VerticalAlign.Center)
               .onClick(() => {
@@ -612,7 +608,7 @@ struct HomeView {
             .width('100%')
             .padding({ left: 14, right: 14, top: 14, bottom: 14 })
             .borderRadius(14)
-            .backgroundColor('#EAF2FF')
+            .backgroundColor('#FEF8E3')
             .margin({ top: 16 })
             .alignItems(HorizontalAlign.Start)
           }
@@ -620,37 +616,46 @@ struct HomeView {
           .padding(16)
           .borderRadius(20)
           .backgroundColor(Color.White)
-          .border({ width: 1, color: '#EEF2F6' })
+          .border({ width: 1, color: '#F2ECD8' })
           .shadow({ radius: 10, color: '#0A000000', offsetY: 3 })
           .margin({ bottom: 14 })
 
+
           // 主体列表：各知识分类条目（随页面滚动浏览，无悬浮入口干扰）
           // Tab 0 基础知识固定；Tab 1 按当前报考级别取对应专业知识；无数据则兜底文案
-          if (this.knowledgeTab === 0 ? basicEntries.length === 0
-            : knowledgeEntriesOf(this.goal.levelIndex).length === 0) {
+          if (this.currentList().length === 0) {
             Text('暂无知识点分类')
               .fontSize(15.0)
-              .fontColor('#8A94A6')
+              .fontColor('#9A8A6E')
               .width('100%')
               .textAlign(TextAlign.Center)
               .padding({ top: 24, bottom: 24 })
           } else {
             Column() {
-              ForEach(this.knowledgeTab === 0 ? basicEntries : knowledgeEntriesOf(this.goal.levelIndex),
+              ForEach(this.currentList(),
                 (item: KnowledgeEntry) => {
-                  if (item.children !== undefined && item.children.length > 0) {
-                    // 可展开的父分类：名称+进度条+0/N道，点组头收起/展开（默认展开）
-                    this.GroupHeader(item)
-                    if (this.isExpanded(item.name)) {
-                      ForEach(item.children, (child: KnowledgeEntry) => {
-                        this.KnowledgeRow(child.name, child.total, true)
-                        Divider().color('#F1F4F9').strokeWidth(1).margin({ left: 16 })
-                      }, (child: KnowledgeEntry) => `${item.name}_${child.name}`)
+                  // 每个条目包一层 Column 作为唯一根节点：
+                  // ForEach 的 itemGenerator 若直接产出多个根组件（如 @Builder 调用后再跟兄弟节点），
+                  // 运行时会导致整段列表不渲染（编译可通过但界面空白），必须单根
+                  Column() {
+                    if (item.children !== undefined && item.children.length > 0) {
+                      // 可展开的父分类：名称+进度条+0/N道，点组头收起/展开（默认展开）
+                      this.GroupHeader(item)
+                      if (this.isExpanded(item.name)) {
+                        ForEach(item.children, (child: KnowledgeEntry) => {
+                          Column() {
+                            this.KnowledgeRow(child.name, child.total, true)
+                            Divider().color('#F8F4E8').strokeWidth(1).margin({ left: 16 })
+                          }
+                          .width('100%')
+                        }, (child: KnowledgeEntry) => `${item.name}_${child.name}`)
+                      }
+                    } else {
+                      // 无子分类的平铺条目
+                      this.KnowledgeRow(item.name, item.total, false)
                     }
-                  } else {
-                    // 无子分类的平铺条目
-                    this.KnowledgeRow(item.name, item.total, false)
                   }
+                  .width('100%')
                 // key 中编入级别与 Tab：初级/中级顶级分类名相同，避免 ArkUI 按同名 key 复用旧行导致内容不刷新
                 }, (item: KnowledgeEntry) => `${this.knowledgeTab}_${this.goal.levelIndex}_${item.name}`)
             }
@@ -658,7 +663,7 @@ struct HomeView {
             .padding({ left: 16, right: 16, top: 4, bottom: 4 })
             .borderRadius(20)
             .backgroundColor(Color.White)
-            .border({ width: 1, color: '#EEF2F6' })
+            .border({ width: 1, color: '#F2ECD8' })
             .shadow({ radius: 10, color: '#0A000000', offsetY: 3 })
             .margin({ bottom: 24 })
           }
@@ -673,7 +678,10 @@ struct HomeView {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F7FA')
+    .backgroundColor('#FDFDED')
+    // 沉浸式：页面底色铺进状态栏区域，内容用 SafeArea.topVp 让出状态栏高度（自动适配机型）
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP])
+    .padding({ top: SafeArea.topVp })
   }
 
   // 报考级别下拉菜单（初级 / 中级 / 高级）：写回全局级别并落库
@@ -703,13 +711,13 @@ struct HomeView {
         Text(item.name)
           .fontSize(16.5)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
           .layoutWeight(1)
 
         Text('›')
           .fontSize(21.0)
           .fontWeight(FontWeight.Medium)
-          .fontColor('#CBD5E1')
+          .fontColor('#B5A98D')
           .rotate({ x: 0, y: 0, z: 1, angle: this.isExpanded(item.name) ? -90 : 90 })
       }
       .width('100%')
@@ -734,7 +742,7 @@ struct HomeView {
           .width('100%')
           .height(5)
           .borderRadius(2.5)
-          .backgroundColor('#E4EBF8')
+          .backgroundColor('#FEF8E3')
       }
       .layoutWeight(1)
 
@@ -742,10 +750,10 @@ struct HomeView {
         Span('0')
           .fontSize(13.5)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#3B6BF6')
+          .fontColor('#E4842A')
         Span('/' + total.toString() + '道')
           .fontSize(13.0)
-          .fontColor('#8A94A6')
+          .fontColor('#9A8A6E')
       }
     }
     .width('100%')
@@ -761,7 +769,7 @@ struct HomeView {
         Text(title)
           .fontSize(16.0)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .layoutWeight(1)
@@ -769,7 +777,7 @@ struct HomeView {
         Text('›')
           .fontSize(21.0)
           .fontWeight(FontWeight.Medium)
-          .fontColor('#CBD5E1')
+          .fontColor('#B5A98D')
       }
       .width('100%')
       .alignItems(VerticalAlign.Center)
@@ -784,9 +792,9 @@ struct HomeView {
     })
   }
 
-  // 「开始学习」/「继续练习」：切到「基础知识」页签，并直接进入该页签第一个知识点练习
+  // 「开始练习」/「继续练习」：切到「基础知识」页签，并直接进入该页签第一个知识点练习
   private startStudy(): void {
-    this.started = true;
+    // 按钮文案由后端进度驱动（fetchDashboard），此处不再提前置为已开始
     StudyCache.markStarted();
     this.knowledgeTab = 0;   // 主按钮固定指向基础知识练习
     this.gotoPractice(firstLeafName(basicEntries));
@@ -808,11 +816,11 @@ struct HomeView {
         .width(24)
         .height(24)
         .objectFit(ImageFit.Contain)
-        .fillColor('#2B3445')
+        .fillColor('#55402F')
 
       Text(title)
         .fontSize(13.0)
-        .fontColor('#4A5568')
+        .fontColor('#9A8A6E')
     }
     .layoutWeight(1)
     .alignItems(HorizontalAlign.Center)

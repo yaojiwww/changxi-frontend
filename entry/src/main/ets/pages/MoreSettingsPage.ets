@@ -29,8 +29,8 @@ struct MoreSettings {
       title: '注销账号',
       message: '注销后账号信息将被删除且无法恢复，确定继续吗？',
       buttons: [
-        { text: '取消', color: '#667085' },
-        { text: '确认注销', color: '#F53F3F', primary: true }
+        { text: '取消', color: '#9A8A6E' },
+        { text: '确认注销', color: '#D9534F', primary: true }
       ]
     });
     if (resp.index !== 1) {
@@ -62,7 +62,7 @@ struct MoreSettings {
         Text('‹')
           .fontSize(34.0)
           .fontWeight(FontWeight.Medium)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
           .padding({ left: 16, right: 12, top: 4, bottom: 4 })
           .onClick(() => {
             this.getUIContext().getRouter().back();
@@ -71,13 +71,13 @@ struct MoreSettings {
         Text('更多设置')
           .fontSize(18.0)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
       }
       .width('100%')
       .height(56)
       .backgroundColor(Color.White)
       .alignItems(VerticalAlign.Center)
-      .border({ width: { bottom: 1 }, color: '#F1F4F9' })
+      .border({ width: { bottom: 1 }, color: '#F2ECD8' })
 
       Scroll() {
         Column() {
@@ -86,19 +86,19 @@ struct MoreSettings {
             Text('注销账号')
               .fontSize(16.0)
               .fontWeight(FontWeight.Medium)
-              .fontColor('#F53F3F')
+              .fontColor('#D9534F')
               .layoutWeight(1)
 
             Text('›')
               .fontSize(21.0)
               .fontWeight(FontWeight.Medium)
-              .fontColor('#CBD5E1')
+              .fontColor('#B5A98D')
           }
           .width('100%')
           .padding({ left: 16, right: 16, top: 14, bottom: 14 })
           .backgroundColor(Color.White)
           .borderRadius(16)
-          .border({ width: 1, color: '#EEF2F6' })
+          .border({ width: 1, color: '#F2ECD8' })
           .shadow({ radius: 10, color: '#0A000000', offsetY: 3 })
           .alignItems(VerticalAlign.Center)
           .enabled(!this.isDeleting)
@@ -117,6 +117,6 @@ struct MoreSettings {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F7FA')
+    .backgroundColor('#FDFDED')
   }
 }

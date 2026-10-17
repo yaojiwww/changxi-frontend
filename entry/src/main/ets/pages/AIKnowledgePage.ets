@@ -12,11 +12,12 @@ interface SearchHit {
 }
 
 // 统一配色（与全局蓝色扁平风一致）
-const PRIMARY: string = '#3B6BF6';
-const TEXT_MAIN: string = '#1A202C';
-const TEXT_SUB: string = '#6B7484';
-const TEXT_WEAK: string = '#9AA3B2';
-const CARD_BORDER: string = '#E9EEF6';
+const PRIMARY: string = '#FBDE71';
+const ACCENT: string = '#E4842A';
+const TEXT_MAIN: string = '#55402F';
+const TEXT_SUB: string = '#9A8A6E';
+const TEXT_WEAK: string = '#B5A98D';
+const CARD_BORDER: string = '#FEF8E3';
 
 function levelNameOf(levelIndex: number): string {
   if (levelIndex === LEVEL_INTERMEDIATE) {
@@ -47,23 +48,10 @@ struct AIKnowledge {
   @Local goal: GoalModel = AppStorageV2.connect(GoalModel, () => new GoalModel())!;
 
   aboutToAppear(): void {
-    // 左栏默认展开「通用」与「我的备考级别」，其余收起
-    const myCode = this.myLevelCode();
-    const opened: string[] = ['GENERAL'];
-    if (myCode !== 'GENERAL') {
-      opened.push(myCode);
-    }
-    this.expandedGroups = opened;
-
-    // 默认选中「我的备考级别」的第一个分类，没命中则选通用第一个
-    const myLevel = levelNameOf(this.goal.levelIndex);
-    for (const g of KP_GROUPS) {
-      if (g.levelName.startsWith(myLevel) && g.docs.length > 0) {
-        this.openedId = g.docs[0].id;
-        return;
-      }
-    }
-    this.openedId = KP_DOCS[0].id;
+    // 左栏默认全部收起，由用户自己展开
+    this.expandedGroups = [];
+    // 初始不选中任何分类，右侧显示「选择分类」提示
+    this.openedId = '';
   }
 
   // 当前选中的分类文档
@@ -116,15 +104,6 @@ struct AIKnowledge {
       next.push(level);
       this.expandedGroups = next;
     }
-  }
-
-  // 全部考点总数
-  private totalPoints(): number {
-    let n = 0;
-    for (const d of KP_DOCS) {
-      n += pointsOf(d);
-    }
-    return n;
   }
 
   private skillCount(): number {
@@ -232,6 +211,8 @@ struct AIKnowledge {
         Column() {
           if (this.keyword.trim() !== '') {
             this.SearchResultView()
+          } else if (this.openedId === '') {
+            this.EmptyHint()
           } else {
             this.RightHeader()
             this.SectionList()
@@ -247,7 +228,7 @@ struct AIKnowledge {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F7FA')
+    .backgroundColor('#FDFDED')
   }
 
   // ==================== 顶部返回栏 ====================
@@ -272,10 +253,10 @@ struct AIKnowledge {
       // 直接跳到政策解读，看标准原文
       Text('职业标准')
         .fontSize(13.5)
-        .fontColor(PRIMARY)
+        .fontColor(ACCENT)
         .padding({ left: 11, right: 11, top: 6, bottom: 6 })
         .borderRadius(13)
-        .backgroundColor('#EAF1FF')
+        .backgroundColor('#FEF8E3')
         .margin({ right: 16 })
         .onClick(() => {
           this.getUIContext().getRouter().pushUrl({ url: 'pages/PolicyDetailPage' });
@@ -285,7 +266,7 @@ struct AIKnowledge {
     .height(58)
     .backgroundColor(Color.White)
     .alignItems(VerticalAlign.Center)
-    .border({ width: { bottom: 1 }, color: '#F1F4F9' })
+    .border({ width: { bottom: 1 }, color: '#F2ECD8' })
   }
 
   // ==================== 搜索框（横跨双栏） ====================
@@ -297,15 +278,12 @@ struct AIKnowledge {
         .fontColor(TEXT_SUB)
         .margin({ right: 8 })
 
-      TextInput({ text: this.keyword, placeholder: '搜索知识点，如：消毒、睡眠、母乳喂养' })
-        .placeholderColor('#9AA0AC')
+      TextInput({ text: $$this.keyword, placeholder: '搜索知识点，如：消毒、睡眠、母乳喂养' })
+        .placeholderColor('#B5A98D')
         .backgroundColor(Color.Transparent)
         .padding(0)
         .fontSize(16.0)
         .layoutWeight(1)
-        .onChange((v: string) => {
-          this.keyword = v;
-        })
 
       if (this.keyword !== '') {
         Text('×')
@@ -321,7 +299,7 @@ struct AIKnowledge {
     .height(50)
     .padding({ left: 16, right: 14 })
     .backgroundColor(Color.White)
-    .border({ width: { bottom: 1 }, color: '#F1F4F9' })
+    .border({ width: { bottom: 1 }, color: '#F2ECD8' })
     .alignItems(VerticalAlign.Center)
   }
 
@@ -338,59 +316,37 @@ struct AIKnowledge {
             }, (d: KpDoc) => d.id)
           }
         }, (g: KpGroup) => g.level)
-
-        Text(`共 ${KP_DOCS.length} 类 / ${this.totalPoints()} 考点`)
-          .fontSize(12.0)
-          .fontColor(TEXT_WEAK)
-          .lineHeight(16)
-          .width('100%')
-          .textAlign(TextAlign.Center)
-          .padding({ top: 14, bottom: 16 })
       }
       .width('100%')
+      .padding({ top: 4 })
       .alignItems(HorizontalAlign.Start)
     }
     .scrollBar(BarState.Off)
     .edgeEffect(EdgeEffect.Spring)
-    .width(120)
+    .align(Alignment.TopStart)
+    .width(132)
     .height('100%')
-    .backgroundColor('#EFF3F9')
+    .backgroundColor(Color.White)
+    .border({ width: { right: 1 }, color: '#F2ECD8' })
   }
 
   // 左栏分组标题（通用 / 初级 / 中级 / 高级）——点击收起或展开
   @Builder
   RailGroupHeader(g: KpGroup) {
-    Column() {
-      Row({ space: 6 }) {
-        if (g.level === this.myLevelCode()) {
-          Circle()
-            .width(6)
-            .height(6)
-            .fill(PRIMARY)
-        }
-        Text(this.shortLevel(g.levelName))
-          .fontSize(14.5)
-          .fontWeight(FontWeight.Bold)
-          .fontColor(this.isGroupOpen(g.level) ? TEXT_MAIN : '#7A8494')
-          .layoutWeight(1)
+    Row({ space: 7 }) {
+      Text(this.shortLevel(g.levelName))
+        .fontSize(15.0)
+        .fontWeight(this.isGroupOpen(g.level) ? FontWeight.Bold : FontWeight.Medium)
+        .fontColor(this.isGroupOpen(g.level) ? TEXT_MAIN : '#8A7A5E')
+        .layoutWeight(1)
 
-        Text(this.isGroupOpen(g.level) ? '⌃' : '⌄')
-          .fontSize(14.0)
-          .fontColor(this.isGroupOpen(g.level) ? PRIMARY : '#AEB8C6')
-      }
-      .width('100%')
-      .alignItems(VerticalAlign.Center)
-
-      Text(g.level === this.myLevelCode() ? '我的备考级别 · ' + g.docs.length + ' 类'
-        : g.docs.length + ' 个分类')
-        .fontSize(11.5)
+      Text(this.isGroupOpen(g.level) ? '⌃' : '⌄')
+        .fontSize(13.0)
         .fontColor(TEXT_WEAK)
-        .width('100%')
-        .margin({ top: 3 })
     }
     .width('100%')
-    .padding({ left: 14, right: 12, top: 14, bottom: 8 })
-    .alignItems(HorizontalAlign.Start)
+    .padding({ left: 16, right: 14, top: 16, bottom: 16 })
+    .alignItems(VerticalAlign.Center)
     .onClick(() => {
       this.toggleGroup(g.level);
     })
@@ -408,17 +364,17 @@ struct AIKnowledge {
         .margin({ right: 8 })
 
       Text(d.funcName)
-        .fontSize(15.0)
+        .fontSize(13.5)
         .fontWeight(this.openedId === d.id ? FontWeight.Bold : FontWeight.Medium)
-        .fontColor(this.openedId === d.id ? PRIMARY : '#3F4956')
+        .fontColor(this.openedId === d.id ? ACCENT : '#55402F')
         .maxLines(2)
-        .lineHeight(19)
+        .lineHeight(18)
         .textAlign(TextAlign.Start)
         .layoutWeight(1)
     }
     .width('100%')
-    .padding({ left: 9, right: 8, top: 11, bottom: 11 })
-    .margin({ left: 8, right: 8, bottom: 4 })
+    .padding({ left: 10, right: 8, top: 10, bottom: 10 })
+    .margin({ left: 6, right: 6, bottom: 3 })
     .borderRadius(10)
     .backgroundColor(this.openedId === d.id ? Color.White : Color.Transparent)
     .shadow(this.openedId === d.id ? { radius: 6, color: '#14000000', offsetY: 2 } : { radius: 0, color: Color.Transparent, offsetY: 0 })
@@ -440,11 +396,8 @@ struct AIKnowledge {
           .layoutWeight(1)
 
         Text(this.docLevel())
-          .fontSize(13.5)
-          .fontColor(PRIMARY)
-          .padding({ left: 10, right: 10, top: 4, bottom: 4 })
-          .borderRadius(11)
-          .backgroundColor('#EAF1FF')
+          .fontSize(12.5)
+          .fontColor(ACCENT)
       }
       .width('100%')
       .alignItems(VerticalAlign.Center)
@@ -456,36 +409,18 @@ struct AIKnowledge {
         .width('100%')
         .margin({ top: 7 })
 
-      Row({ space: 8 }) {
-        this.StatChip('小节', (this.openedDoc !== undefined ? this.openedDoc.sections.length : 0).toString())
-        this.StatChip('实操考点', this.skillCount().toString())
-        this.StatChip('理论考点', this.theoryCount().toString())
-      }
-      .width('100%')
-      .margin({ top: 12 })
+      Text((this.openedDoc !== undefined ? this.openedDoc.sections.length : 0) + ' 小节 · '
+        + this.skillCount() + ' 实操考点 · ' + this.theoryCount() + ' 理论考点')
+        .fontSize(12.5)
+        .fontColor(TEXT_SUB)
+        .width('100%')
+        .margin({ top: 8 })
     }
     .width('100%')
-    .padding({ left: 16, right: 16, top: 15, bottom: 15 })
+    .padding({ left: 16, right: 16, top: 14, bottom: 13 })
     .backgroundColor(Color.White)
-    .border({ width: { bottom: 1 }, color: '#F1F4F9' })
+    .border({ width: { bottom: 1 }, color: '#F2ECD8' })
     .alignItems(HorizontalAlign.Start)
-  }
-
-  @Builder
-  StatChip(label: string, value: string) {
-    Row({ space: 5 }) {
-      Text(value)
-        .fontSize(16.0)
-        .fontWeight(FontWeight.Bold)
-        .fontColor(PRIMARY)
-      Text(label)
-        .fontSize(13.0)
-        .fontColor(TEXT_SUB)
-    }
-    .padding({ left: 10, right: 10, top: 6, bottom: 6 })
-    .borderRadius(10)
-    .backgroundColor('#F0F4FE')
-    .alignItems(VerticalAlign.Center)
   }
 
   // ==================== 右栏：小节列表 ====================
@@ -497,11 +432,9 @@ struct AIKnowledge {
           ForEach(this.openedDoc !== undefined ? this.openedDoc.sections : [], (sec: KpSection) => {
             this.SectionCard(sec)
           }, (sec: KpSection, i: number) => this.openedId + '_' + sec.no + '_' + i)
-
-          this.DetailFoot()
         }
         .width('100%')
-        .padding({ left: 16, right: 16, top: 14, bottom: 18 })
+        .padding({ left: 16, right: 16, top: 14, bottom: 24 })
         .alignItems(HorizontalAlign.Start)
       }
       .scrollBar(BarState.Off)
@@ -513,30 +446,26 @@ struct AIKnowledge {
 
     // 底部：去 AI 伴学提问
     Row() {
-      Row({ space: 7 }) {
-        Text('✦')
-          .fontSize(16.0)
-          .fontColor(Color.White)
-        Text('向 AI 提问这个知识点')
-          .fontSize(17.0)
-          .fontWeight(FontWeight.Bold)
-          .fontColor(Color.White)
-      }
-      .height(48)
-      .borderRadius(24)
-      .backgroundColor(PRIMARY)
-      .justifyContent(FlexAlign.Center)
-      .shadow({ radius: 10, color: '#333B6BF6', offsetY: 4 })
-      .onClick(() => {
-        // 通知首页切到「AI 伴学」页签，再退回首页
-        signalPendingTab(1);
-        this.getUIContext().getRouter().back();
-      })
+      Text('向 AI 提问这个知识点')
+        .fontSize(14.5)
+        .fontWeight(FontWeight.Medium)
+        .fontColor('#8A7A50')
+        .height(42)
+        .padding({ left: 26, right: 26 })
+        .borderRadius(21)
+        .backgroundColor(PRIMARY)
+        .textAlign(TextAlign.Center)
+        .shadow({ radius: 10, color: '#14000000', offsetY: 4 })
+        .onClick(() => {
+          // 通知首页切到「AI 伴学」页签，再退回首页
+          signalPendingTab(1);
+          this.getUIContext().getRouter().back();
+        })
     }
     .width('100%')
     .padding({ left: 16, right: 16, top: 10, bottom: 14 })
     .backgroundColor(Color.White)
-    .border({ width: { top: 1 }, color: '#F1F4F9' })
+    .border({ width: { top: 1 }, color: '#F2ECD8' })
   }
 
   // 小节卡片：技能要求 + 知识要求
@@ -546,34 +475,31 @@ struct AIKnowledge {
       Row() {
         if (sec.no !== '') {
           Text(sec.no)
-            .fontSize(13.5)
+            .fontSize(14.0)
             .fontWeight(FontWeight.Bold)
-            .fontColor(PRIMARY)
-            .padding({ left: 8, right: 8, top: 3, bottom: 3 })
-            .borderRadius(8)
-            .backgroundColor('#EAF1FF')
+            .fontColor(ACCENT)
             .margin({ right: 9 })
         }
         Text(sec.title)
-          .fontSize(17.5)
+          .fontSize(16.0)
           .fontWeight(FontWeight.Bold)
           .fontColor(TEXT_MAIN)
           .layoutWeight(1)
       }
       .width('100%')
       .alignItems(VerticalAlign.Center)
-      .margin({ bottom: 13 })
+      .margin({ bottom: 12 })
 
       if (sec.skill.length > 0) {
-        this.PointBlock('技能要求 · 实操考点', PRIMARY, '#EAF1FF', sec.skill)
+        this.PointBlock('技能要求 · 实操考点', sec.skill)
       }
       if (sec.skill.length > 0 && sec.theory.length > 0) {
         Divider()
-          .color('#F0F3F8')
-          .margin({ top: 12, bottom: 13 })
+          .color('#F2ECD8')
+          .margin({ top: 13, bottom: 14 })
       }
       if (sec.theory.length > 0) {
-        this.PointBlock('知识要求 · 理论考点', '#0FA968', '#EAF9F1', sec.theory)
+        this.PointBlock('知识要求 · 理论考点', sec.theory)
       }
     }
     .width('100%')
@@ -585,36 +511,28 @@ struct AIKnowledge {
     .margin({ bottom: 12 })
   }
 
-  // 一组考点：标签 + 编号条目
+  // 一组考点：纯文字小标题 + 编号条目（不再使用彩色标签底，减少花哨感）
   @Builder
-  PointBlock(label: string, color: string, bg: string, items: string[]) {
+  PointBlock(label: string, items: string[]) {
     Column() {
       Text(label)
-        .fontSize(13.5)
+        .fontSize(12.0)
         .fontWeight(FontWeight.Bold)
-        .fontColor(color)
-        .padding({ left: 9, right: 9, top: 4, bottom: 4 })
-        .borderRadius(9)
-        .backgroundColor(bg)
-        .margin({ bottom: 11 })
+        .fontColor(TEXT_SUB)
+        .letterSpacing(1)
+        .margin({ bottom: 10 })
 
       ForEach(items, (it: string, i: number) => {
         Row() {
-          Text((i + 1).toString())
+          Text((i + 1).toString() + '.')
             .fontSize(12.5)
-            .fontWeight(FontWeight.Bold)
-            .fontColor(color)
-            .width(19)
-            .height(19)
-            .borderRadius(10)
-            .backgroundColor(bg)
-            .textAlign(TextAlign.Center)
-            .margin({ right: 10, top: 3 })
+            .fontColor(TEXT_WEAK)
+            .margin({ right: 8, top: 2 })
 
           Text(it)
-            .fontSize(16.0)
-            .fontColor('#2C3542')
-            .lineHeight(24)
+            .fontSize(14.5)
+            .fontColor('#55402F')
+            .lineHeight(21)
             .layoutWeight(1)
         }
         .width('100%')
@@ -626,25 +544,22 @@ struct AIKnowledge {
     .alignItems(HorizontalAlign.Start)
   }
 
-  // 详情底部提示
+  // ==================== 右栏：未选分类时的提示 ====================
   @Builder
-  DetailFoot() {
-    Row({ space: 7 }) {
-      Text('✦')
-        .fontSize(14.0)
-        .fontColor(PRIMARY)
-      Text('本分类考点已同步至 AI 伴学，可结合你的做题记录追问。')
-        .fontSize(13.5)
+  EmptyHint() {
+    Column({ space: 8 }) {
+      Text('选择左侧分类')
+        .fontSize(16.0)
+        .fontWeight(FontWeight.Medium)
+        .fontColor(TEXT_MAIN)
+      Text('展开级别后点选分类，查看考点')
+        .fontSize(13.0)
         .fontColor(TEXT_SUB)
-        .lineHeight(19)
-        .layoutWeight(1)
     }
     .width('100%')
-    .padding(13)
-    .borderRadius(12)
-    .backgroundColor('#EFF3F9')
-    .alignItems(VerticalAlign.Center)
-    .margin({ top: 2 })
+    .layoutWeight(1)
+    .justifyContent(FlexAlign.Center)
+    .alignItems(HorizontalAlign.Center)
   }
 
   // ==================== 搜索结果 ====================
@@ -680,10 +595,8 @@ struct AIKnowledge {
                 Row({ space: 7 }) {
                   Text(h.levelName)
                     .fontSize(12.0)
-                    .fontColor(PRIMARY)
-                    .padding({ left: 6, right: 6, top: 2, bottom: 2 })
-                    .borderRadius(6)
-                    .backgroundColor('#EAF1FF')
+                    .fontWeight(FontWeight.Bold)
+                    .fontColor(ACCENT)
                   Text(`${h.docName} · ${h.section}`)
                     .fontSize(13.5)
                     .fontColor(TEXT_SUB)
@@ -696,7 +609,7 @@ struct AIKnowledge {
 
                 Text(h.text)
                   .fontSize(16.0)
-                  .fontColor('#2C3542')
+                  .fontColor('#55402F')
                   .lineHeight(23)
                   .width('100%')
               }
