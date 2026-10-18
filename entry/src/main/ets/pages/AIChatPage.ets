@@ -1,88 +1,44 @@
-import { photoAccessHelper } from '@kit.MediaLibraryKit';
 import { SafeArea } from '../common/SafeArea';
 import { ProfileModel } from '../common/ProfileModel';
 import { AppStorageV2 } from '@kit.ArkUI';
-
-// 聊天消息：发送方 user/ai，类型 text/image
-export interface ChatMessage {
-  from: string;      // 'user' | 'ai'
-  type: string;      // 'text' | 'image'
-  content: string;   // 文本内容
-  imageUri: string;  // 图片本地 URI（无图为空串）
-}
-
-// AI 模拟回复文案
-const AI_REPLY: string = '好的，已收到您的提问，正在结合考纲为您拆解...';
-// 模拟 AI 回复延迟（毫秒）
-const AI_REPLY_DELAY_MS: number = 1000;
+import { ChatMessage } from '../model/ChatModels';
+import { AIChatViewModel } from '../viewmodel/AIChatViewModel';
 
 @ComponentV2
 export struct AIView {
-  @Local selectedMode: number = 0;
-  @Local inputText: string = '';
-  @Local chatList: ChatMessage[] = [];   // 聊天记录
-  @Local pendingImage: string = '';      // 已选未发送的图片 URI
+  // ★ 聊天记录、输入态、提问编排全在 ViewModel，页面只渲染、只把异常弹出来。
+  //   历史：wuh 分支合进来时这个页面被整个覆盖成了一个 setTimeout 假回复的演示版
+  //   （AI_REPLY 写死一句"正在结合考纲为您拆解..."，1 秒后 push 进去），
+  //   看起来"能聊"，实际上根本没连后端、更谈不上流式。接线已经恢复，别再退回去。
+  @Local vm: AIChatViewModel = new AIChatViewModel();
   // 用户头像：与「我的」页同源（有自定义头像用头像，否则取昵称首字）
   @Local profile: ProfileModel = AppStorageV2.connect(ProfileModel, () => new ProfileModel())!;
 
-  // 聊天记录非空时隐藏上部引导区，让位给聊天流
-  private get hasChat(): boolean {
-    return this.chatList.length > 0;
-  }
-
-  // 加号：调起系统相册选一张图片，获取本地 URI
-  private async pickImage(): Promise<void> {
-    try {
-      const picker = new photoAccessHelper.PhotoViewPicker();
-      const options: photoAccessHelper.PhotoSelectOptions = {
-        MIMEType: photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE,
-        maxSelectNumber: 1
-      };
-      const result = await picker.select(options);
-      if (result.photoUris.length > 0) {
-        this.pendingImage = result.photoUris[0];
-      }
-    } catch (e) {
-      // 用户取消或选择失败：保持原状态
-    }
-  }
-
-  // 移除已选待发图片
-  private removePendingImage(): void {
-    this.pendingImage = '';
-  }
-
-  // 发送：打包文字+图片追加到列表，清空输入与图片，1 秒后追加 AI 回复
-  private send(): void {
-    const text: string = this.inputText.trim();
-    if (text === '' && this.pendingImage === '') {
+  async aboutToAppear(): Promise<void> {
+    const ctx = this.getUIContext().getHostContext();
+    if (ctx === undefined) {
       return;
     }
-    const msg: ChatMessage = {
-      from: 'user',
-      type: this.pendingImage !== '' ? 'image' : 'text',
-      content: text,
-      imageUri: this.pendingImage
-    };
-    this.chatList.push(msg);
-    this.inputText = '';
-    this.pendingImage = '';
+    await this.vm.init(ctx);
+  }
 
-    setTimeout((): void => {
-      const reply: ChatMessage = {
-        from: 'ai',
-        type: 'text',
-        content: AI_REPLY,
-        imageUri: ''
-      };
-      this.chatList.push(reply);
-    }, AI_REPLY_DELAY_MS);
+  private toast(msg: string): void {
+    this.getUIContext().getPromptAction().showToast({ message: msg, duration: 2500 });
+  }
+
+  // 发送：交给 ViewModel 发一轮流式提问，失败提示原因
+  private async send(): Promise<void> {
+    try {
+      await this.vm.send();
+    } catch (err) {
+      this.toast((err as Error).message);
+    }
   }
 
   build() {
     Column() {
       // ============ 上部：居中引导区（有聊天记录后隐藏） ============
-      if (!this.hasChat) {
+      if (!this.vm.hasChat) {
         Scroll() {
           Column() {
             Row()
@@ -128,10 +84,13 @@ export struct AIView {
       }
 
       // ============ 中部：聊天记录区（Tab 下方、输入框上方） ============
-      if (this.hasChat) {
+      if (this.vm.hasChat) {
         Scroll() {
           Column({ space: 12 }) {
-            ForEach(this.chatList, (msg: ChatMessage, idx: number) => {
+            // key 里必须带 content：@Builder 按值传参不会触发刷新，
+            // 只有换 key 让这一条整个重建，流式增量才画得出来。
+            // 其余消息 key 没变，不会跟着重绘。
+            ForEach(this.vm.chatList, (msg: ChatMessage, idx: number) => {
               this.ChatItem(msg)
             }, (msg: ChatMessage, idx: number) => `${idx}_${msg.from}_${msg.type}_${msg.content}_${msg.imageUri}`)
           }
@@ -159,9 +118,9 @@ export struct AIView {
         .shadow({ radius: 10, color: '#0A000000', offsetY: 3 })
 
         // 已选待发图片预览条
-        if (this.pendingImage !== '') {
+        if (this.vm.pendingImage !== '') {
           Row({ space: 10 }) {
-            Image(this.pendingImage)
+            Image(this.vm.pendingImage)
               .width(56)
               .height(56)
               .borderRadius(10)
@@ -178,7 +137,7 @@ export struct AIView {
               .fontColor('#8A7A50')
               .padding({ left: 8, right: 4, top: 4, bottom: 4 })
               .onClick(() => {
-                this.removePendingImage();
+                this.vm.removePendingImage();
               })
           }
           .width('100%')
@@ -207,11 +166,12 @@ export struct AIView {
               .fontWeight(FontWeight.Medium)
           }
           .onClick(() => {
-            this.pickImage();
+            this.vm.pickImage();
           })
 
-          // 文本输入框
-          TextInput({ text: $$this.inputText, placeholder: '输入题目或粘贴题干…' })
+          // 文本输入框。用 !! 双向绑定而不是 text+onChange 回写：
+          // 回写会在输入法组词（拼音候选）阶段把值再推回组件，有打断组合态的风险。
+          TextInput({ text: this.vm.inputText!!, placeholder: '输入题目或粘贴题干…' })
             .placeholderColor('#B5A98D')
             .backgroundColor(Color.Transparent)
             .layoutWeight(1)
@@ -289,11 +249,17 @@ export struct AIView {
             .objectFit(ImageFit.Cover)
         }
         if (msg.content !== '') {
+          // ★ 千万别给这个 Text 加 .width('100%')，这是修过的老 bug。
+          //   外层 Column 没有确定宽度，只有 constraintSize({ maxWidth: '72%' })，
+          //   宽度由子内容决定；子元素再要 100% 就形成循环依赖，ArkUI 会把 100%
+          //   解成整屏宽——Text 按整屏排版，Column 却卡在 72%，文字就画到气泡外面。
           Text(msg.content)
             .fontSize(16.0)
             .lineHeight(21)
             .fontColor(msg.from === 'user' ? Color.White : '#55402F')
-            .width('100%')
+            // AI 回复里常夹长 URL / 长英文单词：NORMAL 只在空格换行，塞不下就撑破
+            // 气泡。BREAK_WORD 优先按词换、词太长才拆字，中文仍按字换行
+            .wordBreak(WordBreak.BREAK_WORD)
         }
       }
       .padding({ left: 12, right: 12, top: 10, bottom: 10 })
@@ -345,17 +311,17 @@ export struct AIView {
     Row() {
       Text(title)
         .fontSize(16.0)
-        .fontWeight(this.selectedMode === modeIndex ? FontWeight.Bold : FontWeight.Medium)
-        .fontColor(this.selectedMode === modeIndex ? '#E4842A' : '#8A7A50')
+        .fontWeight(this.vm.selectedMode === modeIndex ? FontWeight.Bold : FontWeight.Medium)
+        .fontColor(this.vm.selectedMode === modeIndex ? '#E4842A' : '#8A7A50')
     }
     .layoutWeight(1)
     .height(42)
     .borderRadius(22)
-    .backgroundColor(this.selectedMode === modeIndex ? '#FEF8E3' : Color.Transparent)
+    .backgroundColor(this.vm.selectedMode === modeIndex ? '#FEF8E3' : Color.Transparent)
     .justifyContent(FlexAlign.Center)
     .alignItems(VerticalAlign.Center)
     .onClick(() => {
-      this.selectedMode = modeIndex;
+      this.vm.selectedMode = modeIndex;
     })
   }
 }

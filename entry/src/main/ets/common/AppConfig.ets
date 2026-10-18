@@ -1,5 +1,5 @@
 import { common } from '@kit.AbilityKit';
-import { util } from '@kit.ArkTS';
+import { Utf8ChunkDecoder } from './Utf8ChunkDecoder';
 
 // 对应 resources/rawfile/app_config.json 的结构
 export interface AppConfigData {
@@ -19,7 +19,14 @@ export class AppConfig {
       return;
     }
     const bytes = await context.resourceManager.getRawFileContent('app_config.json');
-    const text = util.TextDecoder.create('utf-8').decodeToString(bytes);
+    // ★ 绝对不能用 util.TextDecoder：**预览器里整个 util 模块是 auto-mock**，
+    //   decodeToString() 永远返回空串，于是 JSON.parse('') 抛异常、配置永远加载不上，
+    //   后面任何接口一取地址就报「AppConfig 未加载」。
+    //   这里换成纯 ArkTS 的 Utf8ChunkDecoder（和流式那条链路同一个实现，不依赖任何平台 API）。
+    const text: string = new Utf8ChunkDecoder().decode(bytes);
+    if (text === '') {
+      throw new Error('读取 app_config.json 失败：内容为空');
+    }
     AppConfig.data = JSON.parse(text) as AppConfigData;
   }
 
