@@ -1,64 +1,30 @@
-import { BusinessError } from '@kit.BasicServicesKit';
-import { AppConfig } from '../common/AppConfig';
-import { TokenStore } from '../common/TokenStore';
-import { AuthApi } from '../api/AuthApi';
-import { CODE_OK } from '../common/Http';
-import { OnboardingCache } from '../common/OnboardingCache';
+import { LoginViewModel } from '../viewmodel/LoginViewModel';
 
 @Entry
 @ComponentV2
 struct Login {
-  @Local phone: string = '';
-  @Local password: string = '';
-  @Local isLoading: boolean = false;
-  @Local agreed: boolean = false;   // 用户协议与隐私政策勾选状态
+  // 登录态与取数逻辑全在 ViewModel 里，页面只负责渲染和跳转
+  @Local vm: LoginViewModel = new LoginViewModel();
 
   // 页面出现前，先把配置和本地存储准备好，避免第一次点登录时还没就绪
   async aboutToAppear(): Promise<void> {
     const context = this.getUIContext().getHostContext();
     if (context === undefined) {
+      this.toast('页面上下文获取失败，请重启应用');
       return;
     }
-    await AppConfig.load(context);
-    await TokenStore.init(context);
-    await OnboardingCache.init(context);   // 引导完成标记：决定登录后去引导页还是首页
+    await this.vm.init(context);
   }
 
-  // 登录：调后端 → 存 token → 进首页
+  // 登录：调后端 → 存 token → 进引导页 / 首页
   private async doLogin(): Promise<void> {
-    if (this.phone === '' || this.password === '') {
-      this.toast('手机号或密码不能为空');
-      return;
-    }
-    if (!this.agreed) {
-      this.toast('请先阅读并同意用户协议与隐私政策');
-      return;
-    }
-    this.isLoading = true;
     try {
-      // const res = await AuthApi.login(this.phone, this.password);
-      // if (res.code !== CODE_OK || res.data === null) {
-      //   this.toast(res.message);
-      //   return;
-      // }
-      // await TokenStore.save(res.data);
-
-      // 硬编码验证
-      if (this.phone === '13200000000' && this.password === '123456') {
-        // 首次登录（未完成引导）→ 先去设置备考目标页；之后直接进首页
-        const done = await OnboardingCache.isDone();
-        this.getUIContext().getRouter().replaceUrl({
-          url: done ? 'pages/HomePage' : 'pages/OnboardingPage'
-        });
-      } else {
-        this.toast('手机号或密码错误');
-      }
+      await this.vm.login();
+      this.getUIContext().getRouter().replaceUrl({
+        url: this.vm.needOnboarding ? 'pages/OnboardingPage' : 'pages/HomePage'
+      });
     } catch (err) {
-      // 走到这里说明不是业务错误，而是网络层问题：超时、连不上服务器、断网
-      const e = err as BusinessError;
-      this.toast(`网络异常(${e.code})，请检查网络或服务器`);
-    } finally {
-      this.isLoading = false;
+      this.toast((err as Error).message);
     }
   }
 
@@ -113,7 +79,7 @@ struct Login {
           .backgroundColor(Color.Transparent)
           .padding({ left: 6, right: 6 })
           .placeholderColor('#B5A98D')
-          .onChange((v: string) => { this.phone = v })
+          .onChange((v: string) => { this.vm.phone = v })
 
         Divider()
           .color('#F8F4E8')
@@ -125,7 +91,7 @@ struct Login {
           .backgroundColor(Color.Transparent)
           .padding({ left: 6, right: 6 })
           .placeholderColor('#B5A98D')
-          .onChange((v: string) => { this.password = v })
+          .onChange((v: string) => { this.vm.password = v })
       }
       .width('100%')
       .padding({ left: 16, right: 16 })
@@ -135,7 +101,7 @@ struct Login {
       .shadow({ radius: 12, color: '#14000000', offsetY: 4 })
 
       // 主按钮
-      Button(this.isLoading ? '登录中…' : '登 录')
+      Button(this.vm.isLoading ? '登录中…' : '登 录')
         .width('100%')
         .height(52)
         .borderRadius(26)
@@ -144,7 +110,7 @@ struct Login {
         .fontSize(18.0)
         .fontWeight(FontWeight.Medium)
         .margin({ top: 20 })
-        .enabled(!this.isLoading)              // 请求中禁用，防重复点
+        .enabled(!this.vm.isLoading)           // 请求中禁用，防重复点
         .shadow({ radius: 10, color: '#14000000', offsetY: 4 })
         .onClick(() => { this.doLogin() })
 
@@ -152,7 +118,7 @@ struct Login {
       Row({ space: 5 }) {
         // 自绘勾选框
         Column() {
-          if (this.agreed) {
+          if (this.vm.agreed) {
             Text('✓')
               .fontSize(13.0)
               .fontWeight(FontWeight.Bold)
@@ -162,12 +128,12 @@ struct Login {
         .width(19)
         .height(19)
         .borderRadius(9.5)
-        .backgroundColor(this.agreed ? '#E4842A' : '#FFFFFF')
-        .border({ width: 1.5, color: this.agreed ? '#E4842A' : '#B5A98D' })
+        .backgroundColor(this.vm.agreed ? '#E4842A' : '#FFFFFF')
+        .border({ width: 1.5, color: this.vm.agreed ? '#E4842A' : '#B5A98D' })
         .justifyContent(FlexAlign.Center)
         .shadow({ radius: 2, color: '#10000000', offsetY: 1 })
         .onClick(() => {
-          this.agreed = !this.agreed;
+          this.vm.agreed = !this.vm.agreed;
         })
 
         Text('我已阅读并同意')
