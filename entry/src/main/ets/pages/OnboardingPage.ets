@@ -85,12 +85,12 @@ struct Onboarding {
         Text('设置备考目标')
           .fontSize(18.0)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
           .layoutWeight(1)
 
         Text('跳过')
           .fontSize(15.0)
-          .fontColor('#8A94A6')
+          .fontColor('#9A8A6E')
           .padding({ left: 12, right: 4, top: 6, bottom: 6 })
           .onClick(() => {
             this.skip();
@@ -106,12 +106,12 @@ struct Onboarding {
           Text('先告诉我们你的备考目标')
             .fontSize(23.0)
             .fontWeight(FontWeight.Bold)
-            .fontColor('#1A202C')
+            .fontColor('#55402F')
             .width('100%')
 
           Text('不同级别对应的题库和知识点不同，选好后首页会按你的级别抽题')
             .fontSize(14.0)
-            .fontColor('#8A94A6')
+            .fontColor('#9A8A6E')
             .lineHeight(20)
             .width('100%')
             .margin({ top: 8, bottom: 20 })
@@ -131,18 +131,18 @@ struct Onboarding {
               .width(20)
               .height(20)
               .borderRadius(10)
-              .backgroundColor(this.selectedLevel === item.index ? '#3B6BF6' : Color.Transparent)
-              .border({ width: 1.5, color: this.selectedLevel === item.index ? '#3B6BF6' : '#C4CEDC' })
+              .backgroundColor(this.selectedLevel === item.index ? '#FBDE71' : Color.Transparent)
+              .border({ width: 1.5, color: this.selectedLevel === item.index ? '#E4842A' : '#FEF8E3' })
               .justifyContent(FlexAlign.Center)
 
               Column({ space: 4 }) {
                 Text(item.name)
                   .fontSize(16.5)
                   .fontWeight(FontWeight.Bold)
-                  .fontColor('#1A202C')
+                  .fontColor('#55402F')
                 Text(item.desc)
                   .fontSize(13.0)
-                  .fontColor('#8A94A6')
+                  .fontColor('#9A8A6E')
               }
               .alignItems(HorizontalAlign.Start)
               .layoutWeight(1)
@@ -150,10 +150,10 @@ struct Onboarding {
             .width('100%')
             .padding({ left: 16, right: 16, top: 15, bottom: 15 })
             .borderRadius(14)
-            .backgroundColor(this.selectedLevel === item.index ? '#F5F9FF' : Color.White)
+            .backgroundColor(this.selectedLevel === item.index ? '#FEF8E3' : Color.White)
             .border({
               width: 1.5,
-              color: this.selectedLevel === item.index ? '#3B6BF6' : '#EEF2F6'
+              color: this.selectedLevel === item.index ? '#E4842A' : '#F2ECD8'
             })
             .margin({ bottom: 10 })
             .alignItems(VerticalAlign.Center)
@@ -166,7 +166,7 @@ struct Onboarding {
           Text('基本信息')
             .fontSize(16.5)
             .fontWeight(FontWeight.Bold)
-            .fontColor('#1A202C')
+            .fontColor('#55402F')
             .width('100%')
             .margin({ top: 14, bottom: 10 })
 
@@ -174,38 +174,37 @@ struct Onboarding {
             Row({ space: 12 }) {
               Text('昵称')
                 .fontSize(16.0)
-                .fontColor('#1A202C')
+                .fontColor('#55402F')
                 .width(72)
 
-              TextInput({ text: this.nickname, placeholder: '怎么称呼你' })
+              TextInput({ text: $$this.nickname, placeholder: '怎么称呼你' })
                 .height(48)
                 .backgroundColor(Color.Transparent)
                 .padding({ left: 0, right: 0 })
-                .placeholderColor('#A8B3C5')
+                .placeholderColor('#B5A98D')
                 .layoutWeight(1)
-                .onChange((v: string) => { this.nickname = v })
             }
             .width('100%')
             .padding({ left: 16, right: 16 })
             .alignItems(VerticalAlign.Center)
 
-            Divider().color('#F1F4F9').strokeWidth(1).margin({ left: 16, right: 16 })
+            Divider().color('#F8F4E8').strokeWidth(1).margin({ left: 16, right: 16 })
 
             Row() {
               Text('考试时间')
                 .fontSize(16.0)
-                .fontColor('#1A202C')
+                .fontColor('#55402F')
                 .width(72)
 
               Text(this.dateStr === '' ? '还未确定' : formatExamDateCN(this.dateStr))
                 .fontSize(15.0)
-                .fontColor(this.dateStr === '' ? '#A8B3C5' : '#3B6BF6')
+                .fontColor(this.dateStr === '' ? '#B5A98D' : '#E4842A')
                 .layoutWeight(1)
 
               Text('›')
                 .fontSize(21.0)
                 .fontWeight(FontWeight.Medium)
-                .fontColor('#CBD5E1')
+                .fontColor('#B5A98D')
             }
             .width('100%')
             .padding({ left: 16, right: 16, top: 14, bottom: 14 })
@@ -217,11 +216,11 @@ struct Onboarding {
           .width('100%')
           .borderRadius(16)
           .backgroundColor(Color.White)
-          .border({ width: 1, color: '#EEF2F6' })
+          .border({ width: 1, color: '#F2ECD8' })
 
           Text('信息只保存在本机，之后可在「我的 - 设置」里随时修改')
             .fontSize(12.5)
-            .fontColor('#A8B3C5')
+            .fontColor('#B5A98D')
             .width('100%')
             .margin({ top: 10 })
 
@@ -230,8 +229,8 @@ struct Onboarding {
             .width('100%')
             .height(50)
             .borderRadius(25)
-            .backgroundColor('#3B6BF6')
-            .fontColor(Color.White)
+            .backgroundColor('#FBDE71')
+            .fontColor('#8A7A50')
             .fontSize(17.0)
             .fontWeight(FontWeight.Medium)
             .margin({ top: 24 })
@@ -249,6 +248,6 @@ struct Onboarding {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F7FA')
+    .backgroundColor('#FDFDED')
   }
 }

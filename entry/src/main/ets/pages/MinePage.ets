@@ -1,6 +1,7 @@
 import { ProfileModel, ProfileCache } from '../common/ProfileModel';
 import { AppStorageV2 } from '@kit.ArkUI';
 import { AppConfig } from '../common/AppConfig';
+import { SafeArea } from '../common/SafeArea';
 import { TokenStore } from '../common/TokenStore';
 import { GoalModel, GoalCache, levelShortName, LEVEL_BEGINNER, LEVEL_INTERMEDIATE, LEVEL_ADVANCED } from '../common/GoalModel';
 import { StudyRecordStore, StudyRecord } from '../common/StudyRecordStore';
@@ -146,7 +147,7 @@ export struct MineView {
                   Text(this.profile.nickname.substring(0, 1))
                     .fontSize(27.0)
                     .fontWeight(FontWeight.Bold)
-                    .fontColor('#3B6BF6')
+                    .fontColor('#E4842A')
                 }
               }
               .onClick(() => {
@@ -158,18 +159,18 @@ export struct MineView {
                 Text(this.profile.nickname)
                   .fontSize(23.0)
                   .fontWeight(FontWeight.Bold)
-                  .fontColor(Color.White)
+                  .fontColor('#8A7A50')
 
                 Text(`保育师${levelShortName(this.goal.levelIndex)}备考中`)
                   .fontSize(14.0)
-                  .fontColor('#DCE7FF')
+                  .fontColor('#55402F')
 
                 // 连续学习标签
                 Row() {
                   Text(`连续学习 ${this.studyDays} 天`)
                     .fontSize(12.0)
                     .fontWeight(FontWeight.Medium)
-                    .fontColor(Color.White)
+                    .fontColor('#8A7A50')
                 }
                 .backgroundColor('#33FFFFFF')
                 .padding({ left: 10, right: 10, top: 4, bottom: 4 })
@@ -183,10 +184,7 @@ export struct MineView {
             .width('100%')
             .padding({ left: 18, right: 18, top: 22, bottom: 22 })
             .borderRadius({ topLeft: 22, topRight: 22 })
-            .linearGradient({
-              angle: 135,
-              colors: [['#4A7BF8', 0.0], ['#2B57E5', 1.0]]
-            })
+            .backgroundColor('#FEF8E3')
 
             // 下半部分学习数据统计栏（白底）。
             // 状态驱动文本直接内联读 @Local，避免 @Builder 传参在状态变化时不刷新
@@ -195,40 +193,40 @@ export struct MineView {
                 Text(this.totalAnswers)
                   .fontSize(21.0)
                   .fontWeight(FontWeight.Bold)
-                  .fontColor('#1A202C')
+                  .fontColor('#55402F')
                 Text('累计答题')
                   .fontSize(13.0)
-                  .fontColor('#8A94A6')
+                  .fontColor('#9A8A6E')
               }
               .layoutWeight(1)
               .alignItems(HorizontalAlign.Center)
               .justifyContent(FlexAlign.Center)
 
-              Divider().vertical(true).height(28).strokeWidth(1).color('#EEF2F6')
+              Divider().vertical(true).height(28).strokeWidth(1).color('#F2ECD8')
 
               Column({ space: 4 }) {
                 Text(this.accuracy)
                   .fontSize(21.0)
                   .fontWeight(FontWeight.Bold)
-                  .fontColor('#1A202C')
+                  .fontColor('#55402F')
                 Text('平均正确率')
                   .fontSize(13.0)
-                  .fontColor('#8A94A6')
+                  .fontColor('#9A8A6E')
               }
               .layoutWeight(1)
               .alignItems(HorizontalAlign.Center)
               .justifyContent(FlexAlign.Center)
 
-              Divider().vertical(true).height(28).strokeWidth(1).color('#EEF2F6')
+              Divider().vertical(true).height(28).strokeWidth(1).color('#F2ECD8')
 
               Column({ space: 4 }) {
                 Text(this.studyHours)
                   .fontSize(21.0)
                   .fontWeight(FontWeight.Bold)
-                  .fontColor('#1A202C')
+                  .fontColor('#55402F')
                 Text('学习时长')
                   .fontSize(13.0)
-                  .fontColor('#8A94A6')
+                  .fontColor('#9A8A6E')
               }
               .layoutWeight(1)
               .alignItems(HorizontalAlign.Center)
@@ -241,7 +239,7 @@ export struct MineView {
           }
           .width('100%')
           .borderRadius(22)
-          .shadow({ radius: 12, color: '#143B6BF6', offsetY: 4 })
+          .shadow({ radius: 12, color: '#14000000', offsetY: 4 })
 
           // ==================== 2. 目标到达卡片 ====================
           Column() {
@@ -251,12 +249,12 @@ export struct MineView {
                 Text('当前目标')
                   .fontSize(13.0)
                   .fontWeight(FontWeight.Bold)
-                  .fontColor('#3B6BF6')
+                  .fontColor('#E4842A')
 
                 Text('保育师职业技能等级认定')
                   .fontSize(18.0)
                   .fontWeight(FontWeight.Bold)
-                  .fontColor('#1A202C')
+                  .fontColor('#55402F')
               }
               .alignItems(HorizontalAlign.Start)
 
@@ -265,7 +263,7 @@ export struct MineView {
               Text('调整目标')
                 .fontSize(14.0)
                 .fontWeight(FontWeight.Medium)
-                .fontColor('#3B6BF6')
+                .fontColor('#E4842A')
                 .onClick(() => {
                   this.openGoalSheet();
                 })
@@ -281,36 +279,36 @@ export struct MineView {
                   Circle()
                     .width(28)
                     .height(28)
-                    .fill('#3B6BF6')
+                    .fill('#FBDE71')
 
                   if (this.goal.levelIndex > LEVEL_BEGINNER) {
                     // 这里要替换真实图标（已完成对勾）
                     Text('✓')
                       .fontSize(15.0)
                       .fontWeight(FontWeight.Bold)
-                      .fontColor(Color.White)
+                      .fontColor('#8A7A50')
                   } else {
                     Text('1')
                       .fontSize(15.0)
                       .fontWeight(FontWeight.Bold)
-                      .fontColor(Color.White)
+                      .fontColor('#8A7A50')
                   }
                 }
                 Text('初级')
                   .fontSize(14.0)
                   .fontWeight(FontWeight.Bold)
-                  .fontColor('#3B6BF6')
+                  .fontColor('#E4842A')
                 Text(this.goal.levelIndex > LEVEL_BEGINNER ? '已完成'
                   : (this.goal.levelIndex === LEVEL_BEGINNER ? '备考中' : '待解锁'))
                   .fontSize(12.0)
-                  .fontColor(this.goal.levelIndex === LEVEL_BEGINNER ? '#3B6BF6' : '#94A3B8')
+                  .fontColor(this.goal.levelIndex === LEVEL_BEGINNER ? '#E4842A' : '#B5A98D')
               }
 
               // 进度连接线 1
               Row()
                 .layoutWeight(1)
                 .height(3)
-                .backgroundColor(this.goal.levelIndex > LEVEL_BEGINNER ? '#3B6BF6' : '#E2E8F0')
+                .backgroundColor(this.goal.levelIndex > LEVEL_BEGINNER ? '#FBDE71' : '#FEF8E3')
                 .borderRadius(1.5)
                 .margin({ left: 8, right: 8, bottom: 36 })
 
@@ -320,35 +318,35 @@ export struct MineView {
                   Circle()
                     .width(28)
                     .height(28)
-                    .fill(this.goal.levelIndex >= LEVEL_INTERMEDIATE ? '#3B6BF6' : '#F1F5F9')
+                    .fill(this.goal.levelIndex >= LEVEL_INTERMEDIATE ? '#FBDE71' : '#F2ECD8')
 
                   if (this.goal.levelIndex > LEVEL_INTERMEDIATE) {
                     Text('✓')
                       .fontSize(15.0)
                       .fontWeight(FontWeight.Bold)
-                      .fontColor(Color.White)
+                      .fontColor('#8A7A50')
                   } else {
                     Text('2')
                       .fontSize(15.0)
                       .fontWeight(FontWeight.Bold)
-                      .fontColor(this.goal.levelIndex >= LEVEL_INTERMEDIATE ? Color.White : '#94A3B8')
+                      .fontColor(this.goal.levelIndex >= LEVEL_INTERMEDIATE ? '#8A7A50' : '#B5A98D')
                   }
                 }
                 Text('中级')
                   .fontSize(14.0)
                   .fontWeight(this.goal.levelIndex >= LEVEL_INTERMEDIATE ? FontWeight.Bold : FontWeight.Medium)
-                  .fontColor(this.goal.levelIndex >= LEVEL_INTERMEDIATE ? '#3B6BF6' : '#94A3B8')
+                  .fontColor(this.goal.levelIndex >= LEVEL_INTERMEDIATE ? '#E4842A' : '#B5A98D')
                 Text(this.goal.levelIndex > LEVEL_INTERMEDIATE ? '已完成'
                   : (this.goal.levelIndex === LEVEL_INTERMEDIATE ? '备考中' : '待解锁'))
                   .fontSize(12.0)
-                  .fontColor(this.goal.levelIndex === LEVEL_INTERMEDIATE ? '#3B6BF6' : '#94A3B8')
+                  .fontColor(this.goal.levelIndex === LEVEL_INTERMEDIATE ? '#E4842A' : '#B5A98D')
               }
 
               // 进度连接线 2
               Row()
                 .layoutWeight(1)
                 .height(3)
-                .backgroundColor(this.goal.levelIndex > LEVEL_INTERMEDIATE ? '#3B6BF6' : '#E2E8F0')
+                .backgroundColor(this.goal.levelIndex > LEVEL_INTERMEDIATE ? '#FBDE71' : '#FEF8E3')
                 .borderRadius(1.5)
                 .margin({ left: 8, right: 8, bottom: 36 })
 
@@ -358,20 +356,20 @@ export struct MineView {
                   Circle()
                     .width(28)
                     .height(28)
-                    .fill(this.goal.levelIndex >= LEVEL_ADVANCED ? '#3B6BF6' : '#F1F5F9')
+                    .fill(this.goal.levelIndex >= LEVEL_ADVANCED ? '#FBDE71' : '#F2ECD8')
 
                   Text('3')
                     .fontSize(15.0)
                     .fontWeight(FontWeight.Bold)
-                    .fontColor(this.goal.levelIndex >= LEVEL_ADVANCED ? Color.White : '#94A3B8')
+                    .fontColor(this.goal.levelIndex >= LEVEL_ADVANCED ? '#8A7A50' : '#B5A98D')
                 }
                 Text('高级')
                   .fontSize(14.0)
                   .fontWeight(this.goal.levelIndex >= LEVEL_ADVANCED ? FontWeight.Bold : FontWeight.Medium)
-                  .fontColor(this.goal.levelIndex >= LEVEL_ADVANCED ? '#3B6BF6' : '#94A3B8')
+                  .fontColor(this.goal.levelIndex >= LEVEL_ADVANCED ? '#E4842A' : '#B5A98D')
                 Text(this.goal.levelIndex === LEVEL_ADVANCED ? '备考中' : '待解锁')
                   .fontSize(12.0)
-                  .fontColor(this.goal.levelIndex === LEVEL_ADVANCED ? '#3B6BF6' : '#94A3B8')
+                  .fontColor(this.goal.levelIndex === LEVEL_ADVANCED ? '#E4842A' : '#B5A98D')
               }
             }
             .width('100%')
@@ -383,24 +381,24 @@ export struct MineView {
           .padding(20)
           .borderRadius(22)
           .backgroundColor(Color.White)
-          .border({ width: 1, color: '#EEF2F6' })
+          .border({ width: 1, color: '#F2ECD8' })
           .shadow({ radius: 10, color: '#0A000000', offsetY: 3 })
 
           // ==================== 3. 功能列表卡片 ====================
           Column() {
             this.FunctionListItem('fav', '我的收藏', 'pages/FavoritesPage')
-            Divider().color('#F1F4F9').strokeWidth(1).margin({ left: 52 })
+            Divider().color('#F8F4E8').strokeWidth(1).margin({ left: 52 })
             this.FunctionListItem('wrong', '错题本', 'pages/WrongBookPage')
-            Divider().color('#F1F4F9').strokeWidth(1).margin({ left: 52 })
+            Divider().color('#F8F4E8').strokeWidth(1).margin({ left: 52 })
             this.FunctionListItem('study', '学习数据', 'pages/StudyDataPage')
-            Divider().color('#F1F4F9').strokeWidth(1).margin({ left: 52 })
+            Divider().color('#F8F4E8').strokeWidth(1).margin({ left: 52 })
             this.FunctionListItem('setting', '账号与设置', 'pages/SettingsPage')
           }
           .width('100%')
           .padding({ left: 16, right: 16, top: 4, bottom: 4 })
           .borderRadius(22)
           .backgroundColor(Color.White)
-          .border({ width: 1, color: '#EEF2F6' })
+          .border({ width: 1, color: '#F2ECD8' })
           .shadow({ radius: 10, color: '#0A000000', offsetY: 3 })
         }
         .padding({ left: 16, right: 16, top: 12, bottom: 84 })
@@ -413,7 +411,7 @@ export struct MineView {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F7FA')
+    .backgroundColor('#FDFDED')
 
     // 调整目标半屏浮窗
     if (this.goalSheetVisible) {
@@ -422,6 +420,9 @@ export struct MineView {
     }
     .width('100%')
     .height('100%')
+    // 沉浸式：页面底色铺进状态栏区域，内容用 SafeArea.topVp 让出状态栏高度（自动适配机型）
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP])
+    .padding({ top: SafeArea.topVp })
     .onVisibleAreaChange([0.0, 1.0], (isVisible: boolean, ratio: number): void => {
       // 「我的」是首页 Tab 的子组件，aboutToAppear 只在首次切到本页签时执行一次；
       // 做完练习/考试再切回来会停留在旧数值。这里在每次变为可见（切页签、从答题页返回）时重算统计。
@@ -450,14 +451,14 @@ export struct MineView {
           Text('调整目标')
             .fontSize(18.0)
             .fontWeight(FontWeight.Bold)
-            .fontColor('#1A202C')
+            .fontColor('#55402F')
 
           Blank()
 
           Text('×')
             .fontSize(25.0)
             .fontWeight(FontWeight.Medium)
-            .fontColor('#8A94A6')
+            .fontColor('#9A8A6E')
             .onClick(() => {
               this.goalSheetVisible = false;
             })
@@ -468,9 +469,9 @@ export struct MineView {
 
         // 三个单选选项
         this.GoalOption(LEVEL_BEGINNER, '初级', '零基础起步，掌握保育入门技能')
-        Divider().color('#F1F4F9').strokeWidth(1)
+        Divider().color('#F8F4E8').strokeWidth(1)
         this.GoalOption(LEVEL_INTERMEDIATE, '中级', '系统提升，胜任日常保育工作')
-        Divider().color('#F1F4F9').strokeWidth(1)
+        Divider().color('#F8F4E8').strokeWidth(1)
         this.GoalOption(LEVEL_ADVANCED, '高级', '精进专业，具备管理与带教能力')
 
         // 确认按钮
@@ -478,8 +479,8 @@ export struct MineView {
           .width('100%')
           .height(48)
           .borderRadius(24)
-          .backgroundColor('#3B6BF6')
-          .fontColor(Color.White)
+          .backgroundColor('#FBDE71')
+          .fontColor('#8A7A50')
           .fontSize(17.0)
           .fontWeight(FontWeight.Medium)
           .margin({ top: 20 })
@@ -505,10 +506,10 @@ export struct MineView {
         Text(title)
           .fontSize(17.0)
           .fontWeight(this.tempLevel === index ? FontWeight.Bold : FontWeight.Medium)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
         Text(subtitle)
           .fontSize(13.0)
-          .fontColor('#8A94A6')
+          .fontColor('#9A8A6E')
       }
       .alignItems(HorizontalAlign.Start)
       .layoutWeight(1)
@@ -518,15 +519,15 @@ export struct MineView {
         Circle()
           .width(22)
           .height(22)
-          .fill(this.tempLevel === index ? '#3B6BF6' : Color.White)
-          .stroke(this.tempLevel === index ? '#3B6BF6' : '#CBD5E1')
+          .fill(this.tempLevel === index ? '#FBDE71' : Color.White)
+          .stroke(this.tempLevel === index ? '#E4842A' : '#FEF8E3')
           .strokeWidth(1.5)
 
         if (this.tempLevel === index) {
           Text('✓')
             .fontSize(13.0)
             .fontWeight(FontWeight.Bold)
-            .fontColor(Color.White)
+            .fontColor('#8A7A50')
         }
       }
     }
@@ -548,7 +549,7 @@ export struct MineView {
           .width(40)
           .height(40)
           .borderRadius(12)
-          .backgroundColor('#E8F0FF')
+          .backgroundColor('#FEF8E3')
 
         // 图标来自 app.media 资源：收藏 shouc / 错题本 cuot / 学习数据 tubiao / 账号与设置 shez
         if (iconType === 'fav') {
@@ -556,25 +557,25 @@ export struct MineView {
             .width(23)
             .height(23)
             .objectFit(ImageFit.Contain)
-            .fillColor('#3B6BF6')
+            .fillColor('#E4842A')
         } else if (iconType === 'wrong') {
           Image($r('app.media.cuot'))
             .width(23)
             .height(23)
             .objectFit(ImageFit.Contain)
-            .fillColor('#3B6BF6')
+            .fillColor('#E4842A')
         } else if (iconType === 'study') {
           Image($r('app.media.xuexsj'))
             .width(23)
             .height(23)
             .objectFit(ImageFit.Contain)
-            .fillColor('#3B6BF6')
+            .fillColor('#E4842A')
         } else {
           Image($r('app.media.shez'))
             .width(23)
             .height(23)
             .objectFit(ImageFit.Contain)
-            .fillColor('#3B6BF6')
+            .fillColor('#E4842A')
         }
       }
 
@@ -582,14 +583,14 @@ export struct MineView {
       Text(title)
         .fontSize(16.0)
         .fontWeight(FontWeight.Bold)
-        .fontColor('#1A202C')
+        .fontColor('#55402F')
         .margin({ left: 12 })
         .layoutWeight(1)
 
       Text('›')
         .fontSize(21.0)
         .fontWeight(FontWeight.Medium)
-        .fontColor('#CBD5E1')
+        .fontColor('#B5A98D')
     }
     .width('100%')
     .padding({ top: 12, bottom: 12 })

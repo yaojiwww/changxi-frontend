@@ -72,12 +72,12 @@ struct WrongBookPage {
   // 进度条颜色：0 橙、1 深橙、2 蓝（即将消除）
   private progressColor(count: number): string {
     if (count <= 0) {
-      return '#F5A623';
+      return '#FBDE71';
     }
     if (count === 1) {
-      return '#F97316';
+      return '#FBDE71';
     }
-    return '#2B57E5';
+    return '#E4842A';
   }
 
   @Builder
@@ -88,12 +88,12 @@ struct WrongBookPage {
           Text(t)
             .fontSize(15.0)
             .fontWeight(this.activeTab === i ? FontWeight.Bold : FontWeight.Medium)
-            .fontColor(this.activeTab === i ? '#2B57E5' : '#8A94A6')
+            .fontColor(this.activeTab === i ? '#E4842A' : '#9A8A6E')
           Row()
             .width(22)
             .height(3)
             .borderRadius(1.5)
-            .backgroundColor(this.activeTab === i ? '#3B6BF6' : Color.Transparent)
+            .backgroundColor(this.activeTab === i ? '#FBDE71' : Color.Transparent)
         }
         .layoutWeight(1)
         .onClick(() => {
@@ -104,7 +104,7 @@ struct WrongBookPage {
     .width('100%')
     .backgroundColor(Color.White)
     .padding({ top: 6, bottom: 4 })
-    .border({ width: { bottom: 1 }, color: '#F1F4F9' })
+    .border({ width: { bottom: 1 }, color: '#F2ECD8' })
   }
 
   @Builder
@@ -113,20 +113,20 @@ struct WrongBookPage {
       Text(cat.category)
         .fontSize(16.0)
         .fontWeight(FontWeight.Bold)
-        .fontColor('#1A202C')
+        .fontColor('#55402F')
         .layoutWeight(1)
         .maxLines(1)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
 
       Text(`${cat.count} 道`)
         .fontSize(14.0)
-        .fontColor('#8A94A6')
+        .fontColor('#9A8A6E')
         .margin({ right: 6 })
 
       Text('重练 ›')
         .fontSize(14.0)
         .fontWeight(FontWeight.Bold)
-        .fontColor('#2B57E5')
+        .fontColor('#E4842A')
     }
     .width('100%')
     .padding({ left: 14, right: 14, top: 14, bottom: 10 })
@@ -141,7 +141,7 @@ struct WrongBookPage {
     Column({ space: 8 }) {
       Text(item.stem)
         .fontSize(15.0)
-        .fontColor('#4A5568')
+        .fontColor('#9A8A6E')
         .lineHeight(21)
         .width('100%')
         .maxLines(2)
@@ -150,14 +150,14 @@ struct WrongBookPage {
       Row({ space: 8 }) {
         Text('答对进度')
           .fontSize(13.0)
-          .fontColor('#8A94A6')
+          .fontColor('#9A8A6E')
 
         Stack({ alignContent: Alignment.Start }) {
           Row()
             .width('100%')
             .height(6)
             .borderRadius(3)
-            .backgroundColor('#EDF1F7')
+            .backgroundColor('#FEF8E3')
 
           Row()
             .width(`${item.correctCount * 100 / 3}%`)
@@ -188,7 +188,7 @@ struct WrongBookPage {
         Text('‹')
           .fontSize(34.0)
           .fontWeight(FontWeight.Medium)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
           .padding({ left: 16, right: 12, top: 4, bottom: 4 })
           .onClick(() => {
             this.goBack();
@@ -197,31 +197,31 @@ struct WrongBookPage {
         Text('错题本')
           .fontSize(18.0)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
           .layoutWeight(1)
       }
       .width('100%')
       .height(56)
       .backgroundColor(Color.White)
       .alignItems(VerticalAlign.Center)
-      .border({ width: { bottom: 1 }, color: '#F1F4F9' })
+      .border({ width: { bottom: 1 }, color: '#F2ECD8' })
 
       this.TabBar()
 
       if (this.loading) {
         Column({ space: 12 }) {
-          LoadingProgress().width(36).height(36).color('#2B57E5')
-          Text('加载中...').fontSize(15.0).fontColor('#8A94A6')
+          LoadingProgress().width(36).height(36).color('#E4842A')
+          Text('加载中...').fontSize(15.0).fontColor('#9A8A6E')
         }
         .justifyContent(FlexAlign.Center)
       } else if (this.result.total === 0) {
         Column({ space: 10 }) {
           Text('暂无错题')
             .fontSize(17.0)
-            .fontColor('#8A94A6')
+            .fontColor('#9A8A6E')
           Text('答错的题会自动收进这里，重练 3 次答对即消除')
             .fontSize(14.0)
-            .fontColor('#A0AEC0')
+            .fontColor('#B5A98D')
         }
         .margin({top:40})
         .justifyContent(FlexAlign.Center)
@@ -237,7 +237,7 @@ struct WrongBookPage {
                 Column() {
                   ForEach(cat.items, (item: WrongItem) => {
                     this.QuestionRow(item)
-                    Divider().width('100%').height(1).color('#F1F4F9').margin({ left: 14 })
+                    Divider().width('100%').height(1).color('#F8F4E8').margin({ left: 14 })
                   }, (item: WrongItem) => `${item.questionId}_${item.correctCount}`)
                 }
                 .width('100%')
@@ -259,6 +259,6 @@ struct WrongBookPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F7FA')
+    .backgroundColor('#FDFDED')
   }
 }

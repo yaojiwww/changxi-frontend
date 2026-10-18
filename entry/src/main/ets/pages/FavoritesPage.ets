@@ -93,12 +93,12 @@ struct FavoritesPage {
           Text(t)
             .fontSize(16.0)
             .fontWeight(this.activeTab === i ? FontWeight.Bold : FontWeight.Medium)
-            .fontColor(this.activeTab === i ? '#2B57E5' : '#8A94A6')
+            .fontColor(this.activeTab === i ? '#E4842A' : '#9A8A6E')
           Row()
             .width(24)
             .height(3)
             .borderRadius(1.5)
-            .backgroundColor(this.activeTab === i ? '#3B6BF6' : Color.Transparent)
+            .backgroundColor(this.activeTab === i ? '#FBDE71' : Color.Transparent)
         }
         .layoutWeight(1)
         .onClick(() => {
@@ -109,7 +109,7 @@ struct FavoritesPage {
     .width('100%')
     .backgroundColor(Color.White)
     .padding({ top: 6, bottom: 4 })
-    .border({ width: { bottom: 1 }, color: '#F1F4F9' })
+    .border({ width: { bottom: 1 }, color: '#F2ECD8' })
   }
 
   // 分类头行：名称 + 数量，点击进重练
@@ -119,20 +119,20 @@ struct FavoritesPage {
       Text(cat.category)
         .fontSize(16.0)
         .fontWeight(FontWeight.Bold)
-        .fontColor('#1A202C')
+        .fontColor('#55402F')
         .layoutWeight(1)
         .maxLines(1)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
 
       Text(`${cat.count} 道`)
         .fontSize(14.0)
-        .fontColor('#8A94A6')
+        .fontColor('#9A8A6E')
         .margin({ right: 6 })
 
       Text('重练 ›')
         .fontSize(14.0)
         .fontWeight(FontWeight.Bold)
-        .fontColor('#2B57E5')
+        .fontColor('#E4842A')
     }
     .width('100%')
     .padding({ left: 14, right: 14, top: 14, bottom: 10 })
@@ -147,7 +147,7 @@ struct FavoritesPage {
     Row({ space: 10 }) {
       Text(item.stem)
         .fontSize(15.0)
-        .fontColor('#4A5568')
+        .fontColor('#9A8A6E')
         .lineHeight(21)
         .layoutWeight(1)
         .maxLines(2)
@@ -155,8 +155,8 @@ struct FavoritesPage {
 
       Button('取消收藏')
         .fontSize(13.0)
-        .fontColor('#EF4444')
-        .backgroundColor('#FEF2F2')
+        .fontColor('#D9534F')
+        .backgroundColor('#FDF3DC')
         .height(30)
         .padding({ left: 12, right: 12 })
         .borderRadius(15)
@@ -175,7 +175,7 @@ struct FavoritesPage {
         Text('‹')
           .fontSize(34.0)
           .fontWeight(FontWeight.Medium)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
           .padding({ left: 16, right: 12, top: 4, bottom: 4 })
           .onClick(() => {
             this.goBack();
@@ -184,21 +184,21 @@ struct FavoritesPage {
         Text('我的收藏')
           .fontSize(18.0)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
           .layoutWeight(1)
       }
       .width('100%')
       .height(56)
       .backgroundColor(Color.White)
       .alignItems(VerticalAlign.Center)
-      .border({ width: { bottom: 1 }, color: '#F1F4F9' })
+      .border({ width: { bottom: 1 }, color: '#F2ECD8' })
 
       this.TabBar()
 
       if (this.loading) {
         Column({ space: 12 }) {
-          LoadingProgress().width(36).height(36).color('#2B57E5')
-          Text('加载中...').fontSize(15.0).fontColor('#8A94A6')
+          LoadingProgress().width(36).height(36).color('#E4842A')
+          Text('加载中...').fontSize(15.0).fontColor('#9A8A6E')
         }
         .layoutWeight(1)
         .justifyContent(FlexAlign.Start)
@@ -208,10 +208,10 @@ struct FavoritesPage {
         Column({ space: 10 }) {
           Text('暂无收藏题目')
             .fontSize(17.0)
-            .fontColor('#8A94A6')
+            .fontColor('#9A8A6E')
           Text('答题时点击右上角 ☆ 即可收藏')
             .fontSize(14.0)
-            .fontColor('#A0AEC0')
+            .fontColor('#B5A98D')
         }
         .layoutWeight(1)
         .justifyContent(FlexAlign.Start)
@@ -229,7 +229,7 @@ struct FavoritesPage {
                 Column() {
                   ForEach(cat.items, (item: FavoriteItem) => {
                     this.QuestionRow(item)
-                    Divider().width('100%').height(1).color('#F1F4F9').margin({ left: 14 })
+                    Divider().width('100%').height(1).color('#F8F4E8').margin({ left: 14 })
                   }, (item: FavoriteItem) => item.questionId)
                 }
                 .width('100%')
@@ -250,6 +250,6 @@ struct FavoritesPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F7FA')
+    .backgroundColor('#FDFDED')
   }
 }

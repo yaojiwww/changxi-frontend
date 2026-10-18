@@ -90,11 +90,12 @@ const DEMO_RESULTS: SceneResult[] = [
 ];
 
 // 统一配色
-const PRIMARY: string = '#3B6BF6';
-const TEXT_MAIN: string = '#1A202C';
-const TEXT_SUB: string = '#8A94A6';
-const TEXT_WEAK: string = '#A8B0BF';
-const CARD_BORDER: string = '#EEF2F6';
+const PRIMARY: string = '#FBDE71';
+const ACCENT: string = '#E4842A';
+const TEXT_MAIN: string = '#55402F';
+const TEXT_SUB: string = '#9A8A6E';
+const TEXT_WEAK: string = '#B5A98D';
+const CARD_BORDER: string = '#F2ECD8';
 
 @Entry
 @ComponentV2
@@ -164,6 +165,11 @@ struct AIPractice {
     this.useDemo = true;
     this.imageUri = '';
     this.pickHint = '';
+    // 示例照片是晨午健康检查（一摸额头/看手心 + 记录板），自动切到对应场景
+    const idx = SCENES.indexOf('晨午健康检查');
+    if (idx >= 0) {
+      this.sceneIndex = idx;
+    }
     this.toast('已载入示例照片');
   }
 
@@ -233,7 +239,7 @@ struct AIPractice {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F7FA')
+    .backgroundColor('#FDFDED')
   }
 
   // ==================== 顶部返回栏 ====================
@@ -257,11 +263,11 @@ struct AIPractice {
 
       Text('历史')
         .fontSize(13.5)
-        .fontColor('#5A6473')
+        .fontColor('#9A8A6E')
         .padding({ left: 12, right: 12, top: 6, bottom: 6 })
         .borderRadius(14)
         .backgroundColor(Color.White)
-        .border({ width: 1, color: '#E6EAF2' })
+        .border({ width: 1, color: '#FEF8E3' })
         .margin({ right: 16 })
         .onClick(() => {
           this.toast('历史记录即将上线');
@@ -271,7 +277,7 @@ struct AIPractice {
     .height(56)
     .backgroundColor(Color.White)
     .alignItems(VerticalAlign.Center)
-    .border({ width: { bottom: 1 }, color: '#F1F4F9' })
+    .border({ width: { bottom: 1 }, color: '#F2ECD8' })
   }
 
   // ==================== 场景选择卡 ====================
@@ -303,7 +309,7 @@ struct AIPractice {
                 .width(34)
                 .height(34)
                 .borderRadius(11)
-                .backgroundColor('#F1F5FD')
+                .backgroundColor('#FEF8E3')
 
               Image(this.sceneIcons[i])
                 .width(21)
@@ -314,7 +320,7 @@ struct AIPractice {
             Text(s)
               .fontSize(14.5)
               .fontWeight(this.sceneIndex === i ? FontWeight.Bold : FontWeight.Medium)
-              .fontColor(this.sceneIndex === i ? PRIMARY : '#3A4556')
+              .fontColor(this.sceneIndex === i ? ACCENT : '#55402F')
               .maxLines(1)
               .textOverflow({ overflow: TextOverflow.Ellipsis })
               .layoutWeight(1)
@@ -322,10 +328,10 @@ struct AIPractice {
           .width('48.5%')
           .padding({ left: 10, right: 8, top: 9, bottom: 9 })
           .borderRadius(12)
-          .backgroundColor(this.sceneIndex === i ? '#EAF1FF' : Color.White)
+          .backgroundColor(this.sceneIndex === i ? '#FEF8E3' : Color.White)
           .border({
             width: this.sceneIndex === i ? 1.5 : 1,
-            color: this.sceneIndex === i ? PRIMARY : '#E4EAF4'
+            color: this.sceneIndex === i ? PRIMARY : '#FEF8E3'
           })
           .alignItems(VerticalAlign.Center)
           .margin({ bottom: 10 })
@@ -369,7 +375,7 @@ struct AIPractice {
           .width('100%')
           .padding(15)
           .borderRadius(16)
-          .backgroundColor('#EFF4FF')
+          .backgroundColor('#FEF8E3')
           .alignItems(HorizontalAlign.Start)
           .margin({ bottom: 12 })
 
@@ -384,7 +390,7 @@ struct AIPractice {
                   .width(62)
                   .height(62)
                   .borderRadius(19)
-                  .backgroundColor('#EAF1FF')
+                  .backgroundColor('#FEF8E3')
 
                 Text('📷')
                   .fontSize(29.0)
@@ -412,7 +418,7 @@ struct AIPractice {
           .padding({ left: 16, right: 16, top: 28, bottom: 28 })
           .borderRadius(18)
           .backgroundColor(Color.White)
-          .border({ width: 1.5, color: '#C9D9FB', radius: 18 })
+          .border({ width: 1.5, color: '#FEF8E3', radius: 18 })
           .alignItems(HorizontalAlign.Center)
           .margin({ bottom: 10 })
           .onClick(() => {
@@ -425,23 +431,23 @@ struct AIPractice {
               Text('!')
                 .fontSize(13.5)
                 .fontWeight(FontWeight.Bold)
-                .fontColor('#B7791F')
+                .fontColor('#E4842A')
                 .width(19)
                 .height(19)
                 .borderRadius(10)
-                .backgroundColor('#FDF3DC')
+                .backgroundColor('#FFFFFF')
                 .textAlign(TextAlign.Center)
               Text(this.pickHint)
                 .fontSize(14.0)
-                .fontColor('#8A6A16')
+                .fontColor('#E4842A')
                 .lineHeight(20)
                 .layoutWeight(1)
             }
             .width('100%')
             .padding({ left: 12, right: 12, top: 10, bottom: 10 })
             .borderRadius(12)
-            .backgroundColor('#FEFAF0')
-            .border({ width: 1, color: '#F6E3B4' })
+            .backgroundColor('#FFFFFF')
+            .border({ width: 1, color: '#FEF8E3' })
             .alignItems(VerticalAlign.Center)
             .margin({ bottom: 10 })
           }
@@ -451,7 +457,7 @@ struct AIPractice {
             Text('没有合适的照片？用示例照片体验 →')
               .fontSize(14.5)
               .fontWeight(FontWeight.Medium)
-              .fontColor(PRIMARY)
+              .fontColor(ACCENT)
               .width('100%')
               .textAlign(TextAlign.Center)
               .padding({ top: 4, bottom: 10 })
@@ -480,14 +486,14 @@ struct AIPractice {
         Text('开始 AI 分析')
           .fontSize(17.5)
           .fontWeight(FontWeight.Bold)
-          .fontColor(Color.White)
+          .fontColor('#8A7A50')
           .width('100%')
           .height(48)
           .textAlign(TextAlign.Center)
           .borderRadius(24)
-          .backgroundColor(this.hasPhoto() ? PRIMARY : '#B9C9F5')
+          .backgroundColor(this.hasPhoto() ? PRIMARY : '#FEF8E3')
           .shadow(this.hasPhoto() ?
-            { radius: 10, color: '#333B6BF6', offsetY: 4 } :
+            { radius: 10, color: '#14000000', offsetY: 4 } :
             { radius: 0, color: Color.Transparent, offsetY: 0 })
           .onClick(() => {
             this.startAnalyze();
@@ -496,7 +502,7 @@ struct AIPractice {
       .width('100%')
       .padding({ left: 16, right: 16, top: 10, bottom: 16 })
       .backgroundColor(Color.White)
-      .border({ width: { top: 1 }, color: '#F1F4F9' })
+      .border({ width: { top: 1 }, color: '#F2ECD8' })
     }
     .width('100%')
     .height('100%')
@@ -518,7 +524,7 @@ struct AIPractice {
                 .fontColor(Color.White)
                 .padding({ left: 10, right: 10, top: 4, bottom: 4 })
                 .borderRadius(10)
-                .backgroundColor('#803B6BF6')
+                .backgroundColor('#E4842A')
             }
             .margin(10)
 
@@ -529,7 +535,7 @@ struct AIPractice {
                 .fontColor(Color.White)
                 .padding({ left: 10, right: 10, top: 4, bottom: 4 })
                 .borderRadius(10)
-                .backgroundColor(PRIMARY)
+                .backgroundColor('#E4842A')
             }
             .justifyContent(FlexAlign.End)
             .width('100%')
@@ -542,9 +548,9 @@ struct AIPractice {
           // 分析步骤卡
           Column({ space: 4 }) {
             this.StepRow('识别保育场景', this.stepDone >= 1 ? '完成' : '进行中', this.stepDone >= 1)
-            Divider().color('#F0F3F8').margin({ left: 42 })
+            Divider().color('#F2ECD8').margin({ left: 42 })
             this.StepRow('匹配保育规范', this.stepDone >= 2 ? '已比对 12 项' : '等待中', this.stepDone >= 2)
-            Divider().color('#F0F3F8').margin({ left: 42 })
+            Divider().color('#F2ECD8').margin({ left: 42 })
             this.StepRow('生成改进建议', this.stepDone >= 3 ? '完成' : '进行中', this.stepDone >= 3)
           }
           .width('100%')
@@ -582,12 +588,12 @@ struct AIPractice {
           .width(26)
           .height(26)
           .borderRadius(13)
-          .backgroundColor(done ? '#EAF9F1' : '#EAF1FF')
+          .backgroundColor(done ? '#F0F6EC' : '#FEF8E3')
 
         Text(done ? '✓' : '·')
           .fontSize(15.0)
           .fontWeight(FontWeight.Bold)
-          .fontColor(done ? '#0FA968' : PRIMARY)
+          .fontColor(done ? '#2E9E63' : ACCENT)
       }
       .margin({ right: 12 })
 
@@ -599,7 +605,7 @@ struct AIPractice {
 
       Text(status)
         .fontSize(14.0)
-        .fontColor(done ? '#0FA968' : TEXT_WEAK)
+        .fontColor(done ? '#2E9E63' : TEXT_WEAK)
     }
     .width('100%')
     .padding({ top: 9, bottom: 9 })
@@ -618,7 +624,7 @@ struct AIPractice {
               Text('AI 分析完成')
                 .fontSize(12.0)
                 .fontWeight(FontWeight.Bold)
-                .fontColor(Color.White)
+                .fontColor('#8A7A50')
                 .padding({ left: 10, right: 10, top: 4, bottom: 4 })
                 .borderRadius(10)
                 .backgroundColor('#4DFFFFFF')
@@ -626,11 +632,11 @@ struct AIPractice {
               Text(this.result().name)
                 .fontSize(23.0)
                 .fontWeight(FontWeight.Bold)
-                .fontColor(Color.White)
+                .fontColor('#8A7A50')
 
               Text(this.result().summary)
                 .fontSize(14.5)
-                .fontColor('#E3EBFF')
+                .fontColor('#55402F')
                 .lineHeight(21)
             }
             .layoutWeight(1)
@@ -641,7 +647,7 @@ struct AIPractice {
               Progress({ value: this.result().score, total: 100, type: ProgressType.Ring })
                 .width(78)
                 .height(78)
-                .color(Color.White)
+                .color('#8A7A50')
                 .backgroundColor('#4DFFFFFF')
                 .style({ strokeWidth: 7 })
 
@@ -649,10 +655,10 @@ struct AIPractice {
                 Text(this.result().score.toString())
                   .fontSize(23.0)
                   .fontWeight(FontWeight.Bold)
-                  .fontColor(Color.White)
+                  .fontColor('#8A7A50')
                 Text('达标度')
                   .fontSize(11.0)
-                  .fontColor('#E3EBFF')
+                  .fontColor('#55402F')
               }
               .alignItems(HorizontalAlign.Center)
             }
@@ -661,8 +667,8 @@ struct AIPractice {
           .width('100%')
           .padding(18)
           .borderRadius(18)
-          .linearGradient({ angle: 135, colors: [['#4A7BF8', 0.0], ['#2B57E5', 1.0]] })
-          .shadow({ radius: 12, color: '#333B6BF6', offsetY: 6 })
+          .backgroundColor('#FEF8E3')
+          .shadow({ radius: 12, color: '#14000000', offsetY: 6 })
           .alignItems(VerticalAlign.Center)
           .margin({ bottom: 14 })
 
@@ -671,7 +677,7 @@ struct AIPractice {
             Row({ space: 7 }) {
               Text('✦')
                 .fontSize(15.0)
-                .fontColor(PRIMARY)
+                .fontColor(ACCENT)
               Text('改进建议')
                 .fontSize(17.5)
                 .fontWeight(FontWeight.Bold)
@@ -685,11 +691,11 @@ struct AIPractice {
                 Text((i + 1).toString())
                   .fontSize(13.0)
                   .fontWeight(FontWeight.Bold)
-                  .fontColor(PRIMARY)
+                  .fontColor(ACCENT)
                   .width(21)
                   .height(21)
                   .borderRadius(11)
-                  .backgroundColor('#EAF1FF')
+                  .backgroundColor('#FEF8E3')
                   .textAlign(TextAlign.Center)
                   .margin({ right: 10, top: 2 })
 
@@ -700,7 +706,7 @@ struct AIPractice {
                     .fontColor(TEXT_MAIN)
                   Text(a.desc)
                     .fontSize(14.5)
-                    .fontColor('#5A6473')
+                    .fontColor('#9A8A6E')
                     .lineHeight(21)
                 }
                 .layoutWeight(1)
@@ -738,17 +744,17 @@ struct AIPractice {
                 Text('✓')
                   .fontSize(14.0)
                   .fontWeight(FontWeight.Bold)
-                  .fontColor('#0FA968')
+                  .fontColor('#2E9E63')
                 Text(b)
                   .fontSize(14.5)
-                  .fontColor('#2C3542')
+                  .fontColor('#55402F')
                   .lineHeight(21)
                   .layoutWeight(1)
               }
               .width('100%')
               .padding({ left: 12, right: 12, top: 10, bottom: 10 })
               .borderRadius(11)
-              .backgroundColor('#F5F8FD')
+              .backgroundColor('#FFFFFF')
               .alignItems(VerticalAlign.Center)
               .margin({ bottom: 8 })
             }, (b: string) => b)
@@ -782,13 +788,13 @@ struct AIPractice {
         Text('再分析一张')
           .fontSize(17.0)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#3B4A66')
+          .fontColor('#55402F')
           .layoutWeight(1)
           .height(48)
           .textAlign(TextAlign.Center)
           .borderRadius(24)
           .backgroundColor(Color.White)
-          .border({ width: 1, color: '#DDE4EE' })
+          .border({ width: 1, color: '#FEF8E3' })
           .onClick(() => {
             this.reset();
           })
@@ -796,13 +802,13 @@ struct AIPractice {
         Text('保存到我的')
           .fontSize(17.0)
           .fontWeight(FontWeight.Bold)
-          .fontColor(Color.White)
+          .fontColor('#8A7A50')
           .layoutWeight(1)
           .height(48)
           .textAlign(TextAlign.Center)
           .borderRadius(24)
           .backgroundColor(PRIMARY)
-          .shadow({ radius: 10, color: '#333B6BF6', offsetY: 4 })
+          .shadow({ radius: 10, color: '#14000000', offsetY: 4 })
           .onClick(() => {
             this.toast('已保存到「我的 · 实操记录」');
           })
@@ -810,7 +816,7 @@ struct AIPractice {
       .width('100%')
       .padding({ left: 16, right: 16, top: 10, bottom: 16 })
       .backgroundColor(Color.White)
-      .border({ width: { top: 1 }, color: '#F1F4F9' })
+      .border({ width: { top: 1 }, color: '#F2ECD8' })
     }
     .width('100%')
     .height('100%')

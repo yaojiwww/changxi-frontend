@@ -101,7 +101,7 @@ struct ExamReportPage {
     .height(52)
     .margin({ bottom: 8 })
     .borderRadius(10)
-    .backgroundColor(cell.correct ? '#22C55E' : '#EF4444')
+    .backgroundColor(cell.correct ? '#2E9E63' : '#D9534F')
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
   }
@@ -113,30 +113,30 @@ struct ExamReportPage {
       Text(item.stem)
         .fontSize(16.0)
         .fontWeight(FontWeight.Medium)
-        .fontColor('#1A202C')
+        .fontColor('#55402F')
         .lineHeight(24)
         .width('100%')
 
       Row({ space: 16 }) {
         Text() {
-          Span('你的答案 ').fontSize(14.0).fontColor('#8A94A6')
-          Span(item.userAnswer).fontSize(14.0).fontWeight(FontWeight.Bold).fontColor('#EF4444')
+          Span('你的答案 ').fontSize(14.0).fontColor('#9A8A6E')
+          Span(item.userAnswer).fontSize(14.0).fontWeight(FontWeight.Bold).fontColor('#D9534F')
         }
 
         Text() {
-          Span('正确答案 ').fontSize(14.0).fontColor('#8A94A6')
-          Span(item.correctOption).fontSize(14.0).fontWeight(FontWeight.Bold).fontColor('#22C55E')
+          Span('正确答案 ').fontSize(14.0).fontColor('#9A8A6E')
+          Span(item.correctOption).fontSize(14.0).fontWeight(FontWeight.Bold).fontColor('#2E9E63')
         }
       }
       .width('100%')
 
       Text(item.explanation)
         .fontSize(14.0)
-        .fontColor('#4A5568')
+        .fontColor('#9A8A6E')
         .lineHeight(20)
         .width('100%')
         .padding({ left: 12, right: 12, top: 10, bottom: 10 })
-        .backgroundColor('#F7F9FC')
+        .backgroundColor('#FFFFFF')
         .borderRadius(10)
     }
     .width('100%')
@@ -151,7 +151,7 @@ struct ExamReportPage {
         Text('‹')
           .fontSize(34.0)
           .fontWeight(FontWeight.Medium)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
           .padding({ left: 16, right: 12, top: 4, bottom: 4 })
           .onClick(() => {
             this.goBack();
@@ -160,31 +160,28 @@ struct ExamReportPage {
         Text('模拟考试成绩')
           .fontSize(18.0)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
           .layoutWeight(1)
       }
       .width('100%')
       .height(56)
       .backgroundColor(Color.White)
       .alignItems(VerticalAlign.Center)
-      .border({ width: { bottom: 1 }, color: '#F1F4F9' })
+      .border({ width: { bottom: 1 }, color: '#F2ECD8' })
 
       if (this.report === null) {
         // 无报告数据：提示并返回，不做二次请求
         Column({ space: 14 }) {
           Text('报告数据缺失')
             .fontSize(17.0)
-            .fontColor('#8A94A6')
+            .fontColor('#9A8A6E')
           Text('返回')
             .fontSize(16.0)
             .fontWeight(FontWeight.Bold)
-            .fontColor(Color.White)
+            .fontColor('#8A7A50')
             .padding({ left: 30, right: 30, top: 10, bottom: 10 })
             .borderRadius(20)
-            .linearGradient({
-              angle: 90,
-              colors: [['#4A8CF8', 0.0], ['#2B57E5', 1.0]]
-            })
+            .backgroundColor('#FBDE71')
             .onClick(() => {
               this.goBack();
             })
@@ -197,7 +194,7 @@ struct ExamReportPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F7FA')
+    .backgroundColor('#FDFDED')
   }
 
   @Builder
@@ -209,7 +206,7 @@ struct ExamReportPage {
           Text(this.report!.paperTitle)
             .fontSize(21.0)
             .fontWeight(FontWeight.Bold)
-            .fontColor(Color.White)
+            .fontColor('#8A7A50')
             .width('100%')
             .maxLines(2)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -219,7 +216,7 @@ struct ExamReportPage {
             Progress({ value: this.report!.score, total: 100, type: ProgressType.Ring })
               .width(130)
               .height(130)
-              .color(Color.White)
+              .color('#8A7A50')
               .style({ strokeWidth: 10 })
               .backgroundColor('#33FFFFFF')
 
@@ -227,10 +224,10 @@ struct ExamReportPage {
               Text(this.scoreText(this.report!))
                 .fontSize(39.0)
                 .fontWeight(FontWeight.Bold)
-                .fontColor(Color.White)
+                .fontColor('#8A7A50')
               Text('总分值')
                 .fontSize(13.0)
-                .fontColor('#DCE7FF')
+                .fontColor('#55402F')
             }
           }
           .width(130)
@@ -239,15 +236,12 @@ struct ExamReportPage {
 
           Text(`交卷时间 ${this.report!.submitTime}`)
             .fontSize(14.0)
-            .fontColor('#DCE7FF')
+            .fontColor('#55402F')
         }
         .width('100%')
         .padding(18)
         .borderRadius(16)
-        .linearGradient({
-          angle: 135,
-          colors: [['#4A8CF8', 0.0], ['#2B57E5', 1.0]]
-        })
+        .backgroundColor('#FEF8E3')
         .alignItems(HorizontalAlign.Center)
         .margin({ bottom: 14 })
 
@@ -257,25 +251,25 @@ struct ExamReportPage {
             Text(this.formatDuration(this.report!.duration))
               .fontSize(21.0)
               .fontWeight(FontWeight.Bold)
-              .fontColor('#1A202C')
+              .fontColor('#55402F')
             Text('练习时长')
               .fontSize(13.0)
-              .fontColor('#8A94A6')
+              .fontColor('#9A8A6E')
           }
           .layoutWeight(1)
           .padding({ top: 14, bottom: 14 })
           .alignItems(HorizontalAlign.Center)
 
-          Divider().vertical(true).height(36).color('#E5EAF2')
+          Divider().vertical(true).height(36).color('#FEF8E3')
 
           Column({ space: 6 }) {
             Text(`${this.report!.correctCount}/${this.report!.total}`)
               .fontSize(21.0)
               .fontWeight(FontWeight.Bold)
-              .fontColor('#2B57E5')
+              .fontColor('#E4842A')
             Text('答对题数')
               .fontSize(13.0)
-              .fontColor('#8A94A6')
+              .fontColor('#9A8A6E')
           }
           .layoutWeight(1)
           .padding({ top: 14, bottom: 14 })
@@ -293,13 +287,13 @@ struct ExamReportPage {
             Text('AI 评估结果')
               .fontSize(17.0)
               .fontWeight(FontWeight.Bold)
-              .fontColor('#1A202C')
+              .fontColor('#55402F')
 
             Text(this.evalLevel(this.report!.score))
               .fontSize(12.0)
               .fontWeight(FontWeight.Bold)
-              .fontColor(Color.White)
-              .backgroundColor(this.report!.score >= 60 ? '#3B82F6' : '#F59E0B')
+              .fontColor('#8A7A50')
+              .backgroundColor(this.report!.score >= 60 ? '#E4842A' : '#FBDE71')
               .padding({ left: 8, right: 8, top: 3, bottom: 3 })
               .borderRadius(8)
           }
@@ -308,7 +302,7 @@ struct ExamReportPage {
 
           Text(this.evalText(this.report!))
             .fontSize(14.5)
-            .fontColor('#4A5568')
+            .fontColor('#9A8A6E')
             .lineHeight(22)
             .width('100%')
 
@@ -317,17 +311,17 @@ struct ExamReportPage {
             Text('向 AI 提问，解答本次考试的薄弱点')
               .fontSize(14.5)
               .fontWeight(FontWeight.Medium)
-              .fontColor('#2B57E5')
+              .fontColor('#E4842A')
               .layoutWeight(1)
 
             Text('›')
               .fontSize(19.0)
-              .fontColor('#2B57E5')
+              .fontColor('#E4842A')
           }
           .width('100%')
           .padding({ left: 14, right: 14, top: 12, bottom: 12 })
           .borderRadius(12)
-          .backgroundColor('#EEF3FF')
+          .backgroundColor('#FEF8E3')
           .alignItems(VerticalAlign.Center)
           .onClick(() => {
             this.goAskAI();
@@ -344,7 +338,7 @@ struct ExamReportPage {
         Text('答题卡')
           .fontSize(17.0)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
           .width('100%')
           .margin({ bottom: 10 })
 
@@ -363,7 +357,7 @@ struct ExamReportPage {
         Text('试卷解析')
           .fontSize(17.0)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
           .width('100%')
           .margin({ bottom: 10 })
 
@@ -371,7 +365,7 @@ struct ExamReportPage {
           Column({ space: 8 }) {
             Text('全部答对，没有需要解析的错题')
               .fontSize(15.0)
-              .fontColor('#8A94A6')
+              .fontColor('#9A8A6E')
           }
           .width('100%')
           .padding(20)
@@ -384,7 +378,7 @@ struct ExamReportPage {
             ForEach(this.report!.parses, (item: ExamParseItem, idx: number) => {
               this.ParseItem(item)
               if (idx < this.report!.parses.length - 1) {
-                Divider().width('100%').height(1).color('#F1F4F9')
+                Divider().width('100%').height(1).color('#F8F4E8')
               }
             }, (item: ExamParseItem, idx: number) => `${idx}_${item.questionId}`)
           }
@@ -400,15 +394,12 @@ struct ExamReportPage {
           Text('返回列表')
             .fontSize(17.0)
             .fontWeight(FontWeight.Bold)
-            .fontColor(Color.White)
+            .fontColor('#8A7A50')
         }
         .width('100%')
         .height(48)
         .borderRadius(24)
-        .linearGradient({
-          angle: 90,
-          colors: [['#4A8CF8', 0.0], ['#2B57E5', 1.0]]
-        })
+        .backgroundColor('#FBDE71')
         .justifyContent(FlexAlign.Center)
         .alignItems(VerticalAlign.Center)
         .onClick(() => {

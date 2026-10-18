@@ -319,13 +319,21 @@ struct ExamAnswerPage {
     });
   }
 
-  // 选项样式：仅点击瞬时高亮，不显示对错
+  // 选项样式（参考图圆圈字母）：选中=橙底白字圆圈，未选=描边圆圈
   private optionBorder(index: number): string {
-    return index === this.selectedIndex ? '#2B57E5' : '#E5EAF2';
+    return index === this.selectedIndex ? '#FBDE71' : '#F2ECD8';
   }
 
   private optionBg(index: number): string {
-    return index === this.selectedIndex ? '#EEF3FF' : '#FFFFFF';
+    return index === this.selectedIndex ? '#F2ECD8' : '#FFFFFF';
+  }
+
+  private circleBg(index: number): string {
+    return index === this.selectedIndex ? '#FBDE71' : '#FFFFFF';
+  }
+
+  private circleFg(index: number): string {
+    return index === this.selectedIndex ? '#FFFFFF' : '#9A8A6E';
   }
 
   private get currentQuestion(): ExamQuestion {
@@ -334,28 +342,31 @@ struct ExamAnswerPage {
 
   @Builder
   OptionItem(index: number) {
-    Row({ space: 10 }) {
+    Row({ space: 12 }) {
       Text(OPTION_LETTERS[index])
         .fontSize(15.0)
         .fontWeight(FontWeight.Bold)
-        .fontColor('#2B57E5')
-        .width(26)
-        .height(26)
+        .fontColor(this.circleFg(index))
+        .width(30)
+        .height(30)
         .textAlign(TextAlign.Center)
-        .borderRadius(13)
-        .backgroundColor('#EEF3FF')
+        .borderRadius(15)
+        .backgroundColor(this.circleBg(index))
+        .border({ width: 1.5, color: index === this.selectedIndex ? '#FBDE71' : '#FEF8E3' })
 
       Text(this.currentQuestion.options[index])
         .fontSize(16.0)
-        .fontColor('#1A202C')
-        .margin({top:12})
+        .fontColor('#55402F')
         .lineHeight(22)
+        .layoutWeight(1)
     }
     .width('100%')
     .padding({ left: 14, right: 14, top: 14, bottom: 14 })
-    .borderRadius(12)
+    .borderRadius(14)
     .backgroundColor(this.optionBg(index))
     .border({ width: 1.5, color: this.optionBorder(index) })
+    .margin({ bottom: 10 })
+    .alignItems(VerticalAlign.Center)
     .onClick(() => {
       this.selectOption(index);
     })
@@ -364,69 +375,104 @@ struct ExamAnswerPage {
   build() {
     Stack({ alignContent: Alignment.TopStart }) {
       Column() {
-        // 顶部返回栏：标题 + 倒计时
+        // 顶部工具栏（参考题库答题页：× + 计时胶囊 + 收藏 + 答题卡）
         Row() {
-          Text('‹')
-            .fontSize(34.0)
+          Text('×')
+            .fontSize(26.0)
             .fontWeight(FontWeight.Medium)
-            .fontColor('#1A202C')
-            .padding({ left: 16, right: 12, top: 4, bottom: 4 })
+            .fontColor('#55402F')
+            .padding({ left: 16, right: 10, top: 4, bottom: 4 })
             .onClick(() => {
               this.goBack();
             })
 
-          Text(this.paperTitle)
-            .fontSize(18.0)
-            .fontWeight(FontWeight.Bold)
-            .fontColor('#1A202C')
-            .margin({top:12})
-            .maxLines(1)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
+          // 计时胶囊（不足5分钟变红）
+          Row({ space: 5 }) {
+            Text('⏱')
+              .fontSize(14.0)
+            Text(this.formatRemain(this.remainSec))
+              .fontSize(14.5)
+              .fontWeight(FontWeight.Bold)
+              .fontColor(this.remainSec < 300 ? '#D9534F' : '#E4842A')
+          }
+          .padding({ left: 10, right: 10, top: 6, bottom: 6 })
+          .borderRadius(14)
+          .backgroundColor(this.remainSec < 300 ? '#FDF3DC' : '#FEF8E3')
+          .alignItems(VerticalAlign.Center)
+
+          Blank()
 
           // 收藏星标
           if (this.questions.length > 0) {
             Text(this.starred ? '★' : '☆')
-              .fontSize(26.0)
-              .fontColor(this.starred ? '#F5A623' : '#8A94A6')
-              .padding({ left: 8, right: 6, top: 4, bottom: 4 })
+              .fontSize(24.0)
+              .fontColor(this.starred ? '#FBDE71' : '#B5A98D')
+              .padding({ left: 6, right: 10, top: 4, bottom: 4 })
               .onClick(() => {
                 this.toggleStar();
               })
 
-            // 答题卡入口：右上角胶囊按钮
+            // 答题卡入口
             Text('答题卡')
               .fontSize(13.5)
               .fontWeight(FontWeight.Medium)
-              .fontColor('#2B57E5')
-              .backgroundColor('#EEF3FF')
+              .fontColor('#E4842A')
+              .backgroundColor('#FEF8E3')
               .padding({ left: 11, right: 11, top: 6, bottom: 6 })
               .borderRadius(14)
-              .margin({ right: 8 })
+              .margin({ right: 14 })
               .onClick(() => {
                 this.confirmSubmit = false;
                 this.sheetOpen = true;
               })
           }
-
-          // 倒计时
-          Text(this.formatRemain(this.remainSec))
-            .fontSize(15.0)
-            .fontWeight(FontWeight.Bold)
-            .fontColor(this.remainSec < 300 ? '#EF4444' : '#2B57E5')
-            .padding({ left: 8, right: 16, top: 4, bottom: 4 })
         }
         .width('100%')
         .height(56)
         .backgroundColor(Color.White)
         .alignItems(VerticalAlign.Center)
-        .border({ width: { bottom: 1 }, color: '#F1F4F9' })
+        .border({ width: { bottom: 1 }, color: '#F2ECD8' })
+
+        // 标签芯片行（参考图：分类 + 题型 + 题号进度）
+        if (this.questions.length > 0) {
+          Row({ space: 8 }) {
+            Text(this.paperTitle !== '' ? this.paperTitle : '模拟考试')
+              .fontSize(12.5)
+              .fontWeight(FontWeight.Medium)
+              .fontColor('#E4842A')
+              .backgroundColor('#FEF8E3')
+              .padding({ left: 9, right: 9, top: 4, bottom: 4 })
+              .borderRadius(6)
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+              .constraintSize({ maxWidth: 180 })
+
+            Text('单选')
+              .fontSize(12.5)
+              .fontWeight(FontWeight.Medium)
+              .fontColor('#9A8A6E')
+              .backgroundColor('#FCF1D5')
+              .padding({ left: 9, right: 9, top: 4, bottom: 4 })
+              .borderRadius(6)
+
+            Blank()
+
+            Text(`${this.currentIndex + 1}/${this.questions.length}`)
+              .fontSize(16.0)
+              .fontWeight(FontWeight.Bold)
+              .fontColor('#55402F')
+          }
+          .width('100%')
+          .padding({ left: 16, right: 16, top: 12, bottom: 4 })
+          .alignItems(VerticalAlign.Center)
+        }
 
         // 空题库兜底
         if (this.questions.length === 0) {
           Column({ space: 10 }) {
             Text('暂无题目')
               .fontSize(17.0)
-              .fontColor('#8A94A6')
+              .fontColor('#9A8A6E')
           }
           .width('100%')
           .margin({top:12})
@@ -439,7 +485,7 @@ struct ExamAnswerPage {
               Text(this.currentQuestion.stem)
                 .fontSize(17.0)
                 .fontWeight(FontWeight.Medium)
-                .fontColor('#1A202C')
+                .fontColor('#55402F')
                 .lineHeight(26)
                 .width('100%')
                 .padding(16)
@@ -475,11 +521,11 @@ struct ExamAnswerPage {
               .fontSize(17.0)
               .fontWeight(FontWeight.Medium)
               .type(ButtonType.Capsule)
-              .backgroundColor(this.currentIndex > 0 && !this.submitting ? Color.White : '#EFF2F7')
-              .fontColor(this.currentIndex > 0 && !this.submitting ? '#3A4556' : '#8A94A6')
+              .backgroundColor(this.currentIndex > 0 && !this.submitting ? Color.White : '#F2ECD8')
+              .fontColor(this.currentIndex > 0 && !this.submitting ? '#55402F' : '#9A8A6E')
               .border({
                 width: 1.2,
-                color: this.currentIndex > 0 && !this.submitting ? '#DCE3EE' : '#DFE5EE'
+                color: this.currentIndex > 0 && !this.submitting ? '#FEF8E3' : '#FEF8E3'
               })
               .enabled(this.currentIndex > 0 && !this.submitting)
               .onClick(() => {
@@ -492,10 +538,10 @@ struct ExamAnswerPage {
               .fontSize(17.0)
               .fontWeight(FontWeight.Bold)
               .type(ButtonType.Capsule)
-              .backgroundColor(this.canSubmit ? '#2B57E5' : '#E7ECF4')
-              .fontColor(this.canSubmit ? Color.White : '#8A94A6')
+              .backgroundColor(this.canSubmit ? '#FBDE71' : '#FEF8E3')
+              .fontColor(this.canSubmit ? '#8A7A50' : '#9A8A6E')
               .shadow(this.canSubmit ?
-                { radius: 8, color: '#2E2B57E5', offsetY: 3 } :
+                { radius: 8, color: '#14000000', offsetY: 3 } :
                 { radius: 0, color: Color.Transparent, offsetY: 0 })
               .enabled(!this.submitting)
               .onClick(() => {
@@ -513,11 +559,11 @@ struct ExamAnswerPage {
           .width('100%')
           .padding({ left: 16, right: 16, top: 8, bottom: 16 })
           .backgroundColor(Color.White)
-          .border({ width: { top: 1 }, color: '#F1F4F9' })
+          .border({ width: { top: 1 }, color: '#F2ECD8' })
       }
       .width('100%')
       .height('100%')
-      .backgroundColor('#F5F7FA')
+      .backgroundColor('#FDFDED')
 
       // 交卷中遮罩
       if (this.submitting) {
@@ -535,7 +581,7 @@ struct ExamAnswerPage {
           .width(140)
           .height(120)
           .borderRadius(16)
-          .backgroundColor('#CC1A202C')
+          .backgroundColor('#E4842A')
           .justifyContent(FlexAlign.Center)
           .alignItems(HorizontalAlign.Center)
         }
@@ -557,16 +603,16 @@ struct ExamAnswerPage {
   // 答题卡格子配色：当前题=蓝底白字，已作答=浅蓝底蓝字，未作答=灰底灰字
   private sheetCellBg(i: number): string {
     if (i === this.currentIndex) {
-      return '#2B57E5';
+      return '#E4842A';
     }
-    return this.answers[i] !== '' ? '#EEF3FF' : '#F1F4F9';
+    return this.answers[i] !== '' ? '#FEF8E3' : '#F2ECD8';
   }
 
   private sheetCellFg(i: number): string {
     if (i === this.currentIndex) {
       return '#FFFFFF';
     }
-    return this.answers[i] !== '' ? '#2B57E5' : '#5A6B85';
+    return this.answers[i] !== '' ? '#E4842A' : '#9A8A6E';
   }
 
   // 答题卡底部面板：点题号直接跳到该题，支持提前交卷（有未答题需二次确认）
@@ -589,14 +635,14 @@ struct ExamAnswerPage {
           Text('答题卡')
             .fontSize(17.0)
             .fontWeight(FontWeight.Bold)
-            .fontColor('#1A202C')
+            .fontColor('#55402F')
 
           Blank()
 
           Text(`已答 ${this.questions.length - this.unansweredCount()}/${this.questions.length}`)
             .fontSize(14.0)
             .fontWeight(FontWeight.Medium)
-            .fontColor('#2B57E5')
+            .fontColor('#E4842A')
         }
         .width('100%')
         .alignItems(VerticalAlign.Center)
@@ -624,12 +670,12 @@ struct ExamAnswerPage {
 
         // 图例
         Row({ space: 6 }) {
-          Circle().width(8).height(8).fill('#2B57E5')
-          Text('当前题').fontSize(12.0).fontColor('#8A94A6')
-          Circle().width(8).height(8).fill('#A9C2FB').margin({ left: 12 })
-          Text('已作答').fontSize(12.0).fontColor('#8A94A6')
-          Circle().width(8).height(8).fill('#DDE3EE').margin({ left: 12 })
-          Text('未作答').fontSize(12.0).fontColor('#8A94A6')
+          Circle().width(8).height(8).fill('#E4842A')
+          Text('当前题').fontSize(12.0).fontColor('#9A8A6E')
+          Circle().width(8).height(8).fill('#FEF8E3').margin({ left: 12 })
+          Text('已作答').fontSize(12.0).fontColor('#9A8A6E')
+          Circle().width(8).height(8).fill('#FEF8E3').margin({ left: 12 })
+          Text('未作答').fontSize(12.0).fontColor('#9A8A6E')
         }
         .width('100%')
         .margin({ top: 16 })
@@ -642,15 +688,12 @@ struct ExamAnswerPage {
             : (this.confirmSubmit ? '再次点击，确认交卷' : '交卷'))
             .fontSize(17.0)
             .fontWeight(FontWeight.Bold)
-            .fontColor(Color.White)
+            .fontColor('#8A7A50')
         }
         .width('100%')
         .height(48)
         .borderRadius(24)
-        .linearGradient({
-          angle: 90,
-          colors: [['#4A8CF8', 0.0], ['#2B57E5', 1.0]]
-        })
+        .backgroundColor('#FBDE71')
         .justifyContent(FlexAlign.Center)
         .alignItems(VerticalAlign.Center)
         .margin({ top: 16 })

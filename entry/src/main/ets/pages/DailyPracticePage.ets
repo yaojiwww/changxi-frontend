@@ -307,7 +307,27 @@ const DEMO_TIPS: DemoTip[] = [
   { questionId: 'd7', tip: '《未成年人保护法》明确：父母或者其他监护人是保障未成年人合法权益的第一责任人。' },
   { questionId: 'd8', tip: '患传染病痊愈后应凭医疗机构证明、隔离期满方可返园，避免疫情在托幼机构内传播。' },
   { questionId: 'd9', tip: '任何情况下都不能让幼儿独自外出玩耍，必须专人看护并随时清点人数。' },
-  { questionId: 'd10', tip: '含氯消毒剂浸泡玩具后须用清水冲洗干净并晾干，避免消毒剂残留刺激婴幼儿皮肤。' }
+  { questionId: 'd10', tip: '含氯消毒剂浸泡玩具后须用清水冲洗干净并晾干，避免消毒剂残留刺激婴幼儿皮肤。' },
+  { questionId: 'd11', tip: '户外活动前必须先检查场地与器械（尖锐边角、松动螺丝、积水、破损地面等），确认安全后再组织活动，这是预防跌落、碰撞伤害的第一道关口。' },
+  { questionId: 'd12', tip: '擦伤后先用流动清水冲掉泥沙等污物，再用碘伏由内向外消毒。直接贴创可贴会把污物闷在伤口内，用手揉搓或涂牙膏都容易引起感染。' },
+  { questionId: 'd13', tip: '鼻腔异物位置深、幼儿又易挣扎，自行掏取可能把异物推得更深甚至滑入气道。应让幼儿保持安静、不要仰头，立即送医由专业人员取出。' },
+  { questionId: 'd14', tip: '发现幼儿发热应先测量并记录体温，同时通知保健医进一步处理、联系家长。自行喂药、对着吹风扇或让其一直睡都可能延误病情。' },
+  { questionId: 'd15', tip: '含氯消毒剂有腐蚀性和刺激性，配制时须戴手套、在通风处进行，并且现配现用（有效氯会随时间衰减）；严禁与洁厕灵等酸性清洁剂混用，否则会产生有毒氯气。' },
+  { questionId: 'd16', tip: '规范洗手要在流动水下用洗手液按七步洗手法搓洗。一盆水轮流洗、用湿巾代替洗手、共用毛巾擦手都会造成交叉感染。' },
+  { questionId: 'd17', tip: '发现手足口病病例应立即隔离患儿、对玩具餐具等全面消毒，并加强晨午检和全日观察，同时按规定上报，不能瞒报、迟报。' },
+  { questionId: 'd18', tip: '活动室每天开窗通风不少于 2 次、每次不少于 30 分钟，可有效降低室内病原体浓度。开空调不能替代通风，只在离园后通风也远远不够。' },
+  { questionId: 'd19', tip: '热汤应先盛好并放在幼儿够不到的远离处，再分发餐具。让幼儿自己端热汤、互相传递是托幼机构烫伤的高发原因。' },
+  { questionId: 'd20', tip: '处理呕吐物要先疏散其他幼儿、开窗通风，保育师戴好口罩手套，用含氯消毒液覆盖作用一段时间后再清除。用拖把直接拖、干抹布擦会让病原体随气溶胶扩散。' },
+  { questionId: 'd21', tip: '喂药必须凭家长书面委托，核对药名、剂量、时间后按医嘱喂服并做好记录。擅自加量、混在饭菜里喂、让幼儿自行服用都可能造成用药错误。' },
+  { questionId: 'd22', tip: '鼻腔异物不要用镊子自行夹取，也不要按压鼻梁或大量喝水冲，这些做法会让异物移位甚至误吸。应保持幼儿安静、避免哭闹，立即送医。' },
+  { questionId: 'd23', tip: '发现法定传染病须按当地规定时限及时上报疾控或妇幼保健机构，不得迟报、瞒报、漏报，同时配合做好隔离、消毒和密切接触者观察。' },
+  { questionId: 'd24', tip: '玩具、图书要按材质选择适宜方式（清洗、消毒液浸泡、暴晒、紫外线等）定期消毒。只在学期末或有污渍时才处理，达不到预防疾病的效果。' },
+  { questionId: 'd25', tip: '晨检「一摸二看三问四查」中的三问，是向家长了解幼儿在家的饮食、睡眠、大小便和健康状况，以便及早发现异常。' },
+  { questionId: 'd26', tip: '正确按压 10 分钟仍未止血，说明出血点较大或可能存在凝血问题，应立即送医。继续长时间按压、让幼儿平躺、塞纸巾都会延误处理。' },
+  { questionId: 'd27', tip: '消毒柜、电热水壶等设备要严格按操作规程使用，放在幼儿够不到的位置，操作时专人看护幼儿，绝不能让幼儿插拔电源。' },
+  { questionId: 'd28', tip: '幼儿应随渴随喝，保育师上下午各组织一次集体饮水，并保证随时能喝到温开水。限制饮水会影响代谢、增加泌尿系统感染的风险。' },
+  { questionId: 'd29', tip: '惊厥时应让幼儿就地侧卧、松开衣领保持呼吸道通畅，移开周围硬物，不要按压四肢、不要往嘴里塞东西、不要抱起摇晃，同时立即送医。' },
+  { questionId: 'd30', tip: '《幼儿园工作规程》明确保育师应配合教师做好保育工作，坚持保育与教育相结合，关注幼儿个体差异，而不是只负责清洁卫生。' }
 ];
 
 // 答题页内的题目模型：@Trace 驱动选中态刷新
@@ -514,7 +534,7 @@ struct DailyPractice {
 
   // 印章颜色：答对绿 / 答错红
   private stampColor(): string {
-    return this.questions[this.cur].selected === this.currentCorrectKey() ? '#0E9F6E' : '#E5484D';
+    return this.questions[this.cur].selected === this.currentCorrectKey() ? '#2E9E63' : '#D9534F';
   }
 
   // 当前题的演示统计值：同一题每次进入固定，不同题之间有差异
@@ -536,7 +556,17 @@ struct DailyPractice {
       return '';
     }
     const t = DEMO_TIPS.find((x: DemoTip): boolean => x.questionId === q.questionId);
-    return t !== undefined ? t.tip : '';
+    if (t !== undefined && t.tip !== '') {
+      return t.tip;
+    }
+    // 兜底：万一新增题目没配解析，也要给出可读结论，不能留空白
+    const key = this.currentCorrectKey();
+    const idx = ['A', 'B', 'C', 'D'].indexOf(key);
+    const opt = (idx >= 0 && idx < q.options.length) ? q.options[idx] : '';
+    if (opt === '') {
+      return '请结合「' + q.knowledgePoint + '」复习本题考点。';
+    }
+    return '正确答案是 ' + key + '：' + opt + '。本题考点属于「' + q.knowledgePoint + '」，建议结合该知识点一起掌握。';
   }
 
   private statErrorProne(): string {
@@ -785,17 +815,17 @@ struct DailyPractice {
   private cardTextColor(questionId: string): string {
     const item = this.findCard(questionId);
     if (item === undefined) {
-      return '#8A94A6';   // 未答
+      return '#9A8A6E';   // 未答
     }
-    return item.correct ? '#0E9F6E' : '#E5484D';
+    return item.correct ? '#2E9E63' : '#D9534F';
   }
 
   private cardBgColor(questionId: string): string {
     const item = this.findCard(questionId);
     if (item === undefined) {
-      return '#F1F4F9';   // 未答
+      return '#F2ECD8';   // 未答
     }
-    return item.correct ? '#E8F7F1' : '#FDECEC';
+    return item.correct ? '#F0F6EC' : '#FDF3DC';
   }
 
   // 回看某题（报告页点答题卡）
@@ -808,19 +838,19 @@ struct DailyPractice {
     const r = this.report;
     const q = this.questions[this.reviewIndex];
     if (r === null || q === undefined) {
-      return '#5A6B85';
+      return '#9A8A6E';
     }
     const item = r.answerCard.find((x: AnswerCardItem): boolean => x.questionId === q.questionId);
     if (item === undefined) {
-      return '#5A6B85';
+      return '#9A8A6E';
     }
     if (optKey === item.correctOption) {
-      return '#0E9F6E';
+      return '#2E9E63';
     }
     if (optKey === item.userAnswer && !item.correct) {
-      return '#E5484D';
+      return '#D9534F';
     }
-    return '#5A6B85';
+    return '#9A8A6E';
   }
 
   private reviewOptBg(optKey: string): string {
@@ -834,10 +864,10 @@ struct DailyPractice {
       return '#FFFFFF';
     }
     if (optKey === item.correctOption) {
-      return '#F2FBF7';
+      return '#F0F6EC';
     }
     if (optKey === item.userAnswer && !item.correct) {
-      return '#FFF6F6';
+      return '#FDF3DC';
     }
     return '#FFFFFF';
   }
@@ -853,7 +883,7 @@ struct DailyPractice {
         Text('‹')
           .fontSize(34.0)
           .fontWeight(FontWeight.Medium)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
           .padding({ left: 16, right: 12, top: 4, bottom: 4 })
           .onClick(() => {
             this.getUIContext().getRouter().back();
@@ -862,14 +892,14 @@ struct DailyPractice {
         Text(this.finished ? '练习报告' : '每日一练')
           .fontSize(18.0)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
           .layoutWeight(1)
 
         if (!this.finished && this.questions.length > 0) {
           // 收藏星标：加入/取消收藏，同步「我的收藏」
           Text(this.starred ? '★' : '☆')
             .fontSize(24.0)
-            .fontColor(this.starred ? '#F5A623' : '#B9C2D0')
+            .fontColor(this.starred ? '#FBDE71' : '#B5A98D')
             .padding({ left: 2, right: 2 })
             .onClick(() => {
               this.toggleStar();
@@ -877,14 +907,14 @@ struct DailyPractice {
 
           Text((this.cur + 1).toString() + '/' + this.questions.length.toString())
             .fontSize(14.0)
-            .fontColor('#8A94A6')
+            .fontColor('#9A8A6E')
 
           // 答题卡入口：右上角胶囊按钮
           Text('答题卡')
             .fontSize(13.5)
             .fontWeight(FontWeight.Medium)
-            .fontColor('#3B6BF6')
-            .backgroundColor('#EAF0FF')
+            .fontColor('#E4842A')
+            .backgroundColor('#FEF8E3')
             .padding({ left: 11, right: 11, top: 6, bottom: 6 })
             .borderRadius(14)
             .margin({ left: 12, right: 16 })
@@ -899,15 +929,15 @@ struct DailyPractice {
       .height(56)
       .backgroundColor(Color.White)
       .alignItems(VerticalAlign.Center)
-      .border({ width: { bottom: 1 }, color: '#F1F4F9' })
+      .border({ width: { bottom: 1 }, color: '#F2ECD8' })
 
       // ===== 主体 =====
       if (this.loading) {
         Column({ space: 12 }) {
-          LoadingProgress().width(36).height(36).color('#3B6BF6')
+          LoadingProgress().width(36).height(36).color('#E4842A')
           Text('正在获取今日题目...')
             .fontSize(14.0)
-            .fontColor('#8A94A6')
+            .fontColor('#9A8A6E')
         }
         .width('100%')
         .layoutWeight(1)
@@ -920,7 +950,7 @@ struct DailyPractice {
         Column() {
           Text('暂无题目')
             .fontSize(15.0)
-            .fontColor('#8A94A6')
+            .fontColor('#9A8A6E')
         }
         .width('100%')
         .layoutWeight(1)
@@ -929,7 +959,7 @@ struct DailyPractice {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F7FA')
+    .backgroundColor('#FDFDED')
   }
 
   // ==================== 答题视图 ====================
@@ -941,12 +971,12 @@ struct DailyPractice {
       Column() {
         // 进度条
         Stack({ alignContent: Alignment.Start }) {
-          Row().width('100%').height(4).borderRadius(2).backgroundColor('#E8EDF5')
+          Row().width('100%').height(4).borderRadius(2).backgroundColor('#FEF8E3')
           Row()
             .width((this.cur + 1) / this.questions.length * 100 + '%')
             .height(4)
             .borderRadius(2)
-            .backgroundColor('#3B6BF6')
+            .backgroundColor('#FBDE71')
         }
         .width('100%')
         .padding({ left: 16, right: 16, top: 12, bottom: 10 })
@@ -957,22 +987,22 @@ struct DailyPractice {
             Column({ space: 10 }) {
               Text(this.questions[this.cur].knowledgePoint === '' ? '单选题' : this.questions[this.cur].knowledgePoint)
                 .fontSize(12.0)
-                .fontColor('#3B6BF6')
-                .backgroundColor('#EAF0FF')
+                .fontColor('#E4842A')
+                .backgroundColor('#FEF8E3')
                 .padding({ left: 8, right: 8, top: 3, bottom: 3 })
                 .borderRadius(6)
 
               Text(this.questions[this.cur].stem)
                 .fontSize(17.5)
                 .fontWeight(FontWeight.Medium)
-                .fontColor('#1A202C')
+                .fontColor('#55402F')
                 .lineHeight(26)
             }
             .width('100%')
             .padding(16)
             .borderRadius(16)
             .backgroundColor(Color.White)
-            .border({ width: 1, color: '#EEF2F6' })
+            .border({ width: 1, color: '#F2ECD8' })
             .alignItems(HorizontalAlign.Start)
             .margin({ bottom: 12 })
 
@@ -1003,11 +1033,11 @@ struct DailyPractice {
             .fontSize(17.0)
             .fontWeight(FontWeight.Medium)
             .type(ButtonType.Capsule)
-            .backgroundColor(this.cur > 0 && !this.submitting ? Color.White : '#EFF2F7')
-            .fontColor(this.cur > 0 && !this.submitting ? '#3A4556' : '#8A94A6')
+            .backgroundColor(this.cur > 0 && !this.submitting ? Color.White : '#F2ECD8')
+            .fontColor(this.cur > 0 && !this.submitting ? '#55402F' : '#9A8A6E')
             .border({
               width: 1.2,
-              color: this.cur > 0 && !this.submitting ? '#DCE3EE' : '#DFE5EE'
+              color: this.cur > 0 && !this.submitting ? '#FEF8E3' : '#FEF8E3'
             })
             .enabled(this.cur > 0 && !this.submitting)
             .onClick(() => {
@@ -1022,10 +1052,10 @@ struct DailyPractice {
             .fontSize(17.0)
             .fontWeight(FontWeight.Bold)
             .type(ButtonType.Capsule)
-            .backgroundColor(this.answeredCurrent() ? '#3B6BF6' : '#E7ECF4')
-            .fontColor(this.answeredCurrent() ? Color.White : '#8A94A6')
+            .backgroundColor(this.answeredCurrent() ? '#FBDE71' : '#FEF8E3')
+            .fontColor(this.answeredCurrent() ? '#8A7A50' : '#9A8A6E')
             .shadow(this.answeredCurrent() ?
-              { radius: 8, color: '#2E3B6BF6', offsetY: 3 } :
+              { radius: 8, color: '#14000000', offsetY: 3 } :
               { radius: 0, color: Color.Transparent, offsetY: 0 })
             .enabled(!this.submitting)
             .onClick(() => {
@@ -1035,7 +1065,7 @@ struct DailyPractice {
         .width('100%')
         .padding({ left: 16, right: 16, top: 8, bottom: 16 })
         .backgroundColor(Color.White)
-        .border({ width: { top: 1 }, color: '#EEF2F6' })
+        .border({ width: { top: 1 }, color: '#F2ECD8' })
       }
       .width('100%')
       .height('100%')
@@ -1063,16 +1093,16 @@ struct DailyPractice {
   // 答题卡格子配色：当前题=蓝底白字，已作答=浅蓝底蓝字，未作答=灰底灰字
   private sheetCellBg(i: number): string {
     if (i === this.cur) {
-      return '#3B6BF6';
+      return '#E4842A';
     }
-    return this.questions[i].selected !== '' ? '#EAF0FF' : '#F1F4F9';
+    return this.questions[i].selected !== '' ? '#FEF8E3' : '#F2ECD8';
   }
 
   private sheetCellFg(i: number): string {
     if (i === this.cur) {
       return '#FFFFFF';
     }
-    return this.questions[i].selected !== '' ? '#3B6BF6' : '#5A6B85';
+    return this.questions[i].selected !== '' ? '#E4842A' : '#9A8A6E';
   }
 
   // 答题卡底部面板：点题号直接跳到该题，点遮罩关闭
@@ -1094,13 +1124,13 @@ struct DailyPractice {
           Text('答题卡')
             .fontSize(17.0)
             .fontWeight(FontWeight.Bold)
-            .fontColor('#1A202C')
+            .fontColor('#55402F')
 
           Blank()
 
           Text('已答 ' + this.answeredCount().toString() + '/' + this.questions.length.toString())
             .fontSize(14.0)
-            .fontColor('#3B6BF6')
+            .fontColor('#E4842A')
             .fontWeight(FontWeight.Medium)
         }
         .width('100%')
@@ -1129,12 +1159,12 @@ struct DailyPractice {
 
         // 图例
         Row({ space: 6 }) {
-          Circle().width(8).height(8).fill('#3B6BF6')
-          Text('当前题').fontSize(12.0).fontColor('#8A94A6')
-          Circle().width(8).height(8).fill('#A9C2FB').margin({ left: 12 })
-          Text('已作答').fontSize(12.0).fontColor('#8A94A6')
-          Circle().width(8).height(8).fill('#DDE3EE').margin({ left: 12 })
-          Text('未作答').fontSize(12.0).fontColor('#8A94A6')
+          Circle().width(8).height(8).fill('#FBDE71')
+          Text('当前题').fontSize(12.0).fontColor('#9A8A6E')
+          Circle().width(8).height(8).fill('#FEF8E3').margin({ left: 12 })
+          Text('已作答').fontSize(12.0).fontColor('#9A8A6E')
+          Circle().width(8).height(8).fill('#FEF8E3').margin({ left: 12 })
+          Text('未作答').fontSize(12.0).fontColor('#9A8A6E')
         }
         .width('100%')
         .margin({ top: 16 })
@@ -1153,44 +1183,57 @@ struct DailyPractice {
   @Builder
   OptionRow(opt: string, i: number) {
     Row({ space: 12 }) {
-      // 判定后：正确选项显示绿色对勾圆标
+      // 圆圈字母（参考题库答题页样式）
       if (this.judged() && this.optKey(i) === this.currentCorrectKey()) {
+        // 正确项：绿色圆圈白对勾
         Text('✓')
           .fontSize(16.0)
           .fontWeight(FontWeight.Bold)
-          .fontColor(Color.White)
+          .fontColor('#8A7A50')
           .width(30)
           .height(30)
           .textAlign(TextAlign.Center)
           .borderRadius(15)
-          .backgroundColor('#0E9F6E')
+          .backgroundColor('#2E9E63')
+      } else if (this.judged() && this.questions[this.cur].selected === this.optKey(i)) {
+        // 选错的项：红色圆圈白字母
+        Text(this.optKey(i))
+          .fontSize(15.0)
+          .fontWeight(FontWeight.Bold)
+          .fontColor('#8A7A50')
+          .width(30)
+          .height(30)
+          .textAlign(TextAlign.Center)
+          .borderRadius(15)
+          .backgroundColor('#D9534F')
       } else {
         Text(this.optKey(i))
           .fontSize(15.0)
           .fontWeight(FontWeight.Bold)
-          .fontColor(this.questions[this.cur].selected === this.optKey(i) ? '#3B6BF6' : '#5A6B85')
+          .fontColor(!this.judged() && this.questions[this.cur].selected === this.optKey(i) ? '#FFFFFF' : '#9A8A6E')
           .width(30)
           .height(30)
           .textAlign(TextAlign.Center)
           .borderRadius(15)
-          .backgroundColor(this.questions[this.cur].selected === this.optKey(i) ? '#EAF0FF' : '#F1F4F9')
+          .backgroundColor(!this.judged() && this.questions[this.cur].selected === this.optKey(i) ? '#FBDE71' : '#FFFFFF')
+          .border({ width: 1.5, color: !this.judged() && this.questions[this.cur].selected === this.optKey(i) ? '#FBDE71' : '#FEF8E3' })
       }
 
       Text(opt)
         .fontSize(15.5)
-        .fontColor('#1A202C')
+        .fontColor('#55402F')
         .lineHeight(21)
         .layoutWeight(1)
     }
     .width('100%')
     .padding(13)
     .borderRadius(14)
-    .backgroundColor(this.judged() && this.optKey(i) === this.currentCorrectKey() ? '#F0FAF5'
-      : (this.judged() && this.questions[this.cur].selected === this.optKey(i) ? '#FFF6F6' : Color.White))
+    .backgroundColor(this.judged() && this.optKey(i) === this.currentCorrectKey() ? '#F0F6EC'
+      : (this.judged() && this.questions[this.cur].selected === this.optKey(i) ? '#FDF3DC' : Color.White))
     .border({
       width: 1.5,
-      color: this.judged() && this.optKey(i) === this.currentCorrectKey() ? '#BFE8D2'
-        : (this.judged() && this.questions[this.cur].selected === this.optKey(i) ? '#F2C1C1' : '#EEF2F6')
+      color: this.judged() && this.optKey(i) === this.currentCorrectKey() ? '#F0F6EC'
+        : (this.judged() && this.questions[this.cur].selected === this.optKey(i) ? '#FEF8E3' : '#F2ECD8')
     })
     .margin({ bottom: 10 })
     .alignItems(VerticalAlign.Center)
@@ -1203,40 +1246,31 @@ struct DailyPractice {
   @Builder
   AnalysisCard() {
     Column() {
-      // 答案对比 + 印章
+      // 答案对比（参考题库答题页：正确答案 C 你的答案 B）+ 印章
       Stack({ alignContent: Alignment.TopEnd }) {
-        Row() {
-          Column({ space: 5 }) {
-            Text(this.currentCorrectKey())
-              .fontSize(21.0)
-              .fontWeight(FontWeight.Bold)
-              .fontColor('#0E9F6E')
-            Text('正确答案')
-              .fontSize(13.0)
-              .fontColor('#8A94A6')
-          }
-          .layoutWeight(1)
-          .alignItems(HorizontalAlign.Center)
+        Row({ space: 6 }) {
+          Text('正确答案：')
+            .fontSize(15.0)
+            .fontColor('#9A8A6E')
 
-          Divider()
-            .vertical(true)
-            .height(34)
-            .color('#EEF2F6')
+          Text(this.currentCorrectKey())
+            .fontSize(19.0)
+            .fontWeight(FontWeight.Bold)
+            .fontColor('#2E9E63')
 
-          Column({ space: 5 }) {
-            Text(this.questions[this.cur].selected)
-              .fontSize(21.0)
-              .fontWeight(FontWeight.Bold)
-              .fontColor(this.stampColor())
-            Text('我的作答')
-              .fontSize(13.0)
-              .fontColor('#8A94A6')
-          }
-          .layoutWeight(1)
-          .alignItems(HorizontalAlign.Center)
+          Text('你的答案：')
+            .fontSize(15.0)
+            .fontColor('#9A8A6E')
+            .margin({ left: 14 })
+
+          Text(this.questions[this.cur].selected)
+            .fontSize(19.0)
+            .fontWeight(FontWeight.Bold)
+            .fontColor(this.stampColor())
         }
         .width('100%')
         .padding({ top: 14, bottom: 12 })
+        .alignItems(VerticalAlign.Center)
 
         // 斜盖章：答对 / 答错
         Text(this.questions[this.cur].selected === this.currentCorrectKey() ? '答对' : '答错')
@@ -1252,25 +1286,25 @@ struct DailyPractice {
       }
       .width('100%')
 
-      Divider().color('#F1F4F9').strokeWidth(1)
+      Divider().color('#F8F4E8').strokeWidth(1)
 
       // 解析
       Column({ space: 7 }) {
         Text('解析')
           .fontSize(14.5)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
 
         Text(this.currentTip())
           .fontSize(14.5)
-          .fontColor('#3A4552')
+          .fontColor('#55402F')
           .lineHeight(21)
       }
       .width('100%')
       .padding({ top: 12, bottom: 12 })
       .alignItems(HorizontalAlign.Start)
 
-      Divider().color('#F1F4F9').strokeWidth(1)
+      Divider().color('#F8F4E8').strokeWidth(1)
 
       // 统计条：答题时间 / 全站正确率 / 易错项
       Row() {
@@ -1281,24 +1315,24 @@ struct DailyPractice {
       .width('100%')
       .padding({ top: 12, bottom: 12 })
 
-      Divider().color('#F1F4F9').strokeWidth(1)
+      Divider().color('#F8F4E8').strokeWidth(1)
 
       // AI 解答入口：回到首页 AI 伴学页签
       Row() {
         Text('对这道题还有疑问？AI 来问你解答')
           .fontSize(14.5)
           .fontWeight(FontWeight.Medium)
-          .fontColor('#3B6BF6')
+          .fontColor('#E4842A')
           .layoutWeight(1)
 
         Text('›')
           .fontSize(19.0)
-          .fontColor('#3B6BF6')
+          .fontColor('#E4842A')
       }
       .width('100%')
       .padding({ left: 14, right: 14, top: 12, bottom: 12 })
       .borderRadius(12)
-      .backgroundColor('#EAF1FF')
+      .backgroundColor('#FEF8E3')
       .margin({ top: 12 })
       .alignItems(VerticalAlign.Center)
       .onClick(() => {
@@ -1310,12 +1344,12 @@ struct DailyPractice {
       Row({ space: 10 }) {
         Text('知识点')
           .fontSize(14.0)
-          .fontColor('#8A94A6')
+          .fontColor('#9A8A6E')
 
         Text(this.questions[this.cur].knowledgePoint === '' ? '综合' : this.questions[this.cur].knowledgePoint)
           .fontSize(13.0)
-          .fontColor('#3B6BF6')
-          .backgroundColor('#EAF0FF')
+          .fontColor('#E4842A')
+          .backgroundColor('#FEF8E3')
           .padding({ left: 8, right: 8, top: 3, bottom: 3 })
           .borderRadius(6)
       }
@@ -1327,7 +1361,7 @@ struct DailyPractice {
     .padding(16)
     .borderRadius(16)
     .backgroundColor(Color.White)
-    .border({ width: 1, color: '#EEF2F6' })
+    .border({ width: 1, color: '#F2ECD8' })
     .alignItems(HorizontalAlign.Start)
     .margin({ top: 4 })
   }
@@ -1338,10 +1372,10 @@ struct DailyPractice {
       Text(value)
         .fontSize(16.0)
         .fontWeight(FontWeight.Bold)
-        .fontColor('#1A202C')
+        .fontColor('#55402F')
       Text(label)
         .fontSize(12.0)
-        .fontColor('#8A94A6')
+        .fontColor('#9A8A6E')
     }
     .layoutWeight(1)
     .alignItems(HorizontalAlign.Center)
@@ -1373,8 +1407,8 @@ struct DailyPractice {
                 })
                   .width(92)
                   .height(92)
-                  .color('#3B6BF6')
-                  .backgroundColor('#E4EBF8')
+                  .color('#E4842A')
+                  .backgroundColor('#FEF8E3')
                   .style({ strokeWidth: 8 })
 
                 Column({ space: 1 }) {
@@ -1382,14 +1416,14 @@ struct DailyPractice {
                     Span(this.report!.correctCount.toString())
                       .fontSize(25.0)
                       .fontWeight(FontWeight.Bold)
-                      .fontColor('#1A202C')
+                      .fontColor('#55402F')
                     Span('/' + this.report!.total.toString())
                       .fontSize(14.0)
-                      .fontColor('#8A94A6')
+                      .fontColor('#9A8A6E')
                   }
                   Text('答对')
                     .fontSize(12.0)
-                    .fontColor('#8A94A6')
+                    .fontColor('#9A8A6E')
                 }
                 .justifyContent(FlexAlign.Center)
                 .alignItems(HorizontalAlign.Center)
@@ -1401,22 +1435,22 @@ struct DailyPractice {
 
             // 与上次 / 合格线对比（字段可为 null）
             if (this.report!.compare !== null) {
-                  Divider().color('#F1F4F9').strokeWidth(1).margin({ top: 14, bottom: 10 })
+                  Divider().color('#F8F4E8').strokeWidth(1).margin({ top: 14, bottom: 10 })
 
               Row() {
                 Text('上次正确率 ' + (this.report!.compare!.lastAccuracy === null
                   ? '--' : this.report!.compare!.lastAccuracy.toString() + '%'))
                   .fontSize(13.0)
-                  .fontColor('#8A94A6')
+                  .fontColor('#9A8A6E')
                 Text('较上次 ' + this.deltaText(this.report!.compare!.deltaVsLast))
                   .fontSize(13.0)
                   .fontColor(this.report!.compare!.deltaVsLast !== null && this.report!.compare!.deltaVsLast < 0
-                    ? '#E5484D' : '#0E9F6E')
+                    ? '#D9534F' : '#2E9E63')
                   .margin({ left: 14 })
                 Text('较合格线 ' + this.deltaText(this.report!.compare!.deltaVsPassLine))
                   .fontSize(13.0)
                   .fontColor(this.report!.compare!.deltaVsPassLine !== null
-                    && this.report!.compare!.deltaVsPassLine < 0 ? '#E5484D' : '#0E9F6E')
+                    && this.report!.compare!.deltaVsPassLine < 0 ? '#D9534F' : '#2E9E63')
                   .margin({ left: 14 })
               }
               .width('100%')
@@ -1430,7 +1464,7 @@ struct DailyPractice {
                   .width(56)
                   .height(72)
                   .borderRadius(16)
-                  .backgroundColor('#EAF1FF')
+                  .backgroundColor('#FEF8E3')
 
                 Image($r('app.media.ip_good'))
                   .width(44)
@@ -1442,10 +1476,10 @@ struct DailyPractice {
                 Text('做得真棒，继续保持！')
                   .fontSize(15.0)
                   .fontWeight(FontWeight.Bold)
-                  .fontColor('#1A202C')
+                  .fontColor('#55402F')
                 Text('每天 10 道题，考试更稳妥')
                   .fontSize(13.0)
-                  .fontColor('#8A94A6')
+                  .fontColor('#9A8A6E')
               }
               .alignItems(HorizontalAlign.Start)
             }
@@ -1457,7 +1491,7 @@ struct DailyPractice {
           .padding(16)
           .borderRadius(16)
           .backgroundColor(Color.White)
-          .border({ width: 1, color: '#EEF2F6' })
+          .border({ width: 1, color: '#F2ECD8' })
           .alignItems(HorizontalAlign.Start)
           .margin({ left: 16, right: 16, top: 12 })
 
@@ -1467,15 +1501,15 @@ struct DailyPractice {
               Text('答题卡')
                 .fontSize(16.5)
                 .fontWeight(FontWeight.Bold)
-                .fontColor('#1A202C')
+                .fontColor('#55402F')
               Blank()
               Row({ space: 4 }) {
-                Circle().width(8).height(8).fill('#0E9F6E')
-                Text('答对').fontSize(12.0).fontColor('#8A94A6')
-                Circle().width(8).height(8).fill('#E5484D').margin({ left: 10 })
-                Text('答错').fontSize(12.0).fontColor('#8A94A6')
-                Circle().width(8).height(8).fill('#C9D4E5').margin({ left: 10 })
-                Text('未答').fontSize(12.0).fontColor('#8A94A6')
+                Circle().width(8).height(8).fill('#2E9E63')
+                Text('答对').fontSize(12.0).fontColor('#9A8A6E')
+                Circle().width(8).height(8).fill('#D9534F').margin({ left: 10 })
+                Text('答错').fontSize(12.0).fontColor('#9A8A6E')
+                Circle().width(8).height(8).fill('#FEF8E3').margin({ left: 10 })
+                Text('未答').fontSize(12.0).fontColor('#9A8A6E')
               }
               .alignItems(VerticalAlign.Center)
             }
@@ -1483,7 +1517,7 @@ struct DailyPractice {
 
             Text('单选题 · 共' + this.report!.total.toString() + '题')
               .fontSize(13.0)
-              .fontColor('#8A94A6')
+              .fontColor('#9A8A6E')
               .width('100%')
               .margin({ top: 10 })
 
@@ -1512,7 +1546,7 @@ struct DailyPractice {
 
             Text('点题号可回看该题')
               .fontSize(12.0)
-              .fontColor('#A8B3C5')
+              .fontColor('#B5A98D')
               .width('100%')
               .margin({ top: 4 })
           }
@@ -1520,7 +1554,7 @@ struct DailyPractice {
           .padding(16)
           .borderRadius(16)
           .backgroundColor(Color.White)
-          .border({ width: 1, color: '#EEF2F6' })
+          .border({ width: 1, color: '#F2ECD8' })
           .margin({ top: 12, left: 16, right: 16 })
 
           // ===== 回看单题 =====
@@ -1530,11 +1564,11 @@ struct DailyPractice {
                 Text('第 ' + (this.reviewIndex + 1).toString() + ' 题')
                   .fontSize(15.0)
                   .fontWeight(FontWeight.Bold)
-                  .fontColor('#3B6BF6')
+                  .fontColor('#E4842A')
                 Blank()
                 Text('收起')
                   .fontSize(13.0)
-                  .fontColor('#8A94A6')
+                  .fontColor('#9A8A6E')
                   .onClick(() => {
                     this.reviewIndex = -1;
                   })
@@ -1544,7 +1578,7 @@ struct DailyPractice {
               Text(this.questions[this.reviewIndex].stem)
                 .fontSize(15.5)
                 .fontWeight(FontWeight.Medium)
-                .fontColor('#1A202C')
+                .fontColor('#55402F')
                 .lineHeight(23)
                 .width('100%')
                 .margin({ top: 10 })
@@ -1563,7 +1597,7 @@ struct DailyPractice {
 
                   Text(opt)
                     .fontSize(14.5)
-                    .fontColor('#1A202C')
+                    .fontColor('#55402F')
                     .lineHeight(20)
                     .layoutWeight(1)
                 }
@@ -1575,7 +1609,7 @@ struct DailyPractice {
               Text('知识点：' + (this.questions[this.reviewIndex].knowledgePoint === ''
                 ? '综合' : this.questions[this.reviewIndex].knowledgePoint))
                 .fontSize(12.5)
-                .fontColor('#8A94A6')
+                .fontColor('#9A8A6E')
                 .width('100%')
                 .margin({ top: 6 })
             }
@@ -1583,7 +1617,7 @@ struct DailyPractice {
             .padding(16)
             .borderRadius(16)
             .backgroundColor(Color.White)
-            .border({ width: 1, color: '#EAF0FF' })
+            .border({ width: 1, color: '#FEF8E3' })
             .alignItems(HorizontalAlign.Start)
             .margin({ top: 12, left: 16, right: 16 })
           }
@@ -1593,7 +1627,7 @@ struct DailyPractice {
             Text('知识点掌握')
               .fontSize(16.5)
               .fontWeight(FontWeight.Bold)
-              .fontColor('#1A202C')
+              .fontColor('#55402F')
               .width('100%')
 
             ForEach(this.report!.mastery, (m: MasteryItem) => {
@@ -1602,12 +1636,12 @@ struct DailyPractice {
                   Text(m.knowledgePoint)
                     .fontSize(15.0)
                     .fontWeight(FontWeight.Medium)
-                    .fontColor('#1A202C')
+                    .fontColor('#55402F')
                     .maxLines(2)
                     .textOverflow({ overflow: TextOverflow.Ellipsis })
                   Text('共' + m.total.toString() + '题，答对' + m.correct.toString() + '题')
                     .fontSize(13.0)
-                    .fontColor('#8A94A6')
+                    .fontColor('#9A8A6E')
                 }
                 .alignItems(HorizontalAlign.Start)
                 .layoutWeight(1)
@@ -1616,18 +1650,18 @@ struct DailyPractice {
                   Progress({ value: m.accuracy, total: 100, type: ProgressType.Ring })
                     .width(62)
                     .height(62)
-                    .color('#3B6BF6')
-                    .backgroundColor('#EDF1F8')
+                    .color('#E4842A')
+                    .backgroundColor('#FEF8E3')
                     .style({ strokeWidth: 6 })
 
                   Column() {
                     Text(m.accuracy.toString() + '%')
                       .fontSize(12.5)
                       .fontWeight(FontWeight.Bold)
-                      .fontColor(m.accuracy >= 60 ? '#0E9F6E' : '#E5484D')
+                      .fontColor(m.accuracy >= 60 ? '#2E9E63' : '#D9534F')
                     Text('正确率')
                       .fontSize(10.0)
-                      .fontColor('#8A94A6')
+                      .fontColor('#9A8A6E')
                   }
                   .alignItems(HorizontalAlign.Center)
                 }
@@ -1642,7 +1676,7 @@ struct DailyPractice {
           .padding(16)
           .borderRadius(16)
           .backgroundColor(Color.White)
-          .border({ width: 1, color: '#EEF2F6' })
+          .border({ width: 1, color: '#F2ECD8' })
           .alignItems(HorizontalAlign.Start)
           .margin({ top: 12, left: 16, right: 16, bottom: 20 })
         }
@@ -1661,10 +1695,10 @@ struct DailyPractice {
           .fontSize(17.0)
           .fontWeight(FontWeight.Bold)
           .type(ButtonType.Capsule)
-          .backgroundColor(this.demoMode ? '#3B6BF6' : '#E7ECF4')
-          .fontColor(this.demoMode ? Color.White : '#8A94A6')
+          .backgroundColor(this.demoMode ? '#FBDE71' : '#FEF8E3')
+          .fontColor(this.demoMode ? '#8A7A50' : '#9A8A6E')
           .shadow(this.demoMode ?
-            { radius: 8, color: '#2E3B6BF6', offsetY: 3 } :
+            { radius: 8, color: '#14000000', offsetY: 3 } :
             { radius: 0, color: Color.Transparent, offsetY: 0 })
           .enabled(this.demoMode)
           .onClick(() => {
@@ -1678,8 +1712,8 @@ struct DailyPractice {
           .fontWeight(FontWeight.Medium)
           .type(ButtonType.Capsule)
           .backgroundColor(Color.White)
-          .fontColor('#3A4556')
-          .border({ width: 1.2, color: '#DCE3EE' })
+          .fontColor('#55402F')
+          .border({ width: 1.2, color: '#FEF8E3' })
           .onClick(() => {
             this.getUIContext().getRouter().back();
           })
@@ -1687,7 +1721,7 @@ struct DailyPractice {
       .width('100%')
       .padding({ left: 16, right: 16, top: 10, bottom: 16 })
       .backgroundColor(Color.White)
-      .border({ width: { top: 1 }, color: '#EEF2F6' })
+      .border({ width: { top: 1 }, color: '#F2ECD8' })
     }
     .width('100%')
     .layoutWeight(1) // 同答题视图：占剩余高度，避免报告底栏被挤出屏幕
@@ -1698,12 +1732,12 @@ struct DailyPractice {
     Row({ space: 10 }) {
       Text(label)
         .fontSize(14.0)
-        .fontColor('#8A94A6')
+        .fontColor('#9A8A6E')
         .width(64)
       Text(value)
         .fontSize(14.5)
         .fontWeight(FontWeight.Medium)
-        .fontColor('#1A202C')
+        .fontColor('#55402F')
         .layoutWeight(1)
     }
     .width('100%')

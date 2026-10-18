@@ -117,7 +117,7 @@ struct PrivacySettings {
         Text('‹')
           .fontSize(34.0)
           .fontWeight(FontWeight.Medium)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
           .padding({ left: 16, right: 12, top: 4, bottom: 4 })
           .onClick(() => {
             this.getUIContext().getRouter().back();
@@ -126,13 +126,13 @@ struct PrivacySettings {
         Text('个人信息保护设置')
           .fontSize(19.0)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
       }
       .width('100%')
       .height(56)
       .backgroundColor(Color.White)
       .alignItems(VerticalAlign.Center)
-      .border({ width: { bottom: 1 }, color: '#F1F4F9' })
+      .border({ width: { bottom: 1 }, color: '#F2ECD8' })
 
       // 权限卡片列表
       Scroll() {
@@ -152,7 +152,7 @@ struct PrivacySettings {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F7FA')
+    .backgroundColor('#FDFDED')
   }
 
   // 单个权限卡片：图标 + 标题 + 右侧状态（已开启 / 去设置）+ 描述小字
@@ -168,7 +168,7 @@ struct PrivacySettings {
         Text(item.title)
           .fontSize(18.0)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
           .margin({ left: 10 })
           .layoutWeight(1)
 
@@ -176,17 +176,17 @@ struct PrivacySettings {
           Text('已开启')
             .fontSize(16.0)
             .fontWeight(FontWeight.Medium)
-            .fontColor('#00B42A')
+            .fontColor('#2E9E63')
         } else {
           Row({ space: 2 }) {
             Text('去设置')
               .fontSize(16.0)
               .fontWeight(FontWeight.Medium)
-              .fontColor('#3B6BF6')
+              .fontColor('#E4842A')
             Text('›')
               .fontSize(18.0)
               .fontWeight(FontWeight.Medium)
-              .fontColor('#3B6BF6')
+              .fontColor('#E4842A')
           }
         }
       }
@@ -195,7 +195,7 @@ struct PrivacySettings {
 
       Text(item.desc)
         .fontSize(14.0)
-        .fontColor('#8A94A6')
+        .fontColor('#9A8A6E')
         .lineHeight(20)
         .width('100%')
     }

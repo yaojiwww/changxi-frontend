@@ -1,11 +1,12 @@
 import { POLICY_META, POLICY_CHAPTERS, PolicyChapter } from '../common/PolicyData';
 
 // 统一配色（与全局蓝色扁平风一致）
-const PRIMARY: string = '#3B6BF6';
-const TEXT_MAIN: string = '#1A202C';
-const TEXT_SUB: string = '#6B7484';
-const TEXT_WEAK: string = '#9AA3B2';
-const CARD_BORDER: string = '#E9EEF6';
+const PRIMARY: string = '#FBDE71';
+const ACCENT: string = '#E4842A';
+const TEXT_MAIN: string = '#55402F';
+const TEXT_SUB: string = '#9A8A6E';
+const TEXT_WEAK: string = '#B5A98D';
+const CARD_BORDER: string = '#FEF8E3';
 
 // 解析后的正文块
 interface PolicyBlock {
@@ -120,7 +121,7 @@ struct PolicyDetail {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F7FA')
+    .backgroundColor('#FDFDED')
   }
 
   // ==================== 顶部返回栏 ====================
@@ -147,7 +148,7 @@ struct PolicyDetail {
         .fontColor(PRIMARY)
         .padding({ left: 12, right: 12, top: 7, bottom: 7 })
         .borderRadius(15)
-        .backgroundColor('#EAF1FF')
+        .backgroundColor('#FEF8E3')
         .margin({ right: 16 })
         .onClick(() => {
           this.expandAll();
@@ -157,7 +158,7 @@ struct PolicyDetail {
     .height(58)
     .backgroundColor(Color.White)
     .alignItems(VerticalAlign.Center)
-    .border({ width: { bottom: 1 }, color: '#F1F4F9' })
+    .border({ width: { bottom: 1 }, color: '#F2ECD8' })
   }
 
   // ==================== 标准概况卡 ====================
@@ -171,14 +172,14 @@ struct PolicyDetail {
           .fontColor(PRIMARY)
           .padding({ left: 9, right: 9, top: 4, bottom: 4 })
           .borderRadius(9)
-          .backgroundColor('#EAF1FF')
+          .backgroundColor('#FEF8E3')
 
         Text('2021 年版')
           .fontSize(13.0)
-          .fontColor('#5A6473')
+          .fontColor('#9A8A6E')
           .padding({ left: 9, right: 9, top: 4, bottom: 4 })
           .borderRadius(9)
-          .backgroundColor('#F1F4FA')
+          .backgroundColor('#FFFFFF')
       }
       .width('100%')
 
@@ -194,11 +195,11 @@ struct PolicyDetail {
           Circle()
             .width(4)
             .height(4)
-            .fill(i === 0 ? PRIMARY : '#C3CEE0')
+            .fill(i === 0 ? PRIMARY : '#FEF8E3')
             .margin({ top: 7 })
           Text(m)
             .fontSize(14.5)
-            .fontColor('#4A5462')
+            .fontColor('#55402F')
             .lineHeight(21)
             .layoutWeight(1)
         }
@@ -210,8 +211,8 @@ struct PolicyDetail {
     .width('100%')
     .padding(18)
     .borderRadius(18)
-    .linearGradient({ angle: 135, colors: [['#F2F6FF', 0.0], ['#E8F0FF', 1.0]] })
-    .border({ width: 1, color: '#DCE7FF' })
+    .backgroundColor('#FEF8E3')
+    .border({ width: 1, color: '#FEF8E3' })
     .alignItems(HorizontalAlign.Start)
     .margin({ bottom: 14 })
   }
@@ -225,11 +226,11 @@ struct PolicyDetail {
         Text(c.no)
           .fontSize(14.0)
           .fontWeight(FontWeight.Bold)
-          .fontColor(Color.White)
+          .fontColor('#8A7A50')
           .width(26)
           .height(26)
           .borderRadius(13)
-          .backgroundColor(this.isOpen(c.id) ? PRIMARY : '#B9C6DB')
+          .backgroundColor(this.isOpen(c.id) ? PRIMARY : '#FEF8E3')
           .textAlign(TextAlign.Center)
 
         Column({ space: 3 }) {
@@ -248,7 +249,7 @@ struct PolicyDetail {
 
         Text(this.isOpen(c.id) ? '⌃' : '⌄')
           .fontSize(17.0)
-          .fontColor(this.isOpen(c.id) ? PRIMARY : '#B3BECC')
+          .fontColor(this.isOpen(c.id) ? PRIMARY : '#B5A98D')
           .padding({ left: 6, right: 2 })
       }
       .width('100%')
@@ -259,7 +260,7 @@ struct PolicyDetail {
       })
 
       if (this.isOpen(c.id)) {
-        Divider().color('#F1F4F9')
+        Divider().color('#F8F4E8')
 
         Column() {
           ForEach(this.blocksOf(c.body), (b: PolicyBlock, i: number) => {
@@ -307,7 +308,7 @@ struct PolicyDetail {
           .margin({ top: 4 })
         Text(b.text)
           .fontSize(15.5)
-          .fontColor('#2C3542')
+          .fontColor('#55402F')
           .lineHeight(24)
           .layoutWeight(1)
       }
@@ -324,13 +325,13 @@ struct PolicyDetail {
           .lineHeight(23)
         Text(b.text)
           .fontSize(15.5)
-          .fontColor('#2C3542')
+          .fontColor('#55402F')
           .lineHeight(23)
           .layoutWeight(1)
       }
       .width('100%')
       .padding({ top: 10, bottom: 10 })
-      .border({ width: { bottom: 1 }, color: '#F4F7FB' })
+      .border({ width: { bottom: 1 }, color: '#F2ECD8' })
       .alignItems(VerticalAlign.Top)
     } else if (b.kind === 'note') {
       Row({ space: 8 }) {
@@ -341,19 +342,19 @@ struct PolicyDetail {
           .width(20)
           .height(20)
           .borderRadius(10)
-          .backgroundColor('#EAF1FF')
+          .backgroundColor('#FEF8E3')
           .textAlign(TextAlign.Center)
           .margin({ top: 2 })
         Text(b.text)
           .fontSize(15.0)
-          .fontColor('#2F4670')
+          .fontColor('#55402F')
           .lineHeight(23)
           .layoutWeight(1)
       }
       .width('100%')
       .padding({ left: 12, right: 12, top: 11, bottom: 11 })
       .borderRadius(12)
-      .backgroundColor('#F1F6FF')
+      .backgroundColor('#FEF8E3')
       .alignItems(VerticalAlign.Top)
       .margin({ top: 4, bottom: 4 })
     } else if (b.kind === 'table') {
@@ -362,20 +363,20 @@ struct PolicyDetail {
           Text(cell)
             .fontSize(b.head ? 12.5 : 13)
             .fontWeight(b.head ? FontWeight.Bold : FontWeight.Medium)
-            .fontColor(b.head ? Color.White : (ci === 0 ? TEXT_MAIN : PRIMARY))
+            .fontColor(b.head ? '#8A7A50' : (ci === 0 ? TEXT_MAIN : ACCENT))
             .textAlign(ci === 0 ? TextAlign.Start : TextAlign.Center)
             .layoutWeight(ci === 0 ? 1.5 : 1)
             .padding({ left: ci === 0 ? 8 : 2, right: 4, top: 9, bottom: 9 })
         }, (cell: string, ci: number) => 'cell_' + ci)
       }
       .width('100%')
-      .backgroundColor(b.head ? PRIMARY : (b.cells.length > 1 && b.cells[0] === '合计' ? '#F1F6FF' : Color.White))
-      .border({ width: { bottom: 1 }, color: '#EEF2F8' })
+      .backgroundColor(b.head ? PRIMARY : (b.cells.length > 1 && b.cells[0] === '合计' ? '#FEF8E3' : Color.White))
+      .border({ width: { bottom: 1 }, color: '#FEF8E3' })
       .alignItems(VerticalAlign.Center)
     } else {
       Text(b.text)
         .fontSize(15.5)
-        .fontColor('#3A4453')
+        .fontColor('#55402F')
         .lineHeight(24)
         .width('100%')
         .margin({ top: 2, bottom: 10 })
