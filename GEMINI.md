@@ -133,3 +133,4 @@ hvigorw assembleHap --mode release
 # 代码检查
 hvigorw --sync
 ```
+
