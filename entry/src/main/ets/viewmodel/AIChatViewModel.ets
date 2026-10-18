@@ -22,6 +22,9 @@ export class AIChatViewModel {
 
   private token: string = '';
   private conversationId: string = '';   // 后端下发的会话 ID，下一轮带上即多轮记忆
+  // 留着 context 是为了发问前能再确认一次配置已加载：aboutToAppear 是异步的，
+  // 用户手快（或者 init 曾经失败过）时，直接发问会撞上「AppConfig 未加载」。
+  private context: common.Context | undefined = undefined;
 
   // 聊天记录非空时隐藏上部引导区，让位给聊天流
   get hasChat(): boolean {
@@ -30,6 +33,7 @@ export class AIChatViewModel {
 
   // 页面 aboutToAppear 调一次：准备配置与令牌（两步都幂等，可以多页重复调用）
   async init(context: common.Context): Promise<void> {
+    this.context = context;
     await AppConfig.load(context);
     await TokenStore.init(context);
     this.token = await TokenStore.read();
@@ -121,9 +125,16 @@ export class AIChatViewModel {
     };
 
     try {
-      // 页面刚起来就发问的话，init() 可能还没把令牌读出来，这里补一次，
-      // 否则会白白吃一个 401，排查方向还容易跑偏
+      // 页面刚起来就发问的话，init() 可能还没跑完，这里补一次：
+      // 配置没加载 → 取 baseUrl 直接抛「AppConfig 未加载」；
+      // 令牌没读到 → 白白吃一个 401。两者都让人以为是自己代码错了。
+      // AppConfig.load / TokenStore.init 都是幂等的，重复调用没有副作用。
+      if (this.context === undefined) {
+        throw new Error('页面还没准备好（拿不到应用上下文），请重新进入本页');
+      }
+      await AppConfig.load(this.context);
       if (this.token === '') {
+        await TokenStore.init(this.context);
         this.token = await TokenStore.read();
       }
       const body: AIChatRequest = {
