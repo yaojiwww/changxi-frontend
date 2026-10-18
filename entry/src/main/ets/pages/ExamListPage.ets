@@ -92,6 +92,31 @@ struct ExamListPage {
     return out;
   }
 
+  // 页头标签数据：共 x 套 / 累计 x 人做过 / 免费 x 套
+  private get freeCount(): number {
+    let n = 0;
+    for (let i = 0; i < this.papers.length; i++) {
+      if (this.papers[i].isFree) {
+        n++;
+      }
+    }
+    return n;
+  }
+
+  private get totalDone(): number {
+    let n = 0;
+    for (let i = 0; i < this.papers.length; i++) {
+      n += this.papers[i].doneCount;
+    }
+    return n;
+  }
+
+  // 已考成绩文案（getFinished 可能返回 null，需判空）
+  private finishedScoreText(paper: ExamPaper): string {
+    const r = ExamStore.getFinished(paper.id);
+    return r !== null ? `已考 · ${r.score}分` : '已考';
+  }
+
   private switchTab(index: number): void {
     if (this.activeTab === index) {
       return;
@@ -154,11 +179,11 @@ struct ExamListPage {
           Text(t)
             .fontSize(15.0)
             .fontWeight(this.activeTab === i ? FontWeight.Bold : FontWeight.Medium)
-            .fontColor(this.activeTab === i ? '#2B57E5' : '#4A5568')
+            .fontColor(this.activeTab === i ? '#E4842A' : '#9A8A6E')
         }
         .padding({ left: 18, right: 18, top: 8, bottom: 8 })
         .borderRadius(18)
-        .backgroundColor(this.activeTab === i ? '#DCEBFF' : '#EDF0F5')
+        .backgroundColor(this.activeTab === i ? '#FEF8E3' : '#F2ECD8')
         .onClick(() => {
           this.switchTab(i);
         })
@@ -170,86 +195,134 @@ struct ExamListPage {
     .alignItems(VerticalAlign.Center)
   }
 
-  // 试卷卡片
+  // 渐变页头上的半透明胶囊标签
+  @Builder
+  HeadPill(text: string) {
+    Text(text)
+      .fontSize(12.5)
+      .fontWeight(FontWeight.Medium)
+      .fontColor('#8A7A50')
+      .backgroundColor('#80FFFFFF')
+      .padding({ left: 10, right: 10, top: 4, bottom: 4 })
+      .borderRadius(9)
+  }
+
+  // 试卷卡片（参考图样式：标题行 + 统计行 + 右侧胶囊按钮）
   @Builder
   PaperCard(paper: ExamPaper) {
-    Row({ space: 12 }) {
-      Column({ space: 10 }) {
-        Text(paper.title)
-          .fontSize(17.0)
-          .fontWeight(FontWeight.Bold)
-          .fontColor('#1A202C')
-          .width('100%')
-          .maxLines(2)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-
-        Row({ space: 8 }) {
-          Text(`${paper.doneCount}人做过`)
-            .fontSize(14.0)
-            .fontColor('#8A94A6')
-
-          if (paper.isFree) {
-            Text('免费')
-              .fontSize(12.0)
-              .fontWeight(FontWeight.Medium)
-              .fontColor('#22C55E')
-              .padding({ left: 8, right: 8, top: 2, bottom: 2 })
-              .borderRadius(4)
-              .border({ width: 1, color: '#22C55E' })
-          }
-        }
+    Column({ space: 12 }) {
+      Text(paper.title)
+        .fontSize(17.0)
+        .fontWeight(FontWeight.Bold)
+        .fontColor('#55402F')
         .width('100%')
-      }
-      .layoutWeight(1)
-      .alignItems(HorizontalAlign.Start)
+        .maxLines(2)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
 
-      // 按钮：已考显示查看成绩，其余显示开始考试
-      Row() {
-        Text(ExamStore.isFinished(paper.id) ? '查看成绩' : '开始考试')
-          .fontSize(15.0)
-          .fontWeight(FontWeight.Bold)
-          .fontColor('#2B57E5')
+      // 底部：统计 + 右侧按钮
+      Row({ space: 10 }) {
+        Text(`${paper.doneCount}人做过`)
+          .fontSize(13.0)
+          .fontColor('#9A8A6E')
+
+        if (ExamStore.isFinished(paper.id)) {
+          Text(this.finishedScoreText(paper))
+            .fontSize(13.0)
+            .fontWeight(FontWeight.Bold)
+            .fontColor('#2E9E63')
+        }
+
+        if (paper.isFree) {
+          Text('免费')
+            .fontSize(11.5)
+            .fontWeight(FontWeight.Medium)
+            .fontColor('#2E9E63')
+            .padding({ left: 7, right: 7, top: 2, bottom: 2 })
+            .borderRadius(5)
+            .border({ width: 1, color: '#2E9E63' })
+        }
+
+        Blank()
+
+        // 按钮：已考显示查看成绩（描边样式），未考显示开始考试（橙色渐变胶囊）
+        if (ExamStore.isFinished(paper.id)) {
+          Text('查看成绩')
+            .fontSize(14.5)
+            .fontWeight(FontWeight.Bold)
+            .fontColor('#E4842A')
+            .padding({ left: 16, right: 16, top: 8, bottom: 8 })
+            .borderRadius(17)
+            .border({ width: 1.2, color: '#FEF8E3' })
+        } else {
+          Text('开始考试')
+            .fontSize(14.5)
+            .fontWeight(FontWeight.Bold)
+            .fontColor('#8A7A50')
+            .padding({ left: 18, right: 18, top: 8, bottom: 8 })
+            .borderRadius(17)
+            .backgroundColor('#FBDE71')
+        }
       }
-      .padding({ left: 16, right: 16, top: 9, bottom: 9 })
-      .borderRadius(18)
-      .backgroundColor('#DCEBFF')
-      .onClick(() => {
-        this.enterPaper(paper);
-      })
+      .width('100%')
+      .alignItems(VerticalAlign.Center)
     }
     .width('100%')
     .padding(18)
     .borderRadius(16)
     .backgroundColor(Color.White)
     .margin({ left: 14, right: 14, bottom: 14 })
-    .alignItems(VerticalAlign.Center)
+    .onClick(() => {
+      this.enterPaper(paper);
+    })
   }
 
   build() {
     Stack({ alignContent: Alignment.Bottom }) {
       Column() {
-        // 顶部返回栏
-        Row() {
-          Text('‹')
-            .fontSize(34.0)
-            .fontWeight(FontWeight.Medium)
-            .fontColor('#1A202C')
-            .padding({ left: 16, right: 12, top: 4, bottom: 4 })
-            .onClick(() => {
-              this.goBack();
-            })
+        // 渐变页头（参考题库 App 风格：导航 + 大标题 + 胶囊标签行）
+        Column() {
+          Row() {
+            Text('‹')
+              .fontSize(34.0)
+              .fontWeight(FontWeight.Medium)
+              .fontColor('#8A7A50')
+              .padding({ left: 16, right: 12, top: 4, bottom: 4 })
+              .onClick(() => {
+                this.goBack();
+              })
 
-          Text('模拟试卷')
-            .fontSize(18.0)
+            Text('模拟试卷')
+              .fontSize(18.0)
+              .fontWeight(FontWeight.Bold)
+              .fontColor('#8A7A50')
+              .layoutWeight(1)
+              .textAlign(TextAlign.Center)
+
+            Blank().width(50)
+          }
+          .width('100%')
+          .height(56)
+          .alignItems(VerticalAlign.Center)
+
+          Text('保育师 · 模拟试卷')
+            .fontSize(23.0)
             .fontWeight(FontWeight.Bold)
-            .fontColor('#1A202C')
-            .layoutWeight(1)
+            .fontColor('#55402F')
+            .width('100%')
+            .padding({ left: 16, right: 16 })
+            .margin({ top: 6 })
+
+          Row({ space: 8 }) {
+            this.HeadPill(`${this.papers.length} 套试卷`)
+            this.HeadPill(`${this.totalDone} 人做过`)
+            this.HeadPill(`免费 ${this.freeCount} 套`)
+          }
+          .width('100%')
+          .padding({ left: 16, right: 16, top: 12, bottom: 20 })
+          .alignItems(VerticalAlign.Center)
         }
         .width('100%')
-        .height(56)
-        .backgroundColor(Color.White)
-        .alignItems(VerticalAlign.Center)
-        .border({ width: { bottom: 1 }, color: '#F1F4F9' })
+        .backgroundColor('#FEF8E3')
 
         this.TabBar()
 
@@ -257,7 +330,7 @@ struct ExamListPage {
           Column({ space: 10 }) {
             Text('暂无试卷')
               .fontSize(17.0)
-              .fontColor('#8A94A6')
+              .fontColor('#9A8A6E')
           }
           .layoutWeight(1)
           .justifyContent(FlexAlign.Center)
@@ -281,7 +354,7 @@ struct ExamListPage {
       }
       .width('100%')
       .height('100%')
-      .backgroundColor('#F5F7FA')
+      .backgroundColor('#FDFDED')
 
       // 底部悬浮栏：存在进行中考试且未被 × 关闭时显示
       if (this.progress !== null && !this.barHidden) {
@@ -289,7 +362,7 @@ struct ExamListPage {
           Text('×')
             .fontSize(25.0)
             .fontWeight(FontWeight.Medium)
-            .fontColor('#1A202C')
+            .fontColor('#55402F')
             .padding({ left: 4, right: 4, top: 4, bottom: 4 })
             .onClick(() => {
               this.barHidden = true;
@@ -299,23 +372,23 @@ struct ExamListPage {
             Text(this.progress!.paperTitle)
               .fontSize(15.0)
               .fontWeight(FontWeight.Medium)
-              .fontColor('#1A202C')
+              .fontColor('#55402F')
               .maxLines(1)
               .textOverflow({ overflow: TextOverflow.Ellipsis })
               .width('100%')
 
             Row({ space: 14 }) {
               Text() {
-                Span('答题进度 ').fontColor('#FFFFFF').fontSize(15.0)
+                Span('答题进度 ').fontColor('#8A7A50').fontSize(15.0)
                   .fontWeight(FontWeight.Bold)
                   .padding({  bottom: 15 ,left:15})
                 Span(`${this.answeredCount(this.progress!)}/${this.progress!.answers.length}`)
-                  .fontColor('#2B57E5').fontSize(14.0).fontWeight(FontWeight.Bold)
+                  .fontColor('#E4842A').fontSize(14.0).fontWeight(FontWeight.Bold)
               }
 
               Text(this.formatRemain(this.remainSec))
                 .fontSize(15.0)
-                .fontColor('#FFFFFF')
+                .fontColor('#8A7A50')
                 .fontWeight(FontWeight.Bold)
             }
             .padding({  bottom: 15 })
@@ -328,14 +401,11 @@ struct ExamListPage {
             Text('继续考试')
               .fontSize(15.0)
               .fontWeight(FontWeight.Bold)
-              .fontColor(Color.White)
+              .fontColor('#8A7A50')
           }
           .padding({ left: 16, right: 16, top: 10, bottom: 10 })
           .borderRadius(20)
-          .linearGradient({
-            angle: 90,
-            colors: [['#4A8CF8', 0.0], ['#2B57E5', 1.0]]
-          })
+          .backgroundColor('#FBDE71')
           .onClick(() => {
             this.continueExam();
           })

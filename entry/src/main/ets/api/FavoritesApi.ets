@@ -11,10 +11,6 @@ interface CancelBody {
   questionId: string;
 }
 
-interface AddBody {
-  questionId: string;
-}
-
 interface OkData {
 }
 
@@ -29,20 +25,6 @@ export class FavoritesApi {
     }
     const q: string = `category=${encodeURIComponent(category)}&timeRange=${timeRange}`;
     return Http.get<FavoritesListData>(`/favorites/list?${q}`, token);
-  }
-
-  // 加入收藏。item 里带题干等快照字段，mock 阶段直接落本地存储；
-  // 真接口只把 questionId 交给后端，其余字段由后端从题库里取
-  static async add(item: FavoriteItem, token: string): Promise<ApiResponse<OkData>> {
-    if (USE_MOCK) {
-      return new Promise<ApiResponse<OkData>>((resolve: (v: ApiResponse<OkData>) => void): void => {
-        FavoritesStore.add(item).then((): void => {
-          resolve({ code: 0, message: 'ok', data: {} });
-        });
-      });
-    }
-    const body: AddBody = { questionId: item.questionId };
-    return Http.post<OkData>('/favorites/add', body, token);
   }
 
   // 取消收藏。立即从列表与数据库移除

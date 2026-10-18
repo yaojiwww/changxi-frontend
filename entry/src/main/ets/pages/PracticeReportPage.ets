@@ -70,15 +70,15 @@ struct PracticeReportPage {
 
   private deltaColor(delta: number | null): string {
     if (delta === null || delta === undefined) {
-      return '#8A94A6';
+      return '#9A8A6E';
     }
     if (delta > 0) {
-      return '#22C55E';
+      return '#2E9E63';
     }
     if (delta < 0) {
-      return '#EF4444';
+      return '#D9534F';
     }
-    return '#8A94A6';
+    return '#9A8A6E';
   }
 
   // compare 可能为 null（每日一练演示报告/首次练习无历史数据），
@@ -106,7 +106,7 @@ struct PracticeReportPage {
         .textOverflow({ overflow: TextOverflow.Ellipsis })
       Text(label)
         .fontSize(13.0)
-        .fontColor('#8A94A6')
+        .fontColor('#9A8A6E')
     }
     .layoutWeight(1)
     .padding({ top: 14, bottom: 14 })
@@ -119,7 +119,7 @@ struct PracticeReportPage {
     Row() {
       Text(label)
         .fontSize(15.0)
-        .fontColor('#4A5568')
+        .fontColor('#9A8A6E')
         .layoutWeight(1)
       Text(value)
         .fontSize(16.0)
@@ -137,16 +137,16 @@ struct PracticeReportPage {
       Text(`${index + 1}`)
         .fontSize(16.0)
         .fontWeight(FontWeight.Bold)
-        .fontColor(Color.White)
+        .fontColor('#8A7A50')
       Text(cell.correct ? '对' : '错')
         .fontSize(11.0)
-        .fontColor(Color.White)
+        .fontColor('#8A7A50')
     }
     .width('18%')
     .height(52)
     .margin({ bottom: 8 })
     .borderRadius(10)
-    .backgroundColor(cell.correct ? '#22C55E' : '#EF4444')
+    .backgroundColor(cell.correct ? '#2E9E63' : '#D9534F')
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
   }
@@ -157,20 +157,20 @@ struct PracticeReportPage {
     Row() {
       Text(m.knowledgePoint)
         .fontSize(15.0)
-        .fontColor('#1A202C')
+        .fontColor('#55402F')
         .layoutWeight(1)
         .maxLines(1)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
 
       Text(`${m.correct}/${m.total}`)
         .fontSize(14.0)
-        .fontColor('#8A94A6')
+        .fontColor('#9A8A6E')
         .margin({ left: 10 })
 
       Text(`${m.accuracy}%`)
         .fontSize(15.0)
         .fontWeight(FontWeight.Bold)
-        .fontColor(m.accuracy >= 60 ? '#22C55E' : '#EF4444')
+        .fontColor(m.accuracy >= 60 ? '#2E9E63' : '#D9534F')
         .width(56)
         .textAlign(TextAlign.End)
         .margin({ left: 8 })
@@ -186,7 +186,7 @@ struct PracticeReportPage {
         Text('‹')
           .fontSize(34.0)
           .fontWeight(FontWeight.Medium)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
           .padding({ left: 16, right: 12, top: 4, bottom: 4 })
           .onClick(() => {
             this.goBack();
@@ -195,31 +195,28 @@ struct PracticeReportPage {
         Text('练习报告')
           .fontSize(18.0)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
           .layoutWeight(1)
       }
       .width('100%')
       .height(56)
       .backgroundColor(Color.White)
       .alignItems(VerticalAlign.Center)
-      .border({ width: { bottom: 1 }, color: '#F1F4F9' })
+      .border({ width: { bottom: 1 }, color: '#F2ECD8' })
 
       if (this.report === null) {
         // 无报告数据：不发二次请求，直接提示并返回
         Column({ space: 14 }) {
           Text('报告数据缺失')
             .fontSize(17.0)
-            .fontColor('#8A94A6')
+            .fontColor('#9A8A6E')
           Text('返回')
             .fontSize(16.0)
             .fontWeight(FontWeight.Bold)
-            .fontColor(Color.White)
+            .fontColor('#8A7A50')
             .padding({ left: 30, right: 30, top: 10, bottom: 10 })
             .borderRadius(20)
-            .linearGradient({
-              angle: 90,
-              colors: [['#4A8CF8', 0.0], ['#2B57E5', 1.0]]
-            })
+            .backgroundColor('#FBDE71')
             .onClick(() => {
               this.goBack();
             })
@@ -232,7 +229,7 @@ struct PracticeReportPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F7FA')
+    .backgroundColor('#FDFDED')
   }
 
   // 报告正文。所有取值直接读 report，不做任何计算
@@ -245,7 +242,7 @@ struct PracticeReportPage {
           Text(this.report!.practiceType)
             .fontSize(14.0)
             .fontWeight(FontWeight.Medium)
-            .fontColor('#DCE7FF')
+            .fontColor('#55402F')
             .padding({ left: 10, right: 10, top: 4, bottom: 4 })
             .borderRadius(10)
             .backgroundColor('#33FFFFFF')
@@ -253,32 +250,29 @@ struct PracticeReportPage {
           Text(this.report!.itemName !== '' ? this.report!.itemName : this.itemName)
             .fontSize(21.0)
             .fontWeight(FontWeight.Bold)
-            .fontColor(Color.White)
+            .fontColor('#8A7A50')
             .width('100%')
             .maxLines(2)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
 
           Text(`交卷时间 ${this.report!.submitTime}`)
             .fontSize(14.0)
-            .fontColor('#DCE7FF')
+            .fontColor('#55402F')
         }
         .width('100%')
         .padding(18)
         .borderRadius(16)
-        .linearGradient({
-          angle: 135,
-          colors: [['#4A8CF8', 0.0], ['#2B57E5', 1.0]]
-        })
+        .backgroundColor('#FEF8E3')
         .alignItems(HorizontalAlign.Start)
         .margin({ bottom: 14 })
 
         // 核心指标
         Row() {
-          this.StatCell('答对题数', `${this.report!.correctCount}/${this.report!.total}`, '#1A202C')
-          Divider().vertical(true).height(36).color('#E5EAF2')
-          this.StatCell('正确率', this.formatAccuracy(this.report!), '#2B57E5')
-          Divider().vertical(true).height(36).color('#E5EAF2')
-          this.StatCell('练习时长', this.formatDuration(this.report!.duration), '#1A202C')
+          this.StatCell('答对题数', `${this.report!.correctCount}/${this.report!.total}`, '#55402F')
+          Divider().vertical(true).height(36).color('#FEF8E3')
+          this.StatCell('正确率', this.formatAccuracy(this.report!), '#E4842A')
+          Divider().vertical(true).height(36).color('#FEF8E3')
+          this.StatCell('练习时长', this.formatDuration(this.report!.duration), '#55402F')
         }
         .width('100%')
         .backgroundColor(Color.White)
@@ -291,16 +285,16 @@ struct PracticeReportPage {
           Text('数据对比')
             .fontSize(17.0)
             .fontWeight(FontWeight.Bold)
-            .fontColor('#1A202C')
+            .fontColor('#55402F')
             .width('100%')
             .margin({ bottom: 10 })
 
           Column() {
-            this.CompareRow('上次练习正确率', this.formatAccValue(this.report!.compare.lastAccuracy), '#1A202C')
-            Divider().width('100%').height(1).color('#F1F4F9')
+            this.CompareRow('上次练习正确率', this.formatAccValue(this.report!.compare.lastAccuracy), '#55402F')
+            Divider().width('100%').height(1).color('#F8F4E8')
             this.CompareRow('较上次', this.formatDelta(this.report!.compare.deltaVsLast),
               this.deltaColor(this.report!.compare.deltaVsLast))
-            Divider().width('100%').height(1).color('#F1F4F9')
+            Divider().width('100%').height(1).color('#F8F4E8')
             this.CompareRow('较合格线(60%)', this.formatDelta(this.report!.compare.deltaVsPassLine),
               this.deltaColor(this.report!.compare.deltaVsPassLine))
           }
@@ -312,7 +306,7 @@ struct PracticeReportPage {
         } else {
           Text('本次记录暂无历史对比，完成下一次练习后自动生成')
             .fontSize(13.0)
-            .fontColor('#9AA7BC')
+            .fontColor('#B5A98D')
             .width('100%')
             .padding(14)
             .borderRadius(14)
@@ -324,7 +318,7 @@ struct PracticeReportPage {
         Text('答题卡')
           .fontSize(17.0)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
           .width('100%')
           .margin({ bottom: 10 })
 
@@ -344,7 +338,7 @@ struct PracticeReportPage {
           Text('知识点掌握')
             .fontSize(17.0)
             .fontWeight(FontWeight.Bold)
-            .fontColor('#1A202C')
+            .fontColor('#55402F')
             .width('100%')
             .margin({ bottom: 10 })
 
@@ -352,7 +346,7 @@ struct PracticeReportPage {
             ForEach(this.report!.mastery, (m: KnowledgeMastery, idx: number) => {
               this.MasteryRow(m)
               if (idx < this.report!.mastery.length - 1) {
-                Divider().width('100%').height(1).color('#F1F4F9')
+                Divider().width('100%').height(1).color('#F8F4E8')
               }
             }, (m: KnowledgeMastery, idx: number) => `${idx}_${m.knowledgePoint}`)
           }
@@ -368,12 +362,12 @@ struct PracticeReportPage {
           Text('查看错题解析')
             .fontSize(16.0)
             .fontWeight(FontWeight.Bold)
-            .fontColor('#A0AEC0')
+            .fontColor('#B5A98D')
         }
         .width('100%')
         .height(46)
         .borderRadius(23)
-        .backgroundColor('#E2E8F0')
+        .backgroundColor('#FEF8E3')
         .justifyContent(FlexAlign.Center)
         .alignItems(VerticalAlign.Center)
         .onClick(() => {

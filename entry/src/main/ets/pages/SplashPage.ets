@@ -75,21 +75,21 @@ struct SplashPage {
       Circle()
         .width(320)
         .height(320)
-        .fill('#DCE9FD')
+        .fill('#FEF8E3')
         .opacity(0.55)
         .position({ x: 220, y: -110 })
 
       Circle()
         .width(200)
         .height(200)
-        .fill('#E4EEFE')
+        .fill('#FEF8E3')
         .opacity(0.7)
         .position({ x: -60, y: 620 })
 
       Circle()
         .width(90)
         .height(90)
-        .fill('#DCE9FD')
+        .fill('#FEF8E3')
         .opacity(0.6)
         .position({ x: 48, y: 130 })
 
@@ -101,11 +101,11 @@ struct SplashPage {
             .width(168)
             .height(168)
             .fill(Color.White)
-            .shadow({ radius: 26, color: '#263B6BF6', offsetY: 10 })
+            .shadow({ radius: 26, color: '#14000000', offsetY: 10 })
 
           Image($r('app.media.ip_hello'))
-            .width(128)
-            .height(128)
+            .width(148)
+            .height(148)
             .objectFit(ImageFit.Contain)
             .translate({ y: this.floatUp ? -7 : 0 })
             .animation({ duration: 1300, curve: Curve.EaseInOut })
@@ -117,7 +117,7 @@ struct SplashPage {
         Text('保育通')
           .fontSize(38)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
           .letterSpacing(6)
           .opacity(this.ready ? 1 : 0)
           .translate({ y: this.ready ? 0 : 12 })
@@ -125,12 +125,12 @@ struct SplashPage {
 
         // slogan
         Row({ space: 10 }) {
-          Row().width(22).height(1.5).borderRadius(1).backgroundColor('#AECBF8')
+          Row().width(22).height(1.5).borderRadius(1).backgroundColor('#FEF8E3')
           Text('用心保育 · 陪伴成长')
             .fontSize(15.5)
             .fontWeight(FontWeight.Medium)
-            .fontColor('#5A6B85')
-          Row().width(22).height(1.5).borderRadius(1).backgroundColor('#AECBF8')
+            .fontColor('#9A8A6E')
+          Row().width(22).height(1.5).borderRadius(1).backgroundColor('#FEF8E3')
         }
         .opacity(this.ready ? 1 : 0)
         .translate({ y: this.ready ? 0 : 12 })
@@ -138,7 +138,7 @@ struct SplashPage {
 
         Text('保育师 AI 备考助手')
           .fontSize(12.5)
-          .fontColor('#9AA7BC')
+          .fontColor('#B5A98D')
           .opacity(this.ready ? 1 : 0)
           .translate({ y: this.ready ? 0 : 12 })
           .animation({ duration: 600, delay: 420, curve: Curve.EaseOut })
@@ -150,11 +150,11 @@ struct SplashPage {
         LoadingProgress()
           .width(28)
           .height(28)
-          .color('#3B6BF6')
+          .color('#E4842A')
 
         Text('— 备考路上的每一天都算数 —')
           .fontSize(12)
-          .fontColor('#B7C1D0')
+          .fontColor('#B5A98D')
       }
       .width('100%')
       .alignItems(HorizontalAlign.Center)
@@ -163,9 +163,6 @@ struct SplashPage {
     .width('100%')
     .height('100%')
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
-    .linearGradient({
-      angle: 180,
-      colors: [['#FFFFFF', 0.0], ['#EAF1FC', 1.0]]
-    })
+    .backgroundColor('#FDFDED')
   }
 }

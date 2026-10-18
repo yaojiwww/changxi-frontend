@@ -11,3 +11,6 @@
 **/.test
 /.appanalyzer
 /.env
+# DevEco 预览缓存
+.preview
+**/.preview

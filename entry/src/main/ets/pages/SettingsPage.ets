@@ -92,8 +92,8 @@ struct Settings {
       title: '退出登录',
       message: '确定要退出当前账号吗？',
       buttons: [
-        { text: '取消', color: '#667085' },
-        { text: '退出登录', color: '#F53F3F', primary: true }
+        { text: '取消', color: '#9A8A6E' },
+        { text: '退出登录', color: '#D9534F', primary: true }
       ]
     });
     if (resp.index !== 1) {
@@ -118,7 +118,7 @@ struct Settings {
         Text('‹')
           .fontSize(34.0)
           .fontWeight(FontWeight.Medium)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
           .padding({ left: 16, right: 12, top: 4, bottom: 4 })
           .onClick(() => {
             this.getUIContext().getRouter().back();
@@ -127,20 +127,20 @@ struct Settings {
         Text('账号与设置')
           .fontSize(19.0)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
       }
       .width('100%')
       .height(56)
       .backgroundColor(Color.White)
       .alignItems(VerticalAlign.Center)
-      .border({ width: { bottom: 1 }, color: '#F1F4F9' })
+      .border({ width: { bottom: 1 }, color: '#F2ECD8' })
 
       // 列表区
       Scroll() {
         Column() {
           // 静态列表项
           this.SettingsRow('个人信息', '')
-          Divider().color('#E9EDF3').strokeWidth(1)
+          Divider().color('#FEF8E3').strokeWidth(1)
 
           // 考试时间：右侧显示已设日期（未设置显示"未设置"），点击弹日期选择器。
           // 状态驱动文本直接内联读 @Local，避免 @Builder 传参在状态变化时不刷新
@@ -148,16 +148,16 @@ struct Settings {
             Text('考试时间')
               .fontSize(18.0)
               .fontWeight(FontWeight.Medium)
-              .fontColor('#1A202C')
+              .fontColor('#55402F')
               .layoutWeight(1)
             Text(this.examDate.dateStr === '' ? '未设置' : formatExamDateCN(this.examDate.dateStr))
               .fontSize(18.0)
-              .fontColor('#8A94A6')
+              .fontColor('#9A8A6E')
               .margin({ right: 6 })
             Text('›')
               .fontSize(21.0)
               .fontWeight(FontWeight.Medium)
-              .fontColor('#CBD5E1')
+              .fontColor('#B5A98D')
           }
           .width('100%')
           .padding({ left: 24, right: 24, top: 14, bottom: 14 })
@@ -165,23 +165,23 @@ struct Settings {
           .onClick(() => {
             this.openDatePicker();
           })
-          Divider().color('#E9EDF3').strokeWidth(1)
+          Divider().color('#FEF8E3').strokeWidth(1)
 
           // 版本更新：右侧显示本机版本，点击检查更新
           Row() {
             Text('版本更新')
               .fontSize(18.0)
               .fontWeight(FontWeight.Medium)
-              .fontColor('#1A202C')
+              .fontColor('#55402F')
               .layoutWeight(1)
             Text(this.localVersion)
               .fontSize(18.0)
-              .fontColor('#8A94A6')
+              .fontColor('#9A8A6E')
               .margin({ right: 6 })
             Text('›')
               .fontSize(26.0)
               .fontWeight(FontWeight.Medium)
-              .fontColor('#CBD5E1')
+              .fontColor('#B5A98D')
           }
           .width('100%')
           .padding({ left: 24, right: 24, top: 14, bottom: 14 })
@@ -189,14 +189,14 @@ struct Settings {
           .onClick(() => {
             this.checkUpdate();
           })
-          Divider().color('#E9EDF3').strokeWidth(1)
+          Divider().color('#FEF8E3').strokeWidth(1)
 
           this.SettingsRow('用户协议', '')
-          Divider().color('#E9EDF3').strokeWidth(1)
+          Divider().color('#FEF8E3').strokeWidth(1)
           this.SettingsRow('隐私政策', '')
-          Divider().color('#E9EDF3').strokeWidth(1)
+          Divider().color('#FEF8E3').strokeWidth(1)
           this.SettingsRow('个人信息保护设置', '')
-          Divider().color('#E9EDF3').strokeWidth(1)
+          Divider().color('#FEF8E3').strokeWidth(1)
           this.SettingsRow('更多设置', '')
         }
         .width('100%')
@@ -215,10 +215,10 @@ struct Settings {
           .height(48)
           .borderRadius(24)
           .backgroundColor(Color.White)
-          .fontColor('#F53F3F')
+          .fontColor('#D9534F')
           .fontSize(18.0)
           .fontWeight(FontWeight.Medium)
-          .border({ width: 1, color: '#F5DCDA' })
+          .border({ width: 1, color: '#FDF3DC' })
           .shadow({ radius: 10, color: '#0A000000', offsetY: 3 })
           .enabled(!this.isLoggingOut)
           .onClick(() => {
@@ -227,12 +227,12 @@ struct Settings {
       }
       .width('100%')
       .padding({ left: 16, right: 16, top: 10, bottom: 24 })
-      .backgroundColor('#F5F7FA')
-      .border({ width: { top: 1 }, color: '#F1F4F9' })
+      .backgroundColor('#FFFFFF')
+      .border({ width: { top: 1 }, color: '#F2ECD8' })
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F7FA')
+    .backgroundColor('#FDFDED')
   }
 
   // 通用列表项：标题 + 右侧值（可空） + 右箭头；跳转类标题在此处约定
@@ -242,20 +242,20 @@ struct Settings {
       Text(title)
         .fontSize(18.0)
         .fontWeight(FontWeight.Medium)
-        .fontColor('#1A202C')
+        .fontColor('#55402F')
         .layoutWeight(1)
 
       if (value !== '') {
         Text(value)
           .fontSize(18.0)
-          .fontColor('#8A94A6')
+          .fontColor('#9A8A6E')
           .margin({ right: 6 })
       }
 
       Text('›')
         .fontSize(21.0)
         .fontWeight(FontWeight.Medium)
-        .fontColor('#CBD5E1')
+        .fontColor('#B5A98D')
     }
     .width('100%')
     .padding({ left: 24, right: 24, top: 14, bottom: 14 })

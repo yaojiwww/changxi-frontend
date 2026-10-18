@@ -41,7 +41,7 @@ struct SettingsDetail {
         Text('‹')
           .fontSize(34.0)
           .fontWeight(FontWeight.Medium)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
           .padding({ left: 16, right: 12, top: 4, bottom: 4 })
           .onClick(() => {
             this.goBack();
@@ -50,20 +50,20 @@ struct SettingsDetail {
         Text(this.pageTitle)
           .fontSize(18.0)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#1A202C')
+          .fontColor('#55402F')
       }
       .width('100%')
       .height(56)
       .backgroundColor(Color.White)
       .alignItems(VerticalAlign.Center)
-      .border({ width: { bottom: 1 }, color: '#F1F4F9' })
+      .border({ width: { bottom: 1 }, color: '#F2ECD8' })
 
       // 正文
       Scroll() {
         Column() {
           Text(detailContent(this.pageTitle))
             .fontSize(16.0)
-            .fontColor('#3A4552')
+            .fontColor('#55402F')
             .lineHeight(26)
             .width('100%')
         }
@@ -78,6 +78,6 @@ struct SettingsDetail {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F7FA')
+    .backgroundColor('#FDFDED')
   }
 }
