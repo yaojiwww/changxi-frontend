@@ -1,6 +1,8 @@
 import { BusinessError } from '@kit.BasicServicesKit';
+import { common } from '@kit.AbilityKit';
 import { AppConfig } from '../common/AppConfig';
 import { TokenStore } from '../common/TokenStore';
+import { SessionService } from '../common/SessionService';
 import { UserApi } from '../api/UserApi';
 import { CODE_OK } from '../common/Http';
 
@@ -9,12 +11,14 @@ import { CODE_OK } from '../common/Http';
 @ComponentV2
 struct MoreSettings {
   @Local isDeleting: boolean = false;
+  private context: common.Context | undefined = undefined;
 
   async aboutToAppear(): Promise<void> {
     const context = this.getUIContext().getHostContext();
     if (context === undefined) {
       return;
     }
+    this.context = context;
     await AppConfig.load(context);
     await TokenStore.init(context);
   }
@@ -45,7 +49,11 @@ struct MoreSettings {
         this.toast(res.message);
         return;
       }
-      await TokenStore.clear();
+      if (this.context !== undefined) {
+        await SessionService.wipeCurrentAccount(this.context);
+      } else {
+        await SessionService.logout();
+      }
       this.getUIContext().getRouter().replaceUrl({ url: 'pages/LoginPage' });
     } catch (err) {
       const e = err as BusinessError;

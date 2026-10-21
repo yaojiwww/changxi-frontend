@@ -2,6 +2,7 @@ import { BusinessError } from '@kit.BasicServicesKit';
 import { photoAccessHelper } from '@kit.MediaLibraryKit';
 import { AppConfig } from '../common/AppConfig';
 import { TokenStore } from '../common/TokenStore';
+import { SessionService } from '../common/SessionService';
 import { ProfileModel, ProfileCache, maskPhone, isValidPhone } from '../common/ProfileModel';
 import { ProfileApi } from '../api/ProfileApi';
 import { UserApi } from '../api/UserApi';
@@ -275,8 +276,7 @@ struct ProfilePage {
     } catch (err) {
       // 网络异常也继续本地退出，避免卡在已登录界面
     }
-    await TokenStore.clear();
-    await ProfileCache.clear();
+    await SessionService.logout();
     this.getUIContext().getRouter().replaceUrl({ url: 'pages/LoginPage' });
   }
 
