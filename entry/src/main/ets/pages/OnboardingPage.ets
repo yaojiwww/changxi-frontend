@@ -1,10 +1,8 @@
-import { AppStorageV2 } from '@kit.ArkUI';
 import {
-  GoalCache, levelFullName, LEVEL_BEGINNER, LEVEL_INTERMEDIATE, LEVEL_ADVANCED
+  LEVEL_BEGINNER, LEVEL_INTERMEDIATE, LEVEL_ADVANCED
 } from '../common/GoalModel';
-import { ProfileCache, ProfileModel } from '../common/ProfileModel';
-import { ExamDateCache, formatExamDateCN, parseExamDate } from '../common/ExamDateModel';
-import { OnboardingCache } from '../common/OnboardingCache';
+import { formatExamDateCN, parseExamDate } from '../common/ExamDateModel';
+import { OnboardingViewModel } from '../viewmodel/OnboardingViewModel';
 
 // 目标级别选项：标题 + 一句说明，帮新用户判断自己属于哪一级
 interface LevelOption {
@@ -23,22 +21,15 @@ const LEVEL_OPTIONS: LevelOption[] = [
 @Entry
 @ComponentV2
 struct Onboarding {
-  @Local selectedLevel: number = LEVEL_BEGINNER;   // 未选择时就是初级（跳过即默认初级）
-  @Local nickname: string = '用户001';             // 默认昵称，用户可自行修改
-  @Local dateStr: string = '';                     // YYYY-MM-DD，空串=未设置
+  // 表单状态与落库逻辑全在 ViewModel 里，页面只负责渲染和跳转
+  @Local vm: OnboardingViewModel = new OnboardingViewModel();
 
   async aboutToAppear(): Promise<void> {
     const context = this.getUIContext().getHostContext();
     if (context === undefined) {
       return;
     }
-    await GoalCache.load(context);
-    await ProfileCache.load(context);
-    await ExamDateCache.load(context);
-    await OnboardingCache.init(context);
-    // 已缓存过昵称则回显，否则保持默认「用户001」
-    const profile = AppStorageV2.connect(ProfileModel, () => new ProfileModel())!;
-    this.nickname = profile.nickname;
+    await this.vm.init(context);
   }
 
   // 弹原生日期选择器（底部弹出，年/月/日）
@@ -46,36 +37,40 @@ struct Onboarding {
     this.getUIContext().showDatePickerDialog({
       start: new Date(2020, 0, 1),
       end: new Date(2040, 11, 31),
-      selected: this.dateStr === '' ? new Date() : parseExamDate(this.dateStr),
+      selected: this.vm.dateStr === '' ? new Date() : parseExamDate(this.vm.dateStr),
       onAccept: (value: DatePickerResult) => {
         const now = new Date();
         const month = value.month ?? (now.getMonth() + 1);
         const day = value.day ?? now.getDate();
         const monthStr = month < 10 ? `0${month}` : `${month}`;
         const dayStr = day < 10 ? `0${day}` : `${day}`;
-        this.dateStr = `${value.year}-${monthStr}-${dayStr}`;
+        this.vm.dateStr = `${value.year}-${monthStr}-${dayStr}`;
       }
     });
   }
 
   // 开始备考：落库已填信息后进首页
   private async start(): Promise<void> {
-    await GoalCache.saveLevel(this.selectedLevel);
-    if (this.nickname !== '') {
-      await ProfileCache.saveNickname(this.nickname);
+    try {
+      await this.vm.start();
+      this.getUIContext().getRouter().replaceUrl({ url: 'pages/HomePage' });
+    } catch (err) {
+      this.toast((err as Error).message);
     }
-    if (this.dateStr !== '') {
-      await ExamDateCache.saveDate(this.dateStr);
-    }
-    await OnboardingCache.markDone();
-    this.getUIContext().getRouter().replaceUrl({ url: 'pages/HomePage' });
   }
 
   // 跳过：目标按初级落库，其余不写，之后可在设置里改
   private async skip(): Promise<void> {
-    await GoalCache.saveLevel(LEVEL_BEGINNER);
-    await OnboardingCache.markDone();
-    this.getUIContext().getRouter().replaceUrl({ url: 'pages/HomePage' });
+    try {
+      await this.vm.skip();
+      this.getUIContext().getRouter().replaceUrl({ url: 'pages/HomePage' });
+    } catch (err) {
+      this.toast((err as Error).message);
+    }
+  }
+
+  private toast(msg: string): void {
+    this.getUIContext().getPromptAction().showToast({ message: msg, duration: 2500 });
   }
 
   build() {
@@ -121,7 +116,7 @@ struct Onboarding {
             Row({ space: 12 }) {
               // 单选圆点
               Column() {
-                if (this.selectedLevel === item.index) {
+                if (this.vm.selectedLevel === item.index) {
                   Circle()
                     .width(9)
                     .height(9)
@@ -131,8 +126,8 @@ struct Onboarding {
               .width(20)
               .height(20)
               .borderRadius(10)
-              .backgroundColor(this.selectedLevel === item.index ? '#FBDE71' : Color.Transparent)
-              .border({ width: 1.5, color: this.selectedLevel === item.index ? '#E4842A' : '#FEF8E3' })
+              .backgroundColor(this.vm.selectedLevel === item.index ? '#FBDE71' : Color.Transparent)
+              .border({ width: 1.5, color: this.vm.selectedLevel === item.index ? '#E4842A' : '#FEF8E3' })
               .justifyContent(FlexAlign.Center)
 
               Column({ space: 4 }) {
@@ -150,15 +145,15 @@ struct Onboarding {
             .width('100%')
             .padding({ left: 16, right: 16, top: 15, bottom: 15 })
             .borderRadius(14)
-            .backgroundColor(this.selectedLevel === item.index ? '#FEF8E3' : Color.White)
+            .backgroundColor(this.vm.selectedLevel === item.index ? '#FEF8E3' : Color.White)
             .border({
               width: 1.5,
-              color: this.selectedLevel === item.index ? '#E4842A' : '#F2ECD8'
+              color: this.vm.selectedLevel === item.index ? '#E4842A' : '#F2ECD8'
             })
             .margin({ bottom: 10 })
             .alignItems(VerticalAlign.Center)
             .onClick(() => {
-              this.selectedLevel = item.index;
+              this.vm.selectedLevel = item.index;
             })
           }, (item: LevelOption) => item.index.toString())
 
@@ -177,12 +172,13 @@ struct Onboarding {
                 .fontColor('#55402F')
                 .width(72)
 
-              TextInput({ text: $$this.nickname, placeholder: '怎么称呼你' })
+              TextInput({ text: this.vm.nickname, placeholder: '怎么称呼你' })
                 .height(48)
                 .backgroundColor(Color.Transparent)
                 .padding({ left: 0, right: 0 })
                 .placeholderColor('#B5A98D')
                 .layoutWeight(1)
+                .onChange((v: string) => { this.vm.nickname = v })
             }
             .width('100%')
             .padding({ left: 16, right: 16 })
@@ -196,9 +192,9 @@ struct Onboarding {
                 .fontColor('#55402F')
                 .width(72)
 
-              Text(this.dateStr === '' ? '还未确定' : formatExamDateCN(this.dateStr))
+              Text(this.vm.dateStr === '' ? '还未确定' : formatExamDateCN(this.vm.dateStr))
                 .fontSize(15.0)
-                .fontColor(this.dateStr === '' ? '#B5A98D' : '#E4842A')
+                .fontColor(this.vm.dateStr === '' ? '#B5A98D' : '#E4842A')
                 .layoutWeight(1)
 
               Text('›')
@@ -234,6 +230,7 @@ struct Onboarding {
             .fontSize(17.0)
             .fontWeight(FontWeight.Medium)
             .margin({ top: 24 })
+            .enabled(!this.vm.isSaving)   // 保存中禁用，防重复提交
             .onClick(() => {
               this.start();
             })

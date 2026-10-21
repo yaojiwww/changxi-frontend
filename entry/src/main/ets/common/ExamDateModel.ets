@@ -50,13 +50,22 @@ const KEY_DATE: string = 'dateStr';
 export class ExamDateCache {
   private static store: preferences.Preferences | undefined = undefined;
 
-  // 打开存储并把缓存写回共享模型。幂等，可多页调用
-  static async load(context: common.Context): Promise<void> {
+  // 只打开存储，不读值。登录流程换号清数据时用
+  static async init(context: common.Context): Promise<void> {
     if (ExamDateCache.store === undefined) {
       ExamDateCache.store = await preferences.getPreferences(context, { name: STORE_NAME });
     }
+  }
+
+  // 打开存储并把缓存写回共享模型。幂等，可多页调用
+  static async load(context: common.Context): Promise<void> {
+    await ExamDateCache.init(context);
+    const store = ExamDateCache.store;
+    if (store === undefined) {
+      return;
+    }
     const model = AppStorageV2.connect(ExamDateModel, () => new ExamDateModel())!;
-    const saved = await ExamDateCache.store.get(KEY_DATE, '') as string;
+    const saved = await store.get(KEY_DATE, '') as string;
     model.dateStr = saved;
   }
 
@@ -69,6 +78,18 @@ export class ExamDateCache {
       return;
     }
     await store.put(KEY_DATE, dateStr);
+    await store.flush();
+  }
+
+  // 换账号时清空：缓存和共享模型一起回到未设置
+  static async clear(): Promise<void> {
+    const model = AppStorageV2.connect(ExamDateModel, () => new ExamDateModel())!;
+    model.dateStr = '';
+    const store = ExamDateCache.store;
+    if (store === undefined) {
+      return;
+    }
+    await store.delete(KEY_DATE);
     await store.flush();
   }
 }

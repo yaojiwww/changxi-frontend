@@ -37,14 +37,23 @@ const KEY_LEVEL: string = 'levelIndex';
 export class GoalCache {
   private static store: preferences.Preferences | undefined = undefined;
 
-  // 打开存储并把缓存写回共享模型。幂等，可多页调用
-  static async load(context: common.Context): Promise<void> {
+  // 只打开存储，不读值。登录流程换号清数据时用
+  static async init(context: common.Context): Promise<void> {
     if (GoalCache.store === undefined) {
       GoalCache.store = await preferences.getPreferences(context, { name: STORE_NAME });
     }
+  }
+
+  // 打开存储并把缓存写回共享模型。幂等，可多页调用
+  static async load(context: common.Context): Promise<void> {
+    await GoalCache.init(context);
+    const store = GoalCache.store;
+    if (store === undefined) {
+      return;
+    }
     const model = AppStorageV2.connect(GoalModel, () => new GoalModel())!;
     // 缓存为空时按初级兜底（新用户跳过引导即从初级开始）
-    const level = await GoalCache.store.get(KEY_LEVEL, LEVEL_BEGINNER) as number;
+    const level = await store.get(KEY_LEVEL, LEVEL_BEGINNER) as number;
     if (level >= LEVEL_BEGINNER && level <= LEVEL_ADVANCED) {
       model.levelIndex = level;
     }
@@ -59,6 +68,18 @@ export class GoalCache {
       return;
     }
     await store.put(KEY_LEVEL, levelIndex);
+    await store.flush();
+  }
+
+  // 换账号时清空：缓存和共享模型一起回到默认初级
+  static async clear(): Promise<void> {
+    const model = AppStorageV2.connect(GoalModel, () => new GoalModel())!;
+    model.levelIndex = LEVEL_BEGINNER;
+    const store = GoalCache.store;
+    if (store === undefined) {
+      return;
+    }
+    await store.delete(KEY_LEVEL);
     await store.flush();
   }
 }

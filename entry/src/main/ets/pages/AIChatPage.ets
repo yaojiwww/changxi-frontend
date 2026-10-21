@@ -35,6 +35,15 @@ export struct AIView {
     }
   }
 
+  // 选图：用户取消由 ViewModel 静默处理，其余失败提示出来
+  private async pickImage(): Promise<void> {
+    try {
+      await this.vm.pickImage();
+    } catch (err) {
+      this.toast((err as Error).message);
+    }
+  }
+
   build() {
     Column() {
       // ============ 上部：居中引导区（有聊天记录后隐藏） ============
@@ -126,7 +135,7 @@ export struct AIView {
               .borderRadius(10)
               .objectFit(ImageFit.Cover)
 
-            Text('图片已就绪，点击发送即可提问')
+            Text('图片将随问题一起发送')
               .fontSize(14.0)
               .fontColor('#9A8A6E')
               .layoutWeight(1)
@@ -165,8 +174,13 @@ export struct AIView {
               .fontColor('#8A7A50')
               .fontWeight(FontWeight.Medium)
           }
+          // Stack 不写死尺寸时在 Row 里可能被量成 0 宽，视觉上按钮还在，
+          // 但点击热区是空的。这里必须显式给尺寸。
+          .width(40)
+          .height(40)
+          .hitTestBehavior(HitTestMode.Block)
           .onClick(() => {
-            this.vm.pickImage();
+            this.pickImage();
           })
 
           // 文本输入框。用 !! 双向绑定而不是 text+onChange 回写：
@@ -177,23 +191,46 @@ export struct AIView {
             .layoutWeight(1)
             .fontSize(16.0)
             .margin({ left: 8, right: 8 })
+            .enterKeyType(EnterKeyType.Send)
+            .onSubmit((enterKey: EnterKeyType) => {
+              if (enterKey === EnterKeyType.Send && this.vm.canSend) {
+                this.send();
+              }
+            })
 
-          // 发送/提问按钮
+          // 发送/提问按钮：有内容时高亮为品牌橙，无内容置灰；发送中显示 loading
           Stack({ alignContent: Alignment.Center }) {
             Row()
               .width(42)
               .height(42)
               .borderRadius(14)
-              .backgroundColor('#FEF8E3')
-              .shadow({ radius: 6, color: '#33E4842A', offsetY: 2 })
+              .backgroundColor(this.vm.sending || this.vm.canSend ? '#E4842A' : '#F0E8D2')
+              .shadow({
+                radius: 6,
+                color: this.vm.sending || this.vm.canSend ? '#33E4842A' : '#00000000',
+                offsetY: 2
+              })
+              .animation({ duration: 150, curve: Curve.EaseOut })
 
-            // 替换为 send 图标
-            Image($r('app.media.send'))
-              .width(19)
-              .height(19)
-              .objectFit(ImageFit.Contain)
+            if (this.vm.sending) {
+              LoadingProgress()
+                .width(20)
+                .height(20)
+                .color(Color.White)
+            } else {
+              Image($r('app.media.send'))
+                .width(19)
+                .height(19)
+                .objectFit(ImageFit.Contain)
+                .fillColor(this.vm.canSend ? Color.White : '#B5A98D')
+                .animation({ duration: 150, curve: Curve.EaseOut })
+            }
           }
-
+          .width(42)
+          .height(42)
+          .hitTestBehavior(HitTestMode.Block)
+          .opacity(this.vm.sending || this.vm.canSend ? 1 : 0.85)
+          .enabled(this.vm.canSend)
           .onClick(() => {
             this.send();
           })

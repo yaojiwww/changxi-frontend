@@ -16,13 +16,27 @@ struct Login {
     await this.vm.init(context);
   }
 
-  // 登录：调后端 → 存 token → 进引导页 / 首页
-  private async doLogin(): Promise<void> {
+  aboutToDisappear(): void {
+    this.vm.dispose();   // 清掉验证码倒计时，避免页面销毁后定时器还在跑
+  }
+
+  // 登录/注册：调后端 → 存 token → 进引导页 / 首页
+  private async doSubmit(): Promise<void> {
     try {
-      await this.vm.login();
+      await this.vm.submit();
       this.getUIContext().getRouter().replaceUrl({
         url: this.vm.needOnboarding ? 'pages/OnboardingPage' : 'pages/HomePage'
       });
+    } catch (err) {
+      this.toast((err as Error).message);
+    }
+  }
+
+  // 注册模式下获取验证码（开发期验证码打在后端终端）
+  private async doSendCode(): Promise<void> {
+    try {
+      await this.vm.sendCode();
+      this.toast('验证码已发送');
     } catch (err) {
       this.toast((err as Error).message);
     }
@@ -71,7 +85,7 @@ struct Login {
       Blank()
         .layoutWeight(2)
 
-      // ===== 输入卡片：手机号 + 密码（逻辑与原来完全一致） =====
+      // ===== 输入卡片：手机号 +（注册时）验证码 + 密码 =====
       Column() {
         TextInput({ placeholder: '手机号' })
           .type(InputType.PhoneNumber)
@@ -85,7 +99,39 @@ struct Login {
           .color('#F8F4E8')
           .strokeWidth(1)
 
-        TextInput({ placeholder: '密码' })
+        // 注册模式才出现的验证码行，配色沿用页面现有的浅黄底 + 橙字
+        if (this.vm.modeRegister) {
+          Row() {
+            TextInput({ placeholder: '验证码' })
+              .type(InputType.Number)
+              .height(52)
+              .layoutWeight(1)
+              .backgroundColor(Color.Transparent)
+              .padding({ left: 6, right: 6 })
+              .placeholderColor('#B5A98D')
+              .onChange((v: string) => { this.vm.code = v })
+
+            Button(this.vm.countdown > 0
+              ? `${this.vm.countdown}s`
+              : (this.vm.isSending ? '发送中…' : '获取验证码'))
+              .height(32)
+              .borderRadius(16)
+              .padding({ left: 12, right: 12 })
+              .fontSize(13.0)
+              .backgroundColor('#FEF8E3')
+              .fontColor(this.vm.countdown > 0 ? '#B5A98D' : '#E4842A')
+              .enabled(this.vm.countdown === 0 && !this.vm.isSending)
+              .onClick(() => { this.doSendCode() })
+          }
+          .width('100%')
+          .alignItems(VerticalAlign.Center)
+
+          Divider()
+            .color('#F8F4E8')
+            .strokeWidth(1)
+        }
+
+        TextInput({ placeholder: this.vm.modeRegister ? '密码（至少 6 位）' : '密码' })
           .type(InputType.Password)
           .height(52)
           .backgroundColor(Color.Transparent)
@@ -101,7 +147,9 @@ struct Login {
       .shadow({ radius: 12, color: '#14000000', offsetY: 4 })
 
       // 主按钮
-      Button(this.vm.isLoading ? '登录中…' : '登 录')
+      Button(this.vm.isLoading
+        ? (this.vm.modeRegister ? '注册中…' : '登录中…')
+        : (this.vm.modeRegister ? '注 册' : '登 录'))
         .width('100%')
         .height(52)
         .borderRadius(26)
@@ -112,7 +160,22 @@ struct Login {
         .margin({ top: 20 })
         .enabled(!this.vm.isLoading)           // 请求中禁用，防重复点
         .shadow({ radius: 10, color: '#14000000', offsetY: 4 })
-        .onClick(() => { this.doLogin() })
+        .onClick(() => { this.doSubmit() })
+
+      // ===== 登录 / 注册切换：只加一行文字，不动品牌区与表单版式 =====
+      Row({ space: 4 }) {
+        Text(this.vm.modeRegister ? '已有账号？' : '还没有账号？')
+          .fontSize(13.5)
+          .fontColor('#9A8A6E')
+
+        Text(this.vm.modeRegister ? '去登录' : '立即注册')
+          .fontSize(13.5)
+          .fontColor('#E4842A')
+          .onClick(() => { this.vm.switchMode(!this.vm.modeRegister) })
+      }
+      .width('100%')
+      .justifyContent(FlexAlign.Center)
+      .margin({ top: 12 })
 
       // ===== 用户协议与隐私政策勾选 =====
       Row({ space: 5 }) {

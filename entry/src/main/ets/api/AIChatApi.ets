@@ -1,7 +1,8 @@
 import { http } from '@kit.NetworkKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { fileIo } from '@kit.CoreFileKit';
 import { AppConfig } from '../common/AppConfig';
-import { ApiResponse } from '../common/Http';
+import { ApiResponse, CODE_OK } from '../common/Http';
 import { Utf8ChunkDecoder } from '../common/Utf8ChunkDecoder';
 
 const DOMAIN = 0x0000;
@@ -9,6 +10,10 @@ const TAG = 'AIChatApi';
 
 // 后端 AI 接口路径（相对 AppConfig.apiPrefix）
 const PATH: string = '/ai/chat';
+// 聊天图片上传：multipart/form-data，字段名 file；返回 data.url 供 /ai/chat 引用
+const UPLOAD_PATH: string = '/ai/upload';
+// 图片上传比普通接口慢，给 60 秒
+const UPLOAD_READ_TIMEOUT_MS: number = 60000;
 
 // 读超时。别的接口沿用配置里的 10 秒，但 Dify 的智能体要先想、再调工具，
 // 首字经常十几秒才到，10 秒会在它开口之前就把连接掐了。
@@ -19,6 +24,12 @@ export interface AIChatRequest {
   query: string;
   conversationId: string;   // 上一轮后端下发的会话 ID，首轮传空串
   mode: string;             // AI_MODE_SOLVE / AI_MODE_PLAN，见 model/ChatModels
+  imageUrl: string;         // 先经 /ai/upload 换来的图片地址，无图传空串
+}
+
+// POST /ai/upload 的返回数据
+export interface AIUploadData {
+  url: string;
 }
 
 // 后端下发的一个流式事件。字段名跟 Dify 的事件保持一致（后端只转发不改名）：
@@ -42,6 +53,67 @@ export interface AIChatHandlers {
 
 // AI 伴学接口。契约见本文件顶部注释，改接口先改这里再改后端
 export class AIChatApi {
+  // 上传一张聊天图片，返回后端可访问的 URL。
+  // 相册 URI 是临时授权，不能直接交给 http 的 filePath（部分机型读不到），
+  // 所以先经 fileIo 读成 ArrayBuffer，再用 multiFormDataList 上传。
+  static async uploadImage(uri: string, token: string): Promise<string> {
+    const cfg = AppConfig.get();
+    const request = http.createHttp();
+    const lower: string = uri.toLowerCase();
+    const isPng: boolean = lower.endsWith('.png');
+    const fileName: string = isPng ? 'chat.png' : 'chat.jpg';
+    const contentType: string = isPng ? 'image/png' : 'image/jpeg';
+
+    try {
+      const data: ArrayBuffer = AIChatApi.readFile(uri);
+      const headers: Record<string, string> = {};
+      if (token !== undefined && token !== '') {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await request.request(cfg.baseUrl + cfg.apiPrefix + UPLOAD_PATH, {
+        method: http.RequestMethod.POST,
+        header: headers,
+        // 不要手动设置 Content-Type，multipart 的 boundary 由网络层生成
+        multiFormDataList: [{
+          name: 'file',
+          contentType: contentType,
+          remoteFileName: fileName,
+          data: data
+        }],
+        connectTimeout: cfg.connectTimeout,
+        readTimeout: UPLOAD_READ_TIMEOUT_MS
+      });
+
+      if (response.responseCode < 200 || response.responseCode >= 300) {
+        throw new Error(`图片上传失败（HTTP ${response.responseCode}）`);
+      }
+      const res = JSON.parse(response.result as string) as ApiResponse<AIUploadData>;
+      if (res.code !== CODE_OK || res.data === null || res.data.url === '') {
+        throw new Error(res.message !== '' ? res.message : '图片上传失败');
+      }
+      return res.data.url;
+    } catch (err) {
+      // 上传失败统一成一句用户能看懂的话，避免把底层异常直接弹出来
+      throw new Error(`图片上传失败：${(err as Error).message}`);
+    } finally {
+      request.destroy();
+    }
+  }
+
+  // 读取相册 URI 指向的文件。fileIo 能直接打开 Picker 授权过的 URI
+  private static readFile(uri: string): ArrayBuffer {
+    const file = fileIo.openSync(uri, fileIo.OpenMode.READ_ONLY);
+    try {
+      const stat = fileIo.statSync(file.fd);
+      const buffer = new ArrayBuffer(stat.size);
+      fileIo.readSync(file.fd, buffer);
+      return buffer;
+    } finally {
+      fileIo.closeSync(file);
+    }
+  }
+
   // 发一轮提问，边收边回调。
   // resolve：整轮跑完（含「流里回了 error 事件」的情况，那种走 onFail）。
   // reject：连流都没建立起来（网络异常、后端在流式之前按统一契约回了错误信封）。

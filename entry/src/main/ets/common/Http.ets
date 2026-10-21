@@ -37,7 +37,6 @@ export class Http {
     }
   }
 
-  // 发起 POST。token 传了就带 Authorization 头
   static async post<T>(
     path: string,
     body: object,
