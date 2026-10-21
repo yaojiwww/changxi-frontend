@@ -34,17 +34,26 @@ const KEY_AVATAR: string = 'avatarUri';
 export class ProfileCache {
   private static store: preferences.Preferences | undefined = undefined;
 
-  // 打开存储并把缓存写回共享模型。幂等，可多页调用
-  static async load(context: common.Context): Promise<void> {
+  // 只打开存储，不读值。登录流程换号清数据时用
+  static async init(context: common.Context): Promise<void> {
     if (ProfileCache.store === undefined) {
       ProfileCache.store = await preferences.getPreferences(context, { name: STORE_NAME });
     }
+  }
+
+  // 打开存储并把缓存写回共享模型。幂等，可多页调用
+  static async load(context: common.Context): Promise<void> {
+    await ProfileCache.init(context);
+    const store = ProfileCache.store;
+    if (store === undefined) {
+      return;
+    }
     const model = AppStorageV2.connect(ProfileModel, () => new ProfileModel())!;
-    const nick = await ProfileCache.store.get(KEY_NICKNAME, '') as string;
+    const nick = await store.get(KEY_NICKNAME, '') as string;
     if (nick !== '') {
       model.nickname = nick;
     }
-    const avatar = await ProfileCache.store.get(KEY_AVATAR, '') as string;
+    const avatar = await store.get(KEY_AVATAR, '') as string;
     if (avatar !== '') {
       model.avatarUri = avatar;
     }
