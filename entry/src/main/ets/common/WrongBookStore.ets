@@ -3,6 +3,8 @@
 import { preferences } from '@kit.ArkData';
 import { common } from '@kit.AbilityKit';
 import { timeRangeHit } from './FavoritesStore';
+import { AccountScope } from './AccountScope';
+import { ScopedPrefs } from './ScopedPrefs';
 
 const STORE_NAME: string = 'changxi_wrongbook';
 const KEY_ITEMS: string = 'items';
@@ -43,13 +45,14 @@ export class WrongBookStore {
   private static loaded: boolean = false;
 
   static async init(context: common.Context): Promise<void> {
+    await AccountScope.init(context);
     if (WrongBookStore.store === undefined) {
       WrongBookStore.store = await preferences.getPreferences(context, { name: STORE_NAME });
     }
     if (!WrongBookStore.loaded) {
-      const raw = await WrongBookStore.store.get(KEY_ITEMS, '[]') as string;
+      const raw: string = await ScopedPrefs.read(WrongBookStore.store, KEY_ITEMS);
       try {
-        const parsed: WrongItem[] = JSON.parse(raw) as WrongItem[];
+        const parsed: WrongItem[] = raw === '' ? [] : JSON.parse(raw) as WrongItem[];
         WrongBookStore.items = parsed;
       } catch (e) {
         WrongBookStore.items = [];
@@ -63,8 +66,22 @@ export class WrongBookStore {
     if (store === undefined) {
       return;
     }
-    await store.put(KEY_ITEMS, JSON.stringify(WrongBookStore.items));
-    await store.flush();
+    await ScopedPrefs.write(store, KEY_ITEMS, JSON.stringify(WrongBookStore.items));
+  }
+
+  // 换号/退出登录时清掉内存，下次 init 会重新读当前账号的数据
+  static reset(): void {
+    WrongBookStore.items = [];
+    WrongBookStore.loaded = false;
+  }
+
+  // 删除指定账号的错题（换号/注销时用），不影响当前内存
+  static async clearAccount(accountKey: string): Promise<void> {
+    const store = WrongBookStore.store;
+    if (store === undefined) {
+      return;
+    }
+    await ScopedPrefs.clearAccount(store, accountKey, [KEY_ITEMS]);
   }
 
   // 供 WrongApi（后端侧 mock）在直接改条目字段后落库

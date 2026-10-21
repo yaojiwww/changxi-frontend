@@ -2,6 +2,8 @@ import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.Ab
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window, display } from '@kit.ArkUI';
 import { SafeArea } from '../common/SafeArea';
+import { Http } from '../common/Http';
+import { SessionService } from '../common/SessionService';
 
 
 const DOMAIN = 0x0000;
@@ -34,6 +36,30 @@ export default class EntryAbility extends UIAbility {
     });
     // ---- 问系统：安全区有多高，并做沉浸式适配（适配任何机型，不写死数字） ----
     const win = windowStage.getMainWindowSync();
+
+    // 全局令牌失效（业务码 1003）：清会话并回登录页。
+    // 并发请求可能同时收到 1003，用一个标记保证只跳一次。
+    let handlingAuthFailure: boolean = false;
+    // 注意：loadContent 是异步的，此刻 UIContent 尚未创建，不能在这里调用 getUIContext()，
+    // 否则抛 1300002 "Uicontent is nullptr" 导致进程被系统杀掉。改为触发时再取。
+    Http.setAuthFailureHandler(() => {
+      if (handlingAuthFailure) {
+        return;
+      }
+      handlingAuthFailure = true;
+      SessionService.logout(this.context).then(() => {
+        try {
+          windowStage.getMainWindowSync().getUIContext().getRouter().replaceUrl({ url: 'pages/LoginPage' });
+        } catch (err) {
+          // 路由失败也不阻塞，下次请求还会再触发
+        }
+        setTimeout(() => {
+          handlingAuthFailure = false;
+        }, 1500);
+      }).catch(() => {
+        handlingAuthFailure = false;
+      });
+    });
     // 状态栏底色与页面同色、图标用深色：非沉浸式页面顶部不再出现白条
     win.setWindowSystemBarProperties({
       statusBarColor: '#FFFFFF',

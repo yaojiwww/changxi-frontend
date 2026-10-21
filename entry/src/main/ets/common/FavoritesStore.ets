@@ -2,6 +2,8 @@
 // 与错题本完全独立，互不影响（一道题可同时存在于收藏与错题本）
 import { preferences } from '@kit.ArkData';
 import { common } from '@kit.AbilityKit';
+import { AccountScope } from './AccountScope';
+import { ScopedPrefs } from './ScopedPrefs';
 
 const STORE_NAME: string = 'changxi_favorites';
 const KEY_ITEMS: string = 'items';
@@ -50,13 +52,14 @@ export class FavoritesStore {
   private static loaded: boolean = false;
 
   static async init(context: common.Context): Promise<void> {
+    await AccountScope.init(context);
     if (FavoritesStore.store === undefined) {
       FavoritesStore.store = await preferences.getPreferences(context, { name: STORE_NAME });
     }
     if (!FavoritesStore.loaded) {
-      const raw = await FavoritesStore.store.get(KEY_ITEMS, '[]') as string;
+      const raw: string = await ScopedPrefs.read(FavoritesStore.store, KEY_ITEMS);
       try {
-        const parsed: FavoriteItem[] = JSON.parse(raw) as FavoriteItem[];
+        const parsed: FavoriteItem[] = raw === '' ? [] : JSON.parse(raw) as FavoriteItem[];
         FavoritesStore.items = parsed;
       } catch (e) {
         FavoritesStore.items = [];
@@ -71,8 +74,22 @@ export class FavoritesStore {
     if (store === undefined) {
       return;
     }
-    await store.put(KEY_ITEMS, JSON.stringify(FavoritesStore.items));
-    await store.flush();
+    await ScopedPrefs.write(store, KEY_ITEMS, JSON.stringify(FavoritesStore.items));
+  }
+
+  // 换号/退出登录时清掉内存，下次 init 会重新读当前账号的数据
+  static reset(): void {
+    FavoritesStore.items = [];
+    FavoritesStore.loaded = false;
+  }
+
+  // 删除指定账号的收藏（换号/注销时用），不影响当前内存
+  static async clearAccount(accountKey: string): Promise<void> {
+    const store = FavoritesStore.store;
+    if (store === undefined) {
+      return;
+    }
+    await ScopedPrefs.clearAccount(store, accountKey, [KEY_ITEMS]);
   }
 
   static isFavorited(questionId: string): boolean {

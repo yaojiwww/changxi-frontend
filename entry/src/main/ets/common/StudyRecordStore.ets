@@ -2,6 +2,8 @@
 // 交卷成功生成报告后，各答题页调用 add() 追加一条，学习数据页读取展示并可回看报告
 import { preferences } from '@kit.ArkData';
 import { common } from '@kit.AbilityKit';
+import { AccountScope } from './AccountScope';
+import { ScopedPrefs } from './ScopedPrefs';
 
 const STORE_NAME: string = 'changxi_study_records';
 const KEY_RECORDS: string = 'records';
@@ -37,13 +39,14 @@ export class StudyRecordStore {
   private static loaded: boolean = false;
 
   static async init(context: common.Context): Promise<void> {
+    await AccountScope.init(context);
     if (StudyRecordStore.store === undefined) {
       StudyRecordStore.store = await preferences.getPreferences(context, { name: STORE_NAME });
     }
     if (!StudyRecordStore.loaded) {
-      const raw = await StudyRecordStore.store.get(KEY_RECORDS, '[]') as string;
+      const raw: string = await ScopedPrefs.read(StudyRecordStore.store, KEY_RECORDS);
       try {
-        StudyRecordStore.records = JSON.parse(raw) as StudyRecord[];
+        StudyRecordStore.records = raw === '' ? [] : JSON.parse(raw) as StudyRecord[];
       } catch (e) {
         StudyRecordStore.records = [];
       }
@@ -57,8 +60,22 @@ export class StudyRecordStore {
     if (store === undefined) {
       return;
     }
-    await store.put(KEY_RECORDS, JSON.stringify(StudyRecordStore.records));
-    await store.flush();
+    await ScopedPrefs.write(store, KEY_RECORDS, JSON.stringify(StudyRecordStore.records));
+  }
+
+  // 换号/退出登录时清掉内存，下次 init 会重新读当前账号的数据
+  static reset(): void {
+    StudyRecordStore.records = [];
+    StudyRecordStore.loaded = false;
+  }
+
+  // 删除指定账号的学习记录（换号/注销时用），不影响当前内存
+  static async clearAccount(accountKey: string): Promise<void> {
+    const store = StudyRecordStore.store;
+    if (store === undefined) {
+      return;
+    }
+    await ScopedPrefs.clearAccount(store, accountKey, [KEY_RECORDS]);
   }
 
   // 追加一条学习记录并落库

@@ -7,6 +7,8 @@ import { GoalCache } from '../common/GoalModel';
 import { ExamDateCache } from '../common/ExamDateModel';
 import { ProfileCache, isValidPhone } from '../common/ProfileModel';
 import { TokenIdentity } from '../common/TokenIdentity';
+import { AccountScope } from '../common/AccountScope';
+import { SessionService } from '../common/SessionService';
 import { AuthApi } from '../api/AuthApi';
 import { CODE_OK } from '../common/Http';
 
@@ -30,9 +32,11 @@ export class LoginViewModel {
   @Trace needOnboarding: boolean = false;
 
   private timerId: number = -1;
+  private context: common.Context | undefined = undefined;
 
   // 页面 aboutToAppear 调一次，把配置与本地存储准备好
   async init(context: common.Context): Promise<void> {
+    this.context = context;
     await AppConfig.load(context);
     await TokenStore.init(context);
     await OnboardingCache.init(context);
@@ -153,13 +157,13 @@ export class LoginViewModel {
     await TokenStore.save(token);
 
     const accountKey: string = TokenIdentity.accountKey(token, this.phone);
-    const previous: string = await OnboardingCache.setCurrentUser(accountKey);
-    if (previous !== '' && previous !== accountKey) {
-      // 换账号：上一个人的目标级别、考试日期、昵称不能留给下一个人
-      await GoalCache.clear();
-      await ExamDateCache.clear();
-      await ProfileCache.clear();
-    }
+    const previous: string = AccountScope.current();
+    // 先按「上一个账号」清理：此时 AccountScope 还没切走，
+    // 旧版本设备级数据会先迁到上一个账号名下再被删除，不会被新账号接手。
+    await SessionService.onAccountChanged(previous, accountKey, this.context);
+    await OnboardingCache.setCurrentUser(accountKey);
+    // 账号切换后清掉内存，下一次 init 按新账号重新读缓存
+    SessionService.resetMemory();
     if (previous === '' && !isRegister) {
       // 旧版本升级后的第一次登录：把设备级 done 迁到当前账号，老用户不重弹引导
       await OnboardingCache.migrateLegacyDone();

@@ -1,4 +1,17 @@
 {
     "typescript.validate.enable": false,
-    "typescript.suggest.enabled": false
+    "typescript.suggest.enabled": false,
+    "editor.gotoLocation.alternativeDeclarationCommand": "editor.action.revealDefinition",
+    "editor.gotoLocation.alternativeDefinitionCommand": "editor.action.revealDefinition",
+    "editor.gotoLocation.alternativeTypeDefinitionCommand": "editor.action.revealDefinition",
+    "editor.selectionHighlight": false,
+    "files.autoSave": "onFocusChange",
+    "editor.suggest.snippetsPreventQuickSuggestions": false,
+    "editor.quickSuggestions": {
+        "other": "on",
+        "comments": "off",
+        "strings": "on"
+    },
+    "CangjieSdk.Option": "CJNative",
+    "CangjieSdkPath.CJNativeBackend": "/Users/yaojiwww/cangjie"
 }

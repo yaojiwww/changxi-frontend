@@ -2,6 +2,8 @@
 // Mock 阶段充当「数据库」，联调后由后端接管
 import { preferences } from '@kit.ArkData';
 import { common } from '@kit.AbilityKit';
+import { AccountScope } from './AccountScope';
+import { ScopedPrefs } from './ScopedPrefs';
 
 const STORE_NAME: string = 'changxi_exam';
 const KEY_PROGRESS: string = 'progress';   // 进行中记录（同一时间仅一套）
@@ -54,11 +56,12 @@ export class ExamStore {
   private static loaded: boolean = false;
 
   static async init(context: common.Context): Promise<void> {
+    await AccountScope.init(context);
     if (ExamStore.store === undefined) {
       ExamStore.store = await preferences.getPreferences(context, { name: STORE_NAME });
     }
     if (!ExamStore.loaded) {
-      const p = await ExamStore.store.get(KEY_PROGRESS, '') as string;
+      const p: string = await ScopedPrefs.read(ExamStore.store, KEY_PROGRESS);
       if (p !== '') {
         try {
           ExamStore.progress = JSON.parse(p) as ExamProgress;
@@ -66,14 +69,30 @@ export class ExamStore {
           ExamStore.progress = null;
         }
       }
-      const f = await ExamStore.store.get(KEY_FINISHED, '[]') as string;
+      const f: string = await ScopedPrefs.read(ExamStore.store, KEY_FINISHED);
       try {
-        ExamStore.finished = JSON.parse(f) as ExamFinished[];
+        ExamStore.finished = f === '' ? [] : JSON.parse(f) as ExamFinished[];
       } catch (e) {
         ExamStore.finished = [];
       }
       ExamStore.loaded = true;
     }
+  }
+
+  // 换号/退出登录时清掉内存，下次 init 会重新读当前账号的数据
+  static reset(): void {
+    ExamStore.progress = null;
+    ExamStore.finished = [];
+    ExamStore.loaded = false;
+  }
+
+  // 删除指定账号的考试进度与成绩（换号/注销时用），不影响当前内存
+  static async clearAccount(accountKey: string): Promise<void> {
+    const store = ExamStore.store;
+    if (store === undefined) {
+      return;
+    }
+    await ScopedPrefs.clearAccount(store, accountKey, [KEY_PROGRESS, KEY_FINISHED]);
   }
 
   // ===== 进行中记录 =====
@@ -88,8 +107,7 @@ export class ExamStore {
     if (store === undefined) {
       return;
     }
-    await store.put(KEY_PROGRESS, JSON.stringify(p));
-    await store.flush();
+    await ScopedPrefs.write(store, KEY_PROGRESS, JSON.stringify(p));
   }
 
   // 交卷后清除：悬浮栏随之消失
@@ -99,8 +117,7 @@ export class ExamStore {
     if (store === undefined) {
       return;
     }
-    await store.put(KEY_PROGRESS, '');
-    await store.flush();
+    await ScopedPrefs.write(store, KEY_PROGRESS, '');
   }
 
   // ===== 已考记录 =====
@@ -133,7 +150,6 @@ export class ExamStore {
     if (store === undefined) {
       return;
     }
-    await store.put(KEY_FINISHED, JSON.stringify(next));
-    await store.flush();
+    await ScopedPrefs.write(store, KEY_FINISHED, JSON.stringify(next));
   }
 }

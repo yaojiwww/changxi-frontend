@@ -3,6 +3,7 @@ import { bundleManager } from '@kit.AbilityKit';
 import { AppStorageV2 } from '@kit.ArkUI';
 import { AppConfig } from '../common/AppConfig';
 import { TokenStore } from '../common/TokenStore';
+import { SessionService } from '../common/SessionService';
 import { UserApi } from '../api/UserApi';
 import { CODE_OK } from '../common/Http';
 import { SettingsDetailParams } from './SettingsDetailPage';
@@ -107,7 +108,7 @@ struct Settings {
     } catch (err) {
       // 网络异常也继续本地退出，避免用户被卡在已登录界面
     }
-    await TokenStore.clear();
+    await SessionService.logout();
     this.getUIContext().getRouter().replaceUrl({ url: 'pages/LoginPage' });
   }
 

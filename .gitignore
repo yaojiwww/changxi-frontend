@@ -14,3 +14,6 @@
 # DevEco 预览缓存
 .preview
 **/.preview
+# 文档
+GEMINI.md
+
