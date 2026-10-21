@@ -2,6 +2,7 @@
 // 页面只做渲染；选图、提问、流式收字、多轮会话 ID 都在这里。
 // 失败一律 throw Error，由页面 catch 后 toast。
 import { common } from '@kit.AbilityKit';
+import { BusinessError } from '@kit.BasicServicesKit';
 import { photoAccessHelper } from '@kit.MediaLibraryKit';
 import { AppConfig } from '../common/AppConfig';
 import { TokenStore } from '../common/TokenStore';
@@ -11,6 +12,9 @@ import { AIChatApi, AIChatRequest, AIChatHandlers } from '../api/AIChatApi';
 // 消息发送方，与页面渲染时的判断值一致
 const FROM_USER: string = 'user';
 const FROM_AI: string = 'ai';
+
+// 只发图片、没写文字时补一句默认提问，保证后端/Dify 的 query 非空
+const IMAGE_ONLY_QUERY: string = '请识别并解答图片中的题目';
 
 @ObservedV2
 export class AIChatViewModel {
@@ -31,6 +35,11 @@ export class AIChatViewModel {
     return this.chatList.length > 0;
   }
 
+  // 发送按钮的可用态：有文字或有图，且当前没有正在收的回复
+  get canSend(): boolean {
+    return !this.sending && (this.inputText.trim() !== '' || this.pendingImage !== '');
+  }
+
   // 页面 aboutToAppear 调一次：准备配置与令牌（两步都幂等，可以多页重复调用）
   async init(context: common.Context): Promise<void> {
     this.context = context;
@@ -45,14 +54,22 @@ export class AIChatViewModel {
       const picker = new photoAccessHelper.PhotoViewPicker();
       const options: photoAccessHelper.PhotoSelectOptions = {
         MIMEType: photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE,
-        maxSelectNumber: 1
+        maxSelectNumber: 1,
+        isPhotoTakingSupported: true
       };
       const result = await picker.select(options);
-      if (result.photoUris.length > 0) {
-        this.pendingImage = result.photoUris[0];
+      const uris: string[] | undefined = result.photoUris;
+      if (uris !== undefined && uris.length > 0) {
+        this.pendingImage = uris[0];
       }
     } catch (e) {
-      // 用户取消或选择失败：保持原状态
+      const err = e as BusinessError;
+      const code: number = err.code !== undefined ? err.code : 0;
+      // 13900006 = 用户主动取消，保持原状态，不打扰
+      if (code === 13900006) {
+        return;
+      }
+      throw new Error(code !== 0 ? `打开相册失败（错误码 ${code}）` : '打开相册失败');
     }
   }
 
@@ -70,10 +87,6 @@ export class AIChatViewModel {
     const text: string = this.inputText.trim();
     if (text === '' && this.pendingImage === '') {
       return;   // 没内容，等同没点
-    }
-    if (text === '') {
-      // 图片目前只做预览，不参与提问（Dify 侧要走文件上传，链路另说）
-      throw new Error('AI 暂时只认文字，请补一句描述再发');
     }
 
     const image: string = this.pendingImage;
@@ -137,10 +150,16 @@ export class AIChatViewModel {
         await TokenStore.init(this.context);
         this.token = await TokenStore.read();
       }
+      // 有图先上传换 URL，再带着 imageUrl 提问；无图时保持空串
+      let imageUrl: string = '';
+      if (image !== '') {
+        imageUrl = await AIChatApi.uploadImage(image, this.token);
+      }
       const body: AIChatRequest = {
-        query: text,
+        query: text !== '' ? text : IMAGE_ONLY_QUERY,
         conversationId: this.conversationId,
-        mode: this.selectedMode === 1 ? AI_MODE_PLAN : AI_MODE_SOLVE
+        mode: this.selectedMode === 1 ? AI_MODE_PLAN : AI_MODE_SOLVE,
+        imageUrl: imageUrl
       };
       await AIChatApi.stream(body, this.token, handlers);
 
