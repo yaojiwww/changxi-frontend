@@ -31,12 +31,19 @@ export default class EntryAbility extends UIAbility {
         return;
       }
       hilog.info(DOMAIN, 'testTag', 'Succeeded in loading the content.');
+      // 窗口底色与页面背景同色，消除状态栏/导航栏区域露出的白边
+      try {
+        const mainWindow = windowStage.getMainWindowSync();
+        mainWindow.setWindowBackgroundColor('#FDFDED');
+      } catch (err) {
+        hilog.error(DOMAIN, 'testTag', 'Failed to set window background. Cause: %{public}s', JSON.stringify(err));
+      }
     });
     // ---- 问系统：安全区有多高，并做沉浸式适配（适配任何机型，不写死数字） ----
     const win = windowStage.getMainWindowSync();
     // 状态栏底色与页面同色、图标用深色：非沉浸式页面顶部不再出现白条
     win.setWindowSystemBarProperties({
-      statusBarColor: '#FFFFFF',
+      statusBarColor: '#FDFDED',
       statusBarContentColor: '#55402F'
     }).catch((err: Object) => {
       hilog.error(DOMAIN, 'testTag', 'setWindowSystemBarProperties failed: %{public}s', JSON.stringify(err));

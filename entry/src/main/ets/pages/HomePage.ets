@@ -340,26 +340,27 @@ struct HomeView {
 
   build() {
     Column() {
+      // ============ 1. 顶部标题：报考级别（固定在顶部，不随内容滚动） ============
+      Row() {
+        Text(this.levelName())
+          .fontSize(21.0)
+          .fontWeight(FontWeight.Bold)
+          .fontColor('#55402F')
+
+        Image($r('app.media.xiangxia'))
+          .width(16)
+          .height(16)
+          .objectFit(ImageFit.Contain)
+          .margin({ left: 4 })
+
+      }
+      .width('100%')
+      .padding({ left: 16, right: 16, top: 4, bottom: 8 })
+      .alignItems(VerticalAlign.Bottom)
+      .bindMenu(this.LevelMenu())
+
       Scroll() {
         Column() {
-          // ============ 1. 顶部标题：报考级别（下拉切换，与 Tab 联动） ============
-          Row() {
-            Text(this.levelName())
-              .fontSize(21.0)
-              .fontWeight(FontWeight.Bold)
-              .fontColor('#55402F')
-
-            Image($r('app.media.xiangxia'))
-              .width(16)
-              .height(16)
-              .objectFit(ImageFit.Contain)
-              .margin({ left: 4 })
-
-          }
-          .width('100%')
-          .padding({ top: 12, bottom: 12 })
-          .alignItems(VerticalAlign.Bottom)
-          .bindMenu(this.LevelMenu())
 
           // 知识分类 Tab（第二项文案随报考级别联动；点击仅切换下方知识点练习列表）
           Row({ space: 30 }) {
@@ -668,13 +669,13 @@ struct HomeView {
             .margin({ bottom: 24 })
           }
         }
-        .padding({ left: 16, right: 16, top: 12, bottom: 84 })
+        .padding({ left: 16, right: 16, top: 4, bottom: 84 })
         .width('100%')
       }
       .scrollBar(BarState.Off)
       .edgeEffect(EdgeEffect.Spring)
       .width('100%')
-      .height('100%')
+      .layoutWeight(1)
     }
     .width('100%')
     .height('100%')
