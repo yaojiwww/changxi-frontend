@@ -1,9 +1,13 @@
 // 知识点练习页：首页「基础知识/专业知识」列表点击某个知识点跳入。
-// 演示说明：「相关法律法规及其它试题」内置 5 道真实题目（本地即选即判，带解析）；
+// 演示说明：「相关法律法规及其它试题」内置 10 道真实题目（本地即选即判，带解析）；
 // 页面顶部的题号与进度条按该知识点真实题库总数（358 题）计算——演示题只是题库的一小部分。
+// 做完自动生成练习报告并归档到学习数据（报告组装见 common/PracticeRecord）。
 // 后端联调后：题目由后端按 kp_id 抽取，判题与解析走接口，本文件演示数据可删。
 import { FavoritesStore, FavoriteItem } from '../common/FavoritesStore';
 import { WrongBookStore } from '../common/WrongBookStore';
+import { StudyRecordStore } from '../common/StudyRecordStore';
+import { AnsweredQuestion, buildPracticeReport, archiveKnowledgePractice } from '../common/PracticeRecord';
+import { PracticeReport } from '../api/PracticeApi';
 
 interface PracticeParams {
   topicId?: number;
@@ -54,6 +58,38 @@ const LAW_DEMO: LawQ[] = [
     options: ['幼儿师范学校毕业', '高中毕业', '初中毕业', '任何学历均可'],
     answer: 'A',
     tip: '教师法规定取得幼儿园教师资格，应当具备幼儿师范学校毕业及其以上学历。'
+  },
+  {
+    stem: '依据《未成年人保护法》，未成年人是指未满（ ）周岁的公民。',
+    options: ['14', '16', '18', '20'],
+    answer: 'C',
+    tip: '未成年人保护法第二条规定：未成年人是指未满十八周岁的公民。托育、幼儿园的服务对象全部属于未成年人。'
+  },
+  {
+    stem: '根据《托儿所幼儿园卫生保健管理办法》，婴幼儿入园（所）时应当查验的健康证明文件是（ ）。',
+    options: ['出生医学证明', '儿童入园（所）健康检查表', '预防接种完成证明原件', '体格发育评价报告'],
+    answer: 'B',
+    tip: '管理办法规定儿童入园（所）前须经医疗卫生机构健康检查，合格后方可入园，查验的是“儿童入园（所）健康检查表”。'
+  },
+  {
+    stem: '根据《食品安全法》，托幼机构食堂制作的食品应当（ ）。',
+    options: ['每餐样品留存48小时以上，每样不少于125克', '每餐样品留存24小时以上，每样不少于100克',
+      '每餐样品留存72小时以上，每样不少于150克', '无需留样，但需做好进货查验记录'],
+    answer: 'A',
+    tip: '每餐食品成品留样，每品种不少于125克、留存48小时以上并记录，发生食源性疾病时才能追溯。'
+  },
+  {
+    stem: '依据《托育机构保育指导大纲（试行）》，托育机构保育工作应遵循的基本原则中，不包括以下哪项？（ ）',
+    options: ['尊重儿童', '安全健康', '积极回应', '提前教学'],
+    answer: 'D',
+    tip: '大纲规定尊重儿童、安全健康、积极回应、科学规范四项原则。“提前教学”违背婴幼儿成长规律。'
+  },
+  {
+    stem: '《未成年人保护法》确立的强制报告制度要求，密切接触未成年人的单位及其工作人员发现未成年人身心健康受到侵害时，应当（ ）。',
+    options: ['立即向公安、民政、教育等有关部门报告', '先在单位内部处理，必要时再上报',
+      '只通知家长，由家长自行处理', '等待有关部门调查后再配合提供情况'],
+    answer: 'A',
+    tip: '强制报告制度要求相关单位和人员立即向公安、民政、教育等部门报告，不得隐瞒、拖延。'
   }
 ];
 
@@ -68,7 +104,10 @@ struct Practice {
   @Local done: boolean = false;          // 演示题全部做完
   @Local starred: boolean = false;       // 当前题收藏状态
 
-  // 演示题稳定 ID：law_1 ~ law_5（错题本/收藏共用）
+  private startTime: number = 0;          // 本轮开始时间，用于报告里的练习时长
+  private openingReport: boolean = false; // 防止连点重复提交/重复归档
+
+  // 演示题稳定 ID：law_1 ~ law_10（错题本/收藏共用）
   private qid(i: number): string {
     return 'law_' + (i + 1).toString();
   }
@@ -94,10 +133,12 @@ struct Practice {
     this.isLaw = this.pageTitle.indexOf('法律法规') >= 0;
     if (this.isLaw) {
       this.picks = LAW_DEMO.map((): string => '');
+      this.startTime = Date.now();
       const ctx = this.getUIContext().getHostContext();
       if (ctx !== undefined) {
         await FavoritesStore.init(ctx);
         await WrongBookStore.init(ctx);
+        await StudyRecordStore.init(ctx);
       }
       this.refreshStar();
     }
@@ -130,23 +171,58 @@ struct Practice {
     this.picks[this.cur] = key;
   }
 
-  private onNext(): void {
+  private async onNext(): Promise<void> {
     if (this.picks[this.cur] === undefined || this.picks[this.cur] === '') {
       this.toast('请先选择答案');
       return;
     }
-    // 离开本题前终判：最终答案错误 → 静默写入错题本
+    // 离开本题前终判：最终答案错误 → 静默写入错题本（await 保证落库后再离开）
     if (this.picks[this.cur] !== LAW_DEMO[this.cur].answer) {
-      WrongBookStore.markWrong(this.qid(this.cur), LAW_DEMO[this.cur].stem,
+      await WrongBookStore.markWrong(this.qid(this.cur), LAW_DEMO[this.cur].stem,
         LAW_DEMO[this.cur].options.slice(), KEYS.indexOf(LAW_DEMO[this.cur].answer),
         '相关法律法规及其它试题', 'practice');
     }
     if (this.isLast()) {
       this.done = true;
+      await this.openReport();
     } else {
       this.cur++;
       this.refreshStar();
     }
+  }
+
+  // 完成后生成练习报告：先归档到学习数据，再用报告页替换当前页（返回直达首页）
+  private async openReport(): Promise<void> {
+    if (this.openingReport) {
+      return;
+    }
+    this.openingReport = true;
+
+    const answers: AnsweredQuestion[] = [];
+    for (let i = 0; i < LAW_DEMO.length; i++) {
+      const q: LawQ = LAW_DEMO[i];
+      answers.push({
+        questionId: this.qid(i),
+        userAnswer: this.picks[i] === undefined ? '' : this.picks[i],
+        correctOption: q.answer,
+        knowledgePoint: '相关法律法规及其它试题'
+      });
+    }
+    const itemName: string = this.pageTitle !== '' ? this.pageTitle : '相关法律法规及其它试题';
+    const duration: number = Math.max(1, Math.floor((Date.now() - this.startTime) / 1000));
+    const report: PracticeReport = buildPracticeReport('kp-basic-law', itemName,
+      '基础知识 · 单选练习', answers, duration);
+
+    try {
+      await archiveKnowledgePractice(report);
+    } catch (err) {
+      // 学习数据归档失败不阻断报告展示
+    }
+
+    this.getUIContext().getRouter().replaceUrl({
+      url: 'pages/PracticeReportPage',
+      params: { itemId: report.itemId, itemName: report.itemName, report: report }
+    });
   }
 
   // ===== 收藏星标 =====

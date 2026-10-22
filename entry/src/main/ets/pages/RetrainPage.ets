@@ -61,6 +61,7 @@ struct RetrainPage {
     if (context !== undefined) {
       await FavoritesStore.init(context);
       await WrongBookStore.init(context);
+      await TokenStore.init(context);
     }
     this.token = await TokenStore.read();
     this.loadQuestions();

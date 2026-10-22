@@ -9,7 +9,12 @@ import { ExamFinished } from '../common/ExamStore';
 struct StudyDataPage {
   @Local records: StudyRecord[] = [];
 
-  aboutToAppear(): void {
+  async aboutToAppear(): Promise<void> {
+    // 不依赖「我的」页先初始化：从任何入口进来都先按当前账号把记录读出来
+    const context = this.getUIContext().getHostContext();
+    if (context !== undefined) {
+      await StudyRecordStore.init(context);
+    }
     this.records = StudyRecordStore.getAll();
   }
 
