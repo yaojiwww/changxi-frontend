@@ -290,13 +290,13 @@ struct PracticeReportPage {
             .margin({ bottom: 10 })
 
           Column() {
-            this.CompareRow('上次练习正确率', this.formatAccValue(this.report!.compare.lastAccuracy), '#55402F')
+            this.CompareRow('上次练习正确率', this.formatAccValue(this.report!.compare!.lastAccuracy), '#55402F')
             Divider().width('100%').height(1).color('#F8F4E8')
-            this.CompareRow('较上次', this.formatDelta(this.report!.compare.deltaVsLast),
-              this.deltaColor(this.report!.compare.deltaVsLast))
+            this.CompareRow('较上次', this.formatDelta(this.report!.compare!.deltaVsLast),
+              this.deltaColor(this.report!.compare!.deltaVsLast))
             Divider().width('100%').height(1).color('#F8F4E8')
-            this.CompareRow('较合格线(60%)', this.formatDelta(this.report!.compare.deltaVsPassLine),
-              this.deltaColor(this.report!.compare.deltaVsPassLine))
+            this.CompareRow('较合格线(60%)', this.formatDelta(this.report!.compare!.deltaVsPassLine),
+              this.deltaColor(this.report!.compare!.deltaVsPassLine))
           }
           .width('100%')
           .padding({ left: 16, right: 16 })

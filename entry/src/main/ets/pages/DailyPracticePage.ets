@@ -1,6 +1,5 @@
 import { Http, ApiResponse, CODE_OK } from '../common/Http';
 import { TokenStore } from '../common/TokenStore';
-import { signalPendingTab } from '../common/NavSignal';
 import { FavoritesStore, FavoriteItem } from '../common/FavoritesStore';
 import { WrongBookStore } from '../common/WrongBookStore';
 import { StudyRecordStore, StudyRecord } from '../common/StudyRecordStore';
@@ -283,6 +282,11 @@ const DEMO_QUESTIONS: DemoQuestion[] = [
 const DEMO_SET_SIZE: number = 10;
 const DEMO_SET_COUNT: number = Math.floor(DEMO_QUESTIONS.length / DEMO_SET_SIZE);
 
+// 是否从后端 /practice/daily 取题。
+// 线上后端目前只返回 5 题，且没有 /practice/daily/submit，走接口就交不了卷、
+// 出不了报告。后端补齐「10 题 + 交卷接口」后把这里改成 true 即可切回。
+const USE_BACKEND_DAILY: boolean = false;
+
 // 取第 g 组演示题（越界自动取模，循环取组）
 function demoGroupQuestions(g: number): DemoQuestion[] {
   if (DEMO_SET_COUNT <= 0) {
@@ -291,44 +295,6 @@ function demoGroupQuestions(g: number): DemoQuestion[] {
   const idx = ((g % DEMO_SET_COUNT) + DEMO_SET_COUNT) % DEMO_SET_COUNT;
   return DEMO_QUESTIONS.slice(idx * DEMO_SET_SIZE, idx * DEMO_SET_SIZE + DEMO_SET_SIZE);
 }
-
-// 每题解析文字（演示模式即选即出；后端联调后由接口下发）
-interface DemoTip {
-  questionId: string;
-  tip: string;
-}
-const DEMO_TIPS: DemoTip[] = [
-  { questionId: 'd1', tip: '尊重与爱护婴幼儿是保育员职业道德的核心要求，是与婴幼儿建立良好关系的前提。' },
-  { questionId: 'd2', tip: '鼻出血时应让幼儿低头前倾，捏住鼻翼压迫止血。仰头会让血液倒流呛入气道，塞纸团、热敷都不正确。' },
-  { questionId: 'd3', tip: '进餐时营造安静愉快的氛围有利于婴幼儿消化吸收；催促、边吃边玩都会影响进食和消化。' },
-  { questionId: 'd4', tip: '含氯消毒剂浸泡后必须用清水彻底冲洗干净，残留消毒剂会刺激婴幼儿皮肤和口腔黏膜。' },
-  { questionId: 'd5', tip: '可利用昆虫的趋光性，用手电筒照射外耳道将其引出；掏挖、灌水都容易损伤鼓膜。' },
-  { questionId: 'd6', tip: '温水擦浴是安全有效的物理降温方法；酒精擦浴易经皮肤吸收中毒，捂汗会使体温进一步升高。' },
-  { questionId: 'd7', tip: '《未成年人保护法》明确：父母或者其他监护人是保障未成年人合法权益的第一责任人。' },
-  { questionId: 'd8', tip: '患传染病痊愈后应凭医疗机构证明、隔离期满方可返园，避免疫情在托幼机构内传播。' },
-  { questionId: 'd9', tip: '任何情况下都不能让幼儿独自外出玩耍，必须专人看护并随时清点人数。' },
-  { questionId: 'd10', tip: '含氯消毒剂浸泡玩具后须用清水冲洗干净并晾干，避免消毒剂残留刺激婴幼儿皮肤。' },
-  { questionId: 'd11', tip: '户外活动前必须先检查场地与器械（尖锐边角、松动螺丝、积水、破损地面等），确认安全后再组织活动，这是预防跌落、碰撞伤害的第一道关口。' },
-  { questionId: 'd12', tip: '擦伤后先用流动清水冲掉泥沙等污物，再用碘伏由内向外消毒。直接贴创可贴会把污物闷在伤口内，用手揉搓或涂牙膏都容易引起感染。' },
-  { questionId: 'd13', tip: '鼻腔异物位置深、幼儿又易挣扎，自行掏取可能把异物推得更深甚至滑入气道。应让幼儿保持安静、不要仰头，立即送医由专业人员取出。' },
-  { questionId: 'd14', tip: '发现幼儿发热应先测量并记录体温，同时通知保健医进一步处理、联系家长。自行喂药、对着吹风扇或让其一直睡都可能延误病情。' },
-  { questionId: 'd15', tip: '含氯消毒剂有腐蚀性和刺激性，配制时须戴手套、在通风处进行，并且现配现用（有效氯会随时间衰减）；严禁与洁厕灵等酸性清洁剂混用，否则会产生有毒氯气。' },
-  { questionId: 'd16', tip: '规范洗手要在流动水下用洗手液按七步洗手法搓洗。一盆水轮流洗、用湿巾代替洗手、共用毛巾擦手都会造成交叉感染。' },
-  { questionId: 'd17', tip: '发现手足口病病例应立即隔离患儿、对玩具餐具等全面消毒，并加强晨午检和全日观察，同时按规定上报，不能瞒报、迟报。' },
-  { questionId: 'd18', tip: '活动室每天开窗通风不少于 2 次、每次不少于 30 分钟，可有效降低室内病原体浓度。开空调不能替代通风，只在离园后通风也远远不够。' },
-  { questionId: 'd19', tip: '热汤应先盛好并放在幼儿够不到的远离处，再分发餐具。让幼儿自己端热汤、互相传递是托幼机构烫伤的高发原因。' },
-  { questionId: 'd20', tip: '处理呕吐物要先疏散其他幼儿、开窗通风，保育师戴好口罩手套，用含氯消毒液覆盖作用一段时间后再清除。用拖把直接拖、干抹布擦会让病原体随气溶胶扩散。' },
-  { questionId: 'd21', tip: '喂药必须凭家长书面委托，核对药名、剂量、时间后按医嘱喂服并做好记录。擅自加量、混在饭菜里喂、让幼儿自行服用都可能造成用药错误。' },
-  { questionId: 'd22', tip: '鼻腔异物不要用镊子自行夹取，也不要按压鼻梁或大量喝水冲，这些做法会让异物移位甚至误吸。应保持幼儿安静、避免哭闹，立即送医。' },
-  { questionId: 'd23', tip: '发现法定传染病须按当地规定时限及时上报疾控或妇幼保健机构，不得迟报、瞒报、漏报，同时配合做好隔离、消毒和密切接触者观察。' },
-  { questionId: 'd24', tip: '玩具、图书要按材质选择适宜方式（清洗、消毒液浸泡、暴晒、紫外线等）定期消毒。只在学期末或有污渍时才处理，达不到预防疾病的效果。' },
-  { questionId: 'd25', tip: '晨检「一摸二看三问四查」中的三问，是向家长了解幼儿在家的饮食、睡眠、大小便和健康状况，以便及早发现异常。' },
-  { questionId: 'd26', tip: '正确按压 10 分钟仍未止血，说明出血点较大或可能存在凝血问题，应立即送医。继续长时间按压、让幼儿平躺、塞纸巾都会延误处理。' },
-  { questionId: 'd27', tip: '消毒柜、电热水壶等设备要严格按操作规程使用，放在幼儿够不到的位置，操作时专人看护幼儿，绝不能让幼儿插拔电源。' },
-  { questionId: 'd28', tip: '幼儿应随渴随喝，保育师上下午各组织一次集体饮水，并保证随时能喝到温开水。限制饮水会影响代谢、增加泌尿系统感染的风险。' },
-  { questionId: 'd29', tip: '惊厥时应让幼儿就地侧卧、松开衣领保持呼吸道通畅，移开周围硬物，不要按压四肢、不要往嘴里塞东西、不要抱起摇晃，同时立即送医。' },
-  { questionId: 'd30', tip: '《幼儿园工作规程》明确保育师应配合教师做好保育工作，坚持保育与教育相结合，关注幼儿个体差异，而不是只负责清洁卫生。' }
-];
 
 // 答题页内的题目模型：@Trace 驱动选中态刷新
 @ObservedV2
@@ -374,7 +340,7 @@ struct DailyPractice {
     await this.loadDaily();
   }
 
-  // ===== 拉题：GET /practice/daily，失败降级演示题 =====
+  // ===== 拉题：本地固定 10 题；USE_BACKEND_DAILY 打开后改走 GET /practice/daily =====
   private async loadDaily(): Promise<void> {
     this.loading = true;
     this.finished = false;
@@ -384,24 +350,26 @@ struct DailyPractice {
     this.sheetOpen = false;
     this.startTime = Date.now();
     this.starred = false;
-    try {
-      const token = await TokenStore.read();
-      const res: ApiResponse<DailyData> = await Http.get<DailyData>('/practice/daily', token);
-      if (res.code === CODE_OK && res.data !== null && res.data.questions.length > 0) {
-        this.practiceId = res.data.practiceId;
-        this.questions = res.data.questions.map((it: DailyQuestionItem): DailyQuestion => {
-          return new DailyQuestion(it.questionId, it.stem, it.options, it.knowledgePoint);
-        });
-        this.demoMode = false;
-        this.loading = false;
-        this.refreshStar();
-        return;
+    if (USE_BACKEND_DAILY) {
+      try {
+        const token = await TokenStore.read();
+        const res: ApiResponse<DailyData> = await Http.get<DailyData>('/practice/daily', token);
+        if (res.code === CODE_OK && res.data !== null && res.data.questions.length > 0) {
+          this.practiceId = res.data.practiceId;
+          this.questions = res.data.questions.map((it: DailyQuestionItem): DailyQuestion => {
+            return new DailyQuestion(it.questionId, it.stem, it.options, it.knowledgePoint);
+          });
+          this.demoMode = false;
+          this.loading = false;
+          this.refreshStar();
+          return;
+        }
+      } catch (err) {
+        // 网络异常走兜底
       }
-    } catch (err) {
-      // 网络异常走兜底
     }
-      // 兜底：后端未连接 → 本地演示题（静默降级，界面不提示，演示效果与真实后端一致）
-      this.demoMode = true;
+    // 本地 10 题：题目、答案、解析都在前端，交卷时能立刻判题并生成报告
+    this.demoMode = true;
     // 每天一套：当天已完成过 → 直接回看当天的学习报告，不再重复做题
     const todayReport: PracticeReportData | null = this.todayLatestReport();
     if (todayReport !== null) {
@@ -515,8 +483,8 @@ struct DailyPractice {
     return q !== undefined && q.selected !== '';
   }
 
-  // ===== 即时解析（演示模式即选即判；后端联调后按契约交卷统一判题，届时解析在报告页回看） =====
-  // 当前题正确选项字母（演示题库内查得；后端模式返回 '' 不判）
+  // ===== 整卷模式：答题过程中只记录选项，不判对错、不显示答案 =====
+  // 正确选项字母只在后台用于「交卷后写错题本」，不参与答题页渲染。
   private currentCorrectKey(): string {
     if (!this.demoMode) {
       return '';
@@ -524,58 +492,6 @@ struct DailyPractice {
     const q = this.questions[this.cur];
     const d = DEMO_QUESTIONS.find((x: DemoQuestion): boolean => x.questionId === q.questionId);
     return d !== undefined ? d.answer : '';
-  }
-
-  // 当前题是否已出解析：可判 + 已作答
-  private judged(): boolean {
-    return this.demoMode && this.questions[this.cur] !== undefined
-      && this.currentCorrectKey() !== '' && this.questions[this.cur].selected !== '';
-  }
-
-  // 印章颜色：答对绿 / 答错红
-  private stampColor(): string {
-    return this.questions[this.cur].selected === this.currentCorrectKey() ? '#2E9E63' : '#D9534F';
-  }
-
-  // 当前题的演示统计值：同一题每次进入固定，不同题之间有差异
-  private demoIdNum(): number {
-    const q = this.questions[this.cur];
-    const m = /\d+/.exec(q.questionId);
-    return m !== null ? parseInt(m[0]) : 0;
-  }
-
-  // 统计演示值：正确率跟随用户本题作答结果（做对=100%，做错=0%）
-  private statRate(): string {
-    return this.questions[this.cur].selected === this.currentCorrectKey() ? '100%' : '0%';
-  }
-
-  // 当前题解析文字
-  private currentTip(): string {
-    const q = this.questions[this.cur];
-    if (q === undefined) {
-      return '';
-    }
-    const t = DEMO_TIPS.find((x: DemoTip): boolean => x.questionId === q.questionId);
-    if (t !== undefined && t.tip !== '') {
-      return t.tip;
-    }
-    // 兜底：万一新增题目没配解析，也要给出可读结论，不能留空白
-    const key = this.currentCorrectKey();
-    const idx = ['A', 'B', 'C', 'D'].indexOf(key);
-    const opt = (idx >= 0 && idx < q.options.length) ? q.options[idx] : '';
-    if (opt === '') {
-      return '请结合「' + q.knowledgePoint + '」复习本题考点。';
-    }
-    return '正确答案是 ' + key + '：' + opt + '。本题考点属于「' + q.knowledgePoint + '」，建议结合该知识点一起掌握。';
-  }
-
-  private statErrorProne(): string {
-    const keys: string[] = ['A', 'B', 'C', 'D'];
-    let idx = (keys.indexOf(this.currentCorrectKey()) + 1 + this.demoIdNum() % 3) % 4;
-    if (keys[idx] === this.currentCorrectKey()) {
-      idx = (idx + 1) % 4;
-    }
-    return keys[idx];
   }
 
   // ===== 收藏星标：加入/取消收藏，实时同步「我的收藏」 =====
@@ -699,6 +615,8 @@ struct DailyPractice {
       }
 
       if (this.demoMode) {
+        // 前 9 题在翻页时已入库，最后一题没有「下一题」可点，必须在这里补记
+        await this.recordWrongIfAny();
         this.report = this.buildDemoReport(answers);
         await this.archiveReport(this.report);
         this.finished = true;
@@ -1006,15 +924,10 @@ struct DailyPractice {
             .alignItems(HorizontalAlign.Start)
             .margin({ bottom: 12 })
 
-            // 选项列表
+            // 选项列表：只标记「已选中」，不暴露对错（交卷后统一出报告）
             ForEach(this.questions[this.cur].options, (opt: string, i: number) => {
               this.OptionRow(opt, i)
             }, (opt: string, i: number) => this.cur.toString() + '-' + i.toString() + '-' + opt)
-
-            // 即时解析卡（作答后出现）
-            if (this.judged()) {
-              this.AnalysisCard()
-            }
           }
           .padding({ left: 16, right: 16, bottom: 20 })
           .width('100%')
@@ -1183,41 +1096,17 @@ struct DailyPractice {
   @Builder
   OptionRow(opt: string, i: number) {
     Row({ space: 12 }) {
-      // 圆圈字母（参考题库答题页样式）
-      if (this.judged() && this.optKey(i) === this.currentCorrectKey()) {
-        // 正确项：绿色圆圈白对勾
-        Text('✓')
-          .fontSize(16.0)
-          .fontWeight(FontWeight.Bold)
-          .fontColor('#8A7A50')
-          .width(30)
-          .height(30)
-          .textAlign(TextAlign.Center)
-          .borderRadius(15)
-          .backgroundColor('#2E9E63')
-      } else if (this.judged() && this.questions[this.cur].selected === this.optKey(i)) {
-        // 选错的项：红色圆圈白字母
-        Text(this.optKey(i))
-          .fontSize(15.0)
-          .fontWeight(FontWeight.Bold)
-          .fontColor('#8A7A50')
-          .width(30)
-          .height(30)
-          .textAlign(TextAlign.Center)
-          .borderRadius(15)
-          .backgroundColor('#D9534F')
-      } else {
-        Text(this.optKey(i))
-          .fontSize(15.0)
-          .fontWeight(FontWeight.Bold)
-          .fontColor(!this.judged() && this.questions[this.cur].selected === this.optKey(i) ? '#FFFFFF' : '#9A8A6E')
-          .width(30)
-          .height(30)
-          .textAlign(TextAlign.Center)
-          .borderRadius(15)
-          .backgroundColor(!this.judged() && this.questions[this.cur].selected === this.optKey(i) ? '#FBDE71' : '#FFFFFF')
-          .border({ width: 1.5, color: !this.judged() && this.questions[this.cur].selected === this.optKey(i) ? '#FBDE71' : '#FEF8E3' })
-      }
+      // 圆圈字母：只区分「已选中 / 未选中」，不显示对错
+      Text(this.optKey(i))
+        .fontSize(15.0)
+        .fontWeight(FontWeight.Bold)
+        .fontColor(this.questions[this.cur].selected === this.optKey(i) ? '#FFFFFF' : '#9A8A6E')
+        .width(30)
+        .height(30)
+        .textAlign(TextAlign.Center)
+        .borderRadius(15)
+        .backgroundColor(this.questions[this.cur].selected === this.optKey(i) ? '#FBDE71' : '#FFFFFF')
+        .border({ width: 1.5, color: this.questions[this.cur].selected === this.optKey(i) ? '#FBDE71' : '#FEF8E3' })
 
       Text(opt)
         .fontSize(15.5)
@@ -1228,157 +1117,13 @@ struct DailyPractice {
     .width('100%')
     .padding(13)
     .borderRadius(14)
-    .backgroundColor(this.judged() && this.optKey(i) === this.currentCorrectKey() ? '#F0F6EC'
-      : (this.judged() && this.questions[this.cur].selected === this.optKey(i) ? '#FDF3DC' : Color.White))
-    .border({
-      width: 1.5,
-      color: this.judged() && this.optKey(i) === this.currentCorrectKey() ? '#F0F6EC'
-        : (this.judged() && this.questions[this.cur].selected === this.optKey(i) ? '#FEF8E3' : '#F2ECD8')
-    })
+    .backgroundColor(Color.White)
+    .border({ width: 1.5, color: '#F2ECD8' })
     .margin({ bottom: 10 })
     .alignItems(VerticalAlign.Center)
     .onClick(() => {
       this.pick(this.optKey(i));
     })
-  }
-
-  // ===== 单题解析卡（参考聚题库版式：正确答案/我的作答对比 + 统计条 + AI解答入口 + 知识点） =====
-  @Builder
-  AnalysisCard() {
-    Column() {
-      // 答案对比（参考题库答题页：正确答案 C 你的答案 B）+ 印章
-      Stack({ alignContent: Alignment.TopEnd }) {
-        Row({ space: 6 }) {
-          Text('正确答案：')
-            .fontSize(15.0)
-            .fontColor('#9A8A6E')
-
-          Text(this.currentCorrectKey())
-            .fontSize(19.0)
-            .fontWeight(FontWeight.Bold)
-            .fontColor('#2E9E63')
-
-          Text('你的答案：')
-            .fontSize(15.0)
-            .fontColor('#9A8A6E')
-            .margin({ left: 14 })
-
-          Text(this.questions[this.cur].selected)
-            .fontSize(19.0)
-            .fontWeight(FontWeight.Bold)
-            .fontColor(this.stampColor())
-        }
-        .width('100%')
-        .padding({ top: 14, bottom: 12 })
-        .alignItems(VerticalAlign.Center)
-
-        // 斜盖章：答对 / 答错
-        Text(this.questions[this.cur].selected === this.currentCorrectKey() ? '答对' : '答错')
-          .fontSize(14.0)
-          .fontWeight(FontWeight.Bold)
-          .fontColor(this.stampColor())
-          .padding({ left: 8, right: 8, top: 3, bottom: 3 })
-          .borderRadius(6)
-          .border({ width: 1.2, color: this.stampColor() })
-          .rotate({ x: 0, y: 0, z: 1, angle: -14 })
-          .margin({ right: 12, top: 12 })
-          .opacity(0.85)
-      }
-      .width('100%')
-
-      Divider().color('#F8F4E8').strokeWidth(1)
-
-      // 解析
-      Column({ space: 7 }) {
-        Text('解析')
-          .fontSize(14.5)
-          .fontWeight(FontWeight.Bold)
-          .fontColor('#55402F')
-
-        Text(this.currentTip())
-          .fontSize(14.5)
-          .fontColor('#55402F')
-          .lineHeight(21)
-      }
-      .width('100%')
-      .padding({ top: 12, bottom: 12 })
-      .alignItems(HorizontalAlign.Start)
-
-      Divider().color('#F8F4E8').strokeWidth(1)
-
-      // 统计条：答题时间 / 全站正确率 / 易错项
-      Row() {
-        this.StatCell('-', '答题时间')
-        this.StatCell(this.statRate(), '全站正确率')
-        this.StatCell(this.statErrorProne(), '易错项')
-      }
-      .width('100%')
-      .padding({ top: 12, bottom: 12 })
-
-      Divider().color('#F8F4E8').strokeWidth(1)
-
-      // AI 解答入口：回到首页 AI 伴学页签
-      Row() {
-        Text('对这道题还有疑问？AI 来问你解答')
-          .fontSize(14.5)
-          .fontWeight(FontWeight.Medium)
-          .fontColor('#E4842A')
-          .layoutWeight(1)
-
-        Text('›')
-          .fontSize(19.0)
-          .fontColor('#E4842A')
-      }
-      .width('100%')
-      .padding({ left: 14, right: 14, top: 12, bottom: 12 })
-      .borderRadius(12)
-      .backgroundColor('#FEF8E3')
-      .margin({ top: 12 })
-      .alignItems(VerticalAlign.Center)
-      .onClick(() => {
-        signalPendingTab(1);   // 返回首页并切到 AI 伴学页签
-        this.getUIContext().getRouter().back();
-      })
-
-      // 知识点
-      Row({ space: 10 }) {
-        Text('知识点')
-          .fontSize(14.0)
-          .fontColor('#9A8A6E')
-
-        Text(this.questions[this.cur].knowledgePoint === '' ? '综合' : this.questions[this.cur].knowledgePoint)
-          .fontSize(13.0)
-          .fontColor('#E4842A')
-          .backgroundColor('#FEF8E3')
-          .padding({ left: 8, right: 8, top: 3, bottom: 3 })
-          .borderRadius(6)
-      }
-      .width('100%')
-      .margin({ top: 12 })
-      .alignItems(VerticalAlign.Center)
-    }
-    .width('100%')
-    .padding(16)
-    .borderRadius(16)
-    .backgroundColor(Color.White)
-    .border({ width: 1, color: '#F2ECD8' })
-    .alignItems(HorizontalAlign.Start)
-    .margin({ top: 4 })
-  }
-
-  @Builder
-  StatCell(value: string, label: string) {
-    Column({ space: 4 }) {
-      Text(value)
-        .fontSize(16.0)
-        .fontWeight(FontWeight.Bold)
-        .fontColor('#55402F')
-      Text(label)
-        .fontSize(12.0)
-        .fontColor('#9A8A6E')
-    }
-    .layoutWeight(1)
-    .alignItems(HorizontalAlign.Center)
   }
 
   // ==================== 练习报告 ====================

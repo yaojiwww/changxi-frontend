@@ -21,6 +21,7 @@ struct FavoritesPage {
     const context = this.getUIContext().getHostContext();
     if (context !== undefined) {
       await FavoritesStore.init(context);
+      await TokenStore.init(context);
     }
     this.token = await TokenStore.read();
     await this.refresh();

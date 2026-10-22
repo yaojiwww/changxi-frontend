@@ -46,7 +46,7 @@ export interface PracticeReport {
   total: number;           // 总题数
   accuracy: number | null; // 正确率百分比；后端未给时为 null，报告页显示 --
   duration: number;        // 练习时长秒数
-  compare: PracticeComparison;
+  compare: PracticeComparison | null;   // 首次练习/演示报告没有历史对比时为 null
   answerCard: AnswerCardCell[];
   mastery: KnowledgeMastery[];
 }

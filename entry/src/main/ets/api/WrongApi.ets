@@ -57,51 +57,48 @@ export class WrongApi {
     });
   }
 
-  private static mockRepractice(answers: WrongAnswer[]): Promise<ApiResponse<RepracticeResult[]>> {
-    return new Promise<ApiResponse<RepracticeResult[]>>((resolve: (v: ApiResponse<RepracticeResult[]>) => void): void => {
-      WrongApi.delay(MOCK_DELAY_MS).then((): void => {
-        const results: RepracticeResult[] = [];
-        for (let i = 0; i < answers.length; i++) {
-          const item: WrongItem | undefined = WrongBookStore.get(answers[i].questionId);
-          if (item === undefined) {
-            continue;
-          }
-          const expectedLetter: string = WrongApi.letterOf(item.answer);
-          if (answers[i].userAnswer === expectedLetter) {
-            // 答对：答对次数 +1，达到 3 次彻底移除
-            // 注意 bumpCorrect 异步，这里用同步读改写保证返回值准确
-            item.correctCount++;
-            if (item.correctCount >= 3) {
-              WrongBookStore.eliminate(item.questionId);
-              results.push({
-                questionId: item.questionId,
-                correctCount: 3,
-                eliminated: true
-              });
-            } else {
-              WrongBookStore.flushPublic();
-              results.push({
-                questionId: item.questionId,
-                correctCount: item.correctCount,
-                eliminated: false
-              });
-            }
-          } else {
-            // 答错：保留在错题本，答对进度重置为 0
-            item.correctCount = 0;
-            item.wrongCount++;
-            item.lastWrongAt = Date.now();
-            WrongBookStore.flushPublic();
-            results.push({
-              questionId: item.questionId,
-              correctCount: 0,
-              eliminated: false
-            });
-          }
+  private static async mockRepractice(answers: WrongAnswer[]): Promise<ApiResponse<RepracticeResult[]>> {
+    await WrongApi.delay(MOCK_DELAY_MS);
+    const results: RepracticeResult[] = [];
+    for (let i = 0; i < answers.length; i++) {
+      const item: WrongItem | undefined = WrongBookStore.get(answers[i].questionId);
+      if (item === undefined) {
+        continue;
+      }
+      const expectedLetter: string = WrongApi.letterOf(item.answer);
+      if (answers[i].userAnswer === expectedLetter) {
+        // 答对：答对次数 +1，达到 3 次彻底移除
+        // 注意 bumpCorrect 异步，这里用同步读改写保证返回值准确
+        item.correctCount++;
+        if (item.correctCount >= 3) {
+          await WrongBookStore.eliminate(item.questionId);
+          results.push({
+            questionId: item.questionId,
+            correctCount: 3,
+            eliminated: true
+          });
+        } else {
+          await WrongBookStore.flushPublic();
+          results.push({
+            questionId: item.questionId,
+            correctCount: item.correctCount,
+            eliminated: false
+          });
         }
-        resolve({ code: 0, message: 'ok', data: results });
-      });
-    });
+      } else {
+        // 答错：保留在错题本，答对进度重置为 0
+        item.correctCount = 0;
+        item.wrongCount++;
+        item.lastWrongAt = Date.now();
+        await WrongBookStore.flushPublic();
+        results.push({
+          questionId: item.questionId,
+          correctCount: 0,
+          eliminated: false
+        });
+      }
+    }
+    return { code: 0, message: 'ok', data: results };
   }
 
   private static letterOf(index: number): string {
