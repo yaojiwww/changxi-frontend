@@ -10,10 +10,12 @@ const TAG = 'AIChatApi';
 
 // 后端 AI 接口路径（相对 AppConfig.apiPrefix）
 const PATH: string = '/ai/chat';
-// 聊天图片上传：multipart/form-data，字段名 file；返回 data.url 供 /ai/chat 引用
+// 聊天图片上传：multipart/form-data，字段名必须是 file；返回 data.fileId 供 /ai/chat 引用
 const UPLOAD_PATH: string = '/ai/upload';
 // 图片上传比普通接口慢，给 60 秒
 const UPLOAD_READ_TIMEOUT_MS: number = 60000;
+// 后端限制：单张 ≤ 8MB，只收 JPEG / PNG / WebP
+const MAX_IMAGE_BYTES: number = 8 * 1024 * 1024;
 
 // 读超时。别的接口沿用配置里的 10 秒，但 Dify 的智能体要先想、再调工具，
 // 首字经常十几秒才到，10 秒会在它开口之前就把连接掐了。
@@ -24,12 +26,14 @@ export interface AIChatRequest {
   query: string;
   conversationId: string;   // 上一轮后端下发的会话 ID，首轮传空串
   mode: string;             // AI_MODE_SOLVE / AI_MODE_PLAN，见 model/ChatModels
-  imageUrl: string;         // 先经 /ai/upload 换来的图片地址，无图传空串
+  fileIds: string[];        // 先经 /ai/upload 换来的文件 ID，纯文字传空数组
 }
 
-// POST /ai/upload 的返回数据
+// POST /ai/upload 的返回数据。文件名后端不采用，只认 fileId
 export interface AIUploadData {
-  url: string;
+  fileId: string;
+  size: number;
+  contentType: string;
 }
 
 // 后端下发的一个流式事件。字段名跟 Dify 的事件保持一致（后端只转发不改名）：
@@ -53,20 +57,37 @@ export interface AIChatHandlers {
 
 // AI 伴学接口。契约见本文件顶部注释，改接口先改这里再改后端
 export class AIChatApi {
-  // 上传一张聊天图片，返回后端可访问的 URL。
+  // 上传一张聊天图片，返回后端分配的 fileId（发送消息时放进 fileIds）。
   // 相册 URI 是临时授权，不能直接交给 http 的 filePath（部分机型读不到），
   // 所以先经 fileIo 读成 ArrayBuffer，再用 multiFormDataList 上传。
   static async uploadImage(uri: string, token: string): Promise<string> {
     const cfg = AppConfig.get();
-    const request = http.createHttp();
-    const lower: string = uri.toLowerCase();
-    const isPng: boolean = lower.endsWith('.png');
-    const fileName: string = isPng ? 'chat.png' : 'chat.jpg';
-    const contentType: string = isPng ? 'image/png' : 'image/jpeg';
 
+    // 本地先卡一道类型和大小，别等传完 8MB 才被后端拒掉。
+    // 类型按文件头判断（相册 URI 的后缀不总是可信），后端也是这么认的。
+    let data: ArrayBuffer;
     try {
-      const data: ArrayBuffer = AIChatApi.readFile(uri);
-      const headers: Record<string, string> = {};
+      data = AIChatApi.readFile(uri);
+    } catch (err) {
+      throw new Error('读取图片失败，请重新选择');
+    }
+    if (data.byteLength > MAX_IMAGE_BYTES) {
+      throw new Error('单张图片不能超过 8MB');
+    }
+    const contentType: string = AIChatApi.detectContentType(data);
+    if (contentType === '') {
+      throw new Error('只支持 JPEG / PNG / WebP 格式的图片');
+    }
+    const fileName: string = contentType === 'image/png'
+      ? 'chat.png'
+      : (contentType === 'image/webp' ? 'chat.webp' : 'chat.jpg');
+
+    const request = http.createHttp();
+    try {
+      // multiFormDataList 只有在 Content-Type 为 multipart/form-data 时才会生效。
+      // 这里只给类型不给 boundary：boundary 和 Content-Length 由网络层生成并补上。
+      // 漏了这一行，后端会收到非 multipart 的请求体，回「请用 multipart/form-data 上传」。
+      const headers: Record<string, string> = { 'Content-Type': 'multipart/form-data' };
       if (token !== undefined && token !== '') {
         headers['Authorization'] = `Bearer ${token}`;
       }
@@ -74,7 +95,6 @@ export class AIChatApi {
       const response = await request.request(cfg.baseUrl + cfg.apiPrefix + UPLOAD_PATH, {
         method: http.RequestMethod.POST,
         header: headers,
-        // 不要手动设置 Content-Type，multipart 的 boundary 由网络层生成
         multiFormDataList: [{
           name: 'file',
           contentType: contentType,
@@ -85,17 +105,31 @@ export class AIChatApi {
         readTimeout: UPLOAD_READ_TIMEOUT_MS
       });
 
+      // 后端约定：失败时 HTTP 是 4xx，但 body 仍是 {code,message,data}。
+      // 先按信封判断，才能把「图片太大」这类具体原因原样弹给用户。
+      let res: ApiResponse<AIUploadData> | null = null;
+      try {
+        res = JSON.parse(response.result as string) as ApiResponse<AIUploadData>;
+      } catch (err) {
+        res = null;
+      }
+      if (res !== null && res.code !== undefined) {
+        if (res.code !== CODE_OK) {
+          throw new Error(res.message !== undefined && res.message !== '' ? res.message : '图片上传失败');
+        }
+        if (res.data === null || res.data.fileId === '') {
+          throw new Error('图片上传失败：后端没有返回文件 ID');
+        }
+        return res.data.fileId;
+      }
       if (response.responseCode < 200 || response.responseCode >= 300) {
         throw new Error(`图片上传失败（HTTP ${response.responseCode}）`);
       }
-      const res = JSON.parse(response.result as string) as ApiResponse<AIUploadData>;
-      if (res.code !== CODE_OK || res.data === null || res.data.url === '') {
-        throw new Error(res.message !== '' ? res.message : '图片上传失败');
-      }
-      return res.data.url;
+      throw new Error('图片上传失败：无法解析后端响应');
     } catch (err) {
       // 上传失败统一成一句用户能看懂的话，避免把底层异常直接弹出来
-      throw new Error(`图片上传失败：${(err as Error).message}`);
+      const msg: string = (err as Error).message;
+      throw new Error(msg.startsWith('图片上传失败') ? msg : `图片上传失败：${msg}`);
     } finally {
       request.destroy();
     }
@@ -112,6 +146,27 @@ export class AIChatApi {
     } finally {
       fileIo.closeSync(file);
     }
+  }
+
+  // 按文件头判断类型，返回空串表示不是支持的类型
+  private static detectContentType(data: ArrayBuffer): string {
+    const bytes = new Uint8Array(data);
+    // JPEG: FF D8 FF
+    if (bytes.length >= 3 && bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) {
+      return 'image/jpeg';
+    }
+    // PNG: 89 50 4E 47 0D 0A 1A 0A
+    if (bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 &&
+      bytes[2] === 0x4E && bytes[3] === 0x47) {
+      return 'image/png';
+    }
+    // WebP: 'RIFF' .... 'WEBP'
+    if (bytes.length >= 12 && bytes[0] === 0x52 && bytes[1] === 0x49 &&
+      bytes[2] === 0x46 && bytes[3] === 0x46 &&
+      bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) {
+      return 'image/webp';
+    }
+    return '';
   }
 
   // 发一轮提问，边收边回调。
