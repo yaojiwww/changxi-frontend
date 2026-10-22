@@ -8,6 +8,8 @@ import { AppConfig } from '../common/AppConfig';
 import { TokenStore } from '../common/TokenStore';
 import {
   ChatMessage,
+  PendingImage,
+  MAX_CHAT_IMAGES,
   AI_MODE_SOLVE,
   AI_MODE_PLAN,
   AIAskContext,
@@ -28,7 +30,8 @@ const IMAGE_ONLY_QUERY: string = '请识别并解答图片中的题目';
 export class AIChatViewModel {
   @Trace chatList: ChatMessage[] = [];
   @Trace inputText: string = '';
-  @Trace pendingImage: string = '';   // 已选未发送的图片 URI
+  // 已选、待发送的图片。选完立刻上传，上传完成前不允许发送
+  @Trace pendingImages: PendingImage[] = [];
   @Trace selectedMode: number = 0;    // 0 = 题目解答，1 = 专属规划
   @Trace sending: boolean = false;    // 正在收回复，期间忽略重复发送
   // 从 AI 知识库带过来的知识点。为空表示普通提问；非空时每轮都带上这段背景
@@ -36,6 +39,7 @@ export class AIChatViewModel {
 
   private token: string = '';
   private conversationId: string = '';   // 后端下发的会话 ID，下一轮带上即多轮记忆
+  private imageSeq: number = 0;          // 给待发图片发号，删除/回填时按 id 定位
   // 留着 context 是为了发问前能再确认一次配置已加载：aboutToAppear 是异步的，
   // 用户手快（或者 init 曾经失败过）时，直接发问会撞上「AppConfig 未加载」。
   private context: common.Context | undefined = undefined;
@@ -45,9 +49,20 @@ export class AIChatViewModel {
     return this.chatList.length > 0;
   }
 
-  // 发送按钮的可用态：有文字或有图，且当前没有正在收的回复
+  // 是否有图片还在上传：上传没完成不能发消息
+  get uploading(): boolean {
+    for (let i = 0; i < this.pendingImages.length; i++) {
+      if (this.pendingImages[i].uploading) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // 发送按钮的可用态：有文字或有图、图片都传完了，且当前没有正在收的回复
   get canSend(): boolean {
-    return !this.sending && (this.inputText.trim() !== '' || this.pendingImage !== '');
+    return !this.sending && !this.uploading &&
+      (this.inputText.trim() !== '' || this.pendingImages.length > 0);
   }
 
   // 是否带着知识点提问：页面据此显示上下文胶囊
@@ -84,19 +99,28 @@ export class AIChatViewModel {
     this.token = await TokenStore.read();
   }
 
-  // 加号：调起系统相册选一张图片，获取本地 URI
+  // 加号：调起系统相册选图（最多补到 4 张），选完立刻上传换取 fileId。
+  // 上传失败的单张会被移除，原因汇总成一句 throw 给页面 toast。
   async pickImage(): Promise<void> {
+    const remaining: number = MAX_CHAT_IMAGES - this.pendingImages.length;
+    if (remaining <= 0) {
+      throw new Error(`一条消息最多发送 ${MAX_CHAT_IMAGES} 张图片`);
+    }
+    // 上传要用令牌和 baseUrl，先确保都就绪，别让用户选完图才失败
+    await this.ensureReady();
+
+    let uris: string[] = [];
     try {
       const picker = new photoAccessHelper.PhotoViewPicker();
       const options: photoAccessHelper.PhotoSelectOptions = {
         MIMEType: photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE,
-        maxSelectNumber: 1,
+        maxSelectNumber: remaining,
         isPhotoTakingSupported: true
       };
       const result = await picker.select(options);
-      const uris: string[] | undefined = result.photoUris;
-      if (uris !== undefined && uris.length > 0) {
-        this.pendingImage = uris[0];
+      const picked: string[] | undefined = result.photoUris;
+      if (picked !== undefined) {
+        uris = picked;
       }
     } catch (e) {
       const err = e as BusinessError;
@@ -107,11 +131,77 @@ export class AIChatViewModel {
       }
       throw new Error(code !== 0 ? `打开相册失败（错误码 ${code}）` : '打开相册失败');
     }
+    if (uris.length === 0) {
+      return;
+    }
+
+    // 先全部挂上缩略图并标记上传中，用户能马上看到选了什么
+    const added: PendingImage[] = [];
+    for (let i = 0; i < uris.length && i < remaining; i++) {
+      this.imageSeq++;
+      added.push({
+        id: `img_${this.imageSeq}`,
+        uri: uris[i],
+        fileId: '',
+        uploading: true
+      });
+    }
+    this.pendingImages = this.pendingImages.concat(added);
+
+    // 逐张上传：并发会把 4 张 8MB 同时压上去，收益不大还容易撞超时
+    const failures: string[] = [];
+    for (let i = 0; i < added.length; i++) {
+      const item: PendingImage = added[i];
+      try {
+        const fileId: string = await AIChatApi.uploadImage(item.uri, this.token);
+        this.patchPendingImage(item.id, fileId);
+      } catch (err) {
+        this.removePendingImage(item.id);
+        failures.push((err as Error).message);
+      }
+    }
+    if (failures.length > 0) {
+      throw new Error(failures.join('；'));
+    }
   }
 
-  // 移除已选待发图片
-  removePendingImage(): void {
-    this.pendingImage = '';
+  // 移除单张待发图片（按 id，避免删错）
+  removePendingImage(id: string): void {
+    const next: PendingImage[] = [];
+    for (let i = 0; i < this.pendingImages.length; i++) {
+      if (this.pendingImages[i].id !== id) {
+        next.push(this.pendingImages[i]);
+      }
+    }
+    this.pendingImages = next;
+  }
+
+  // 上传成功：回填 fileId 并灭掉上传中标记。
+  // 上传期间用户可能已经把这张删了，这里找不到就当无事发生。
+  private patchPendingImage(id: string, fileId: string): void {
+    const next: PendingImage[] = [];
+    for (let i = 0; i < this.pendingImages.length; i++) {
+      const item: PendingImage = this.pendingImages[i];
+      if (item.id === id) {
+        next.push({ id: item.id, uri: item.uri, fileId: fileId, uploading: false });
+      } else {
+        next.push(item);
+      }
+    }
+    this.pendingImages = next;
+  }
+
+  // 配置与令牌准备（两步都幂等）。页面刚起来就操作时 init() 可能还没跑完，
+  // 这里补一次：配置没加载 → 取 baseUrl 直接抛；令牌没读到 → 白白吃 401。
+  private async ensureReady(): Promise<void> {
+    if (this.context === undefined) {
+      throw new Error('页面还没准备好（拿不到应用上下文），请重新进入本页');
+    }
+    await AppConfig.load(this.context);
+    if (this.token === '') {
+      await TokenStore.init(this.context);
+      this.token = await TokenStore.read();
+    }
   }
 
   // 提问：先把用户消息压进列表，再发起流式请求，边收边把增量写进 AI 气泡。
@@ -120,22 +210,38 @@ export class AIChatViewModel {
     if (this.sending) {
       return;   // 上一轮还在收，忽略重复点按
     }
+    if (this.uploading) {
+      throw new Error('图片还在上传，请稍候再发送');
+    }
     const text: string = this.inputText.trim();
-    if (text === '' && this.pendingImage === '') {
+    if (text === '' && this.pendingImages.length === 0) {
       return;   // 没内容，等同没点
     }
 
-    const image: string = this.pendingImage;
+    const imageUris: string[] = [];
+    const fileIds: string[] = [];
+    for (let i = 0; i < this.pendingImages.length; i++) {
+      const item: PendingImage = this.pendingImages[i];
+      imageUris.push(item.uri);
+      if (item.fileId !== '') {
+        fileIds.push(item.fileId);
+      }
+    }
+    if (fileIds.length !== imageUris.length) {
+      // 正常走不到：上传中已在上面拦掉了。留作兜底，别把没换到 ID 的图悄悄发出去
+      throw new Error('有图片还没上传完成，请稍候再发送');
+    }
+
     const ask: AIAskContext | null = this.askContext;
     const userMsg: ChatMessage = {
       from: FROM_USER,
-      type: image !== '' ? 'image' : 'text',
+      type: imageUris.length > 0 ? 'image' : 'text',
       content: text,
-      imageUri: image
+      imageUris: imageUris
     };
     this.chatList.push(userMsg);
     this.inputText = '';
-    this.pendingImage = '';
+    this.pendingImages = [];
     this.sending = true;
 
     // AI 气泡延迟到第一个字到达时才建：Dify 的智能体首字要等好几秒，
@@ -148,7 +254,7 @@ export class AIChatViewModel {
     // 每次只重建正在流的那一条，其余消息的 key 没变，不会跟着重绘。
     const flush = (delta: string): void => {
       if (replyIndex < 0) {
-        const blank: ChatMessage = { from: FROM_AI, type: 'text', content: '', imageUri: '' };
+        const blank: ChatMessage = { from: FROM_AI, type: 'text', content: '', imageUris: [] };
         this.chatList.push(blank);
         replyIndex = this.chatList.length - 1;
       }
@@ -157,7 +263,7 @@ export class AIChatViewModel {
         from: FROM_AI,
         type: 'text',
         content: prev.content + delta,
-        imageUri: ''
+        imageUris: []
       };
       this.chatList.splice(replyIndex, 1, merged);
     };
@@ -175,31 +281,16 @@ export class AIChatViewModel {
     };
 
     try {
-      // 页面刚起来就发问的话，init() 可能还没跑完，这里补一次：
-      // 配置没加载 → 取 baseUrl 直接抛「AppConfig 未加载」；
-      // 令牌没读到 → 白白吃一个 401。两者都让人以为是自己代码错了。
-      // AppConfig.load / TokenStore.init 都是幂等的，重复调用没有副作用。
-      if (this.context === undefined) {
-        throw new Error('页面还没准备好（拿不到应用上下文），请重新进入本页');
-      }
-      await AppConfig.load(this.context);
-      if (this.token === '') {
-        await TokenStore.init(this.context);
-        this.token = await TokenStore.read();
-      }
-      // 有图先上传换 URL，再带着 imageUrl 提问；无图时保持空串
-      let imageUrl: string = '';
-      if (image !== '') {
-        imageUrl = await AIChatApi.uploadImage(image, this.token);
-      }
+      // 页面刚起来就发问的话，init() 可能还没跑完，这里补一次
+      await this.ensureReady();
       const baseQuery: string = text !== ''
         ? text
-        : (image !== '' ? IMAGE_ONLY_QUERY : DEFAULT_KNOWLEDGE_QUESTION);
+        : (imageUris.length > 0 ? IMAGE_ONLY_QUERY : DEFAULT_KNOWLEDGE_QUESTION);
       const body: AIChatRequest = {
         query: ask !== null ? buildKnowledgePrompt(ask, baseQuery) : baseQuery,
         conversationId: this.conversationId,
         mode: this.selectedMode === 1 ? AI_MODE_PLAN : AI_MODE_SOLVE,
-        imageUrl: imageUrl
+        fileIds: fileIds
       };
       await AIChatApi.stream(body, this.token, handlers);
 
@@ -214,7 +305,7 @@ export class AIChatViewModel {
       const msg: string = (err as Error).message;
       if (replyIndex < 0) {
         // 一个字都没收到：把原因也写进气泡
-        const failure: ChatMessage = { from: FROM_AI, type: 'text', content: msg, imageUri: '' };
+        const failure: ChatMessage = { from: FROM_AI, type: 'text', content: msg, imageUris: [] };
         this.chatList.push(failure);
       }
       // ArkTS 不允许 throw 任意类型，catch 变量必须显式当成 Error 再抛

@@ -1,7 +1,7 @@
 import { SafeArea } from '../common/SafeArea';
 import { ProfileModel } from '../common/ProfileModel';
 import { AppStorageV2 } from '@kit.ArkUI';
-import { ChatMessage } from '../model/ChatModels';
+import { ChatMessage, PendingImage } from '../model/ChatModels';
 import { AIChatViewModel } from '../viewmodel/AIChatViewModel';
 import { NavSignal, takePendingAsk } from '../common/NavSignal';
 
@@ -124,7 +124,8 @@ export struct AIView {
             // 其余消息 key 没变，不会跟着重绘。
             ForEach(this.vm.chatList, (msg: ChatMessage, idx: number) => {
               this.ChatItem(msg)
-            }, (msg: ChatMessage, idx: number) => `${idx}_${msg.from}_${msg.type}_${msg.content}_${msg.imageUri}`)
+            }, (msg: ChatMessage, idx: number) =>
+              `${idx}_${msg.from}_${msg.type}_${msg.content}_${msg.imageUris.join(',')}`)
           }
           .width('100%')
           .padding({ left: 16, right: 16, top: 12, bottom: 12 })
@@ -185,28 +186,48 @@ export struct AIView {
           .alignItems(VerticalAlign.Center)
         }
 
-        // 已选待发图片预览条
-        if (this.vm.pendingImage !== '') {
-          Row({ space: 10 }) {
-            Image(this.vm.pendingImage)
+        // 已选待发图片预览条：最多 4 张，上传中盖转圈，右上角可单张删除
+        if (this.vm.pendingImages.length > 0) {
+          Row() {
+            ForEach(this.vm.pendingImages, (item: PendingImage) => {
+              Stack({ alignContent: Alignment.TopEnd }) {
+                Stack({ alignContent: Alignment.Center }) {
+                  Image(item.uri)
+                    .width(56)
+                    .height(56)
+                    .borderRadius(10)
+                    .objectFit(ImageFit.Cover)
+                    .opacity(item.uploading ? 0.45 : 1)
+
+                  if (item.uploading) {
+                    LoadingProgress()
+                      .width(22)
+                      .height(22)
+                      .color('#E4842A')
+                  }
+                }
+                .width(56)
+                .height(56)
+
+                // 上传中也能删：上传结果回来时按 id 找不到这张，会被静默丢弃
+                Text('×')
+                  .fontSize(18.0)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor(Color.White)
+                  .textAlign(TextAlign.Center)
+                  .width(18)
+                  .height(18)
+                  .lineHeight(18)
+                  .borderRadius(9)
+                  .backgroundColor('#99000000')
+                  .onClick(() => {
+                    this.vm.removePendingImage(item.id);
+                  })
+              }
               .width(56)
               .height(56)
-              .borderRadius(10)
-              .objectFit(ImageFit.Cover)
-
-            Text('图片将随问题一起发送')
-              .fontSize(14.0)
-              .fontColor('#9A8A6E')
-              .layoutWeight(1)
-
-            Text('×')
-              .fontSize(24.0)
-              .fontWeight(FontWeight.Medium)
-              .fontColor('#8A7A50')
-              .padding({ left: 8, right: 4, top: 4, bottom: 4 })
-              .onClick(() => {
-                this.vm.removePendingImage();
-              })
+              .margin({ right: 8 })
+            }, (item: PendingImage) => `${item.id}_${item.fileId}_${item.uploading}`)
           }
           .width('100%')
           .padding(8)
@@ -343,12 +364,18 @@ export struct AIView {
       }
 
       Column({ space: 6 }) {
-        if (msg.type === 'image' && msg.imageUri !== '') {
-          Image(msg.imageUri)
-            .width(180)
-            .height(180)
-            .borderRadius(12)
-            .objectFit(ImageFit.Cover)
+        if (msg.type === 'image' && msg.imageUris.length > 0) {
+          // 单图保持原来的 180；多图缩小到 110 并自动换行，避免气泡被撑出屏
+          Flex({ wrap: FlexWrap.Wrap }) {
+            ForEach(msg.imageUris, (uri: string, idx: number) => {
+              Image(uri)
+                .width(msg.imageUris.length === 1 ? 180 : 110)
+                .height(msg.imageUris.length === 1 ? 180 : 110)
+                .borderRadius(12)
+                .objectFit(ImageFit.Cover)
+                .margin({ right: 4, bottom: 4 })
+            }, (uri: string, idx: number) => `${idx}_${uri}`)
+          }
         }
         if (msg.content !== '') {
           // ★ 千万别给这个 Text 加 .width('100%')，这是修过的老 bug。

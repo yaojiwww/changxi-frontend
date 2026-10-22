@@ -1,14 +1,25 @@
 // AI 伴学的数据模型。
 // ChatMessage 原先定义在 pages/AIChatPage.ets 里，但页面要用、ViewModel 也要用，
 // 留在 pages/ 下会让 viewmodel 反向依赖页面，所以按分层挪到 model/。
-// 字段名与页面既有的渲染逻辑（msg.from / msg.type / msg.content / msg.imageUri）保持一致。
+// 字段名与页面既有的渲染逻辑（msg.from / msg.type / msg.content / msg.imageUris）保持一致。
 
 // 聊天消息：发送方 user/ai，类型 text/image
 export interface ChatMessage {
-  from: string;      // 'user' | 'ai'
-  type: string;      // 'text' | 'image'
-  content: string;   // 文本内容
-  imageUri: string;  // 图片本地 URI（无图为空串）
+  from: string;        // 'user' | 'ai'
+  type: string;        // 'text' | 'image'
+  content: string;     // 文本内容
+  imageUris: string[]; // 随消息发送的图片本地 URI（无图为空数组）
+}
+
+// 一条消息最多带几张图，与后端限制一致
+export const MAX_CHAT_IMAGES: number = 4;
+
+// 已选、待发送的图片。选完就开始上传，拿到 fileId 后才允许发送
+export interface PendingImage {
+  id: string;        // 页面内唯一标识，用来更新/删除单张
+  uri: string;       // 相册本地 URI，用于显示缩略图
+  fileId: string;    // 上传成功后的文件 ID；空串表示还没拿到
+  uploading: boolean;
 }
 
 // 提问模式（对应页面上的「题目解答 / 专属规划」胶囊）。
