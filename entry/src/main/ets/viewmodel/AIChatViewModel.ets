@@ -6,7 +6,15 @@ import { BusinessError } from '@kit.BasicServicesKit';
 import { photoAccessHelper } from '@kit.MediaLibraryKit';
 import { AppConfig } from '../common/AppConfig';
 import { TokenStore } from '../common/TokenStore';
-import { ChatMessage, AI_MODE_SOLVE, AI_MODE_PLAN } from '../model/ChatModels';
+import {
+  ChatMessage,
+  AI_MODE_SOLVE,
+  AI_MODE_PLAN,
+  AIAskContext,
+  DEFAULT_KNOWLEDGE_QUESTION,
+  askContextTitle,
+  buildKnowledgePrompt
+} from '../model/ChatModels';
 import { AIChatApi, AIChatRequest, AIChatHandlers } from '../api/AIChatApi';
 
 // 消息发送方，与页面渲染时的判断值一致
@@ -23,6 +31,8 @@ export class AIChatViewModel {
   @Trace pendingImage: string = '';   // 已选未发送的图片 URI
   @Trace selectedMode: number = 0;    // 0 = 题目解答，1 = 专属规划
   @Trace sending: boolean = false;    // 正在收回复，期间忽略重复发送
+  // 从 AI 知识库带过来的知识点。为空表示普通提问；非空时每轮都带上这段背景
+  @Trace askContext: AIAskContext | null = null;
 
   private token: string = '';
   private conversationId: string = '';   // 后端下发的会话 ID，下一轮带上即多轮记忆
@@ -38,6 +48,32 @@ export class AIChatViewModel {
   // 发送按钮的可用态：有文字或有图，且当前没有正在收的回复
   get canSend(): boolean {
     return !this.sending && (this.inputText.trim() !== '' || this.pendingImage !== '');
+  }
+
+  // 是否带着知识点提问：页面据此显示上下文胶囊
+  get hasAskContext(): boolean {
+    return this.askContext !== null;
+  }
+
+  // 上下文胶囊文案：中级 · 婴幼儿饮食照料 · 2.1 饮食照料
+  askContextLabel(): string {
+    return this.askContext !== null ? askContextTitle(this.askContext) : '';
+  }
+
+  // 从知识库进入时调用：记下知识点；输入框为空则预填默认问题，不自动发送
+  applyAskContext(ctx: AIAskContext): void {
+    this.askContext = ctx;
+    if (this.inputText.trim() === '') {
+      this.inputText = DEFAULT_KNOWLEDGE_QUESTION;
+    }
+  }
+
+  // 用户关掉上下文胶囊：回到普通提问；只清理未被改过的默认问题
+  clearAskContext(): void {
+    if (this.inputText === DEFAULT_KNOWLEDGE_QUESTION) {
+      this.inputText = '';
+    }
+    this.askContext = null;
   }
 
   // 页面 aboutToAppear 调一次：准备配置与令牌（两步都幂等，可以多页重复调用）
@@ -90,6 +126,7 @@ export class AIChatViewModel {
     }
 
     const image: string = this.pendingImage;
+    const ask: AIAskContext | null = this.askContext;
     const userMsg: ChatMessage = {
       from: FROM_USER,
       type: image !== '' ? 'image' : 'text',
@@ -155,8 +192,11 @@ export class AIChatViewModel {
       if (image !== '') {
         imageUrl = await AIChatApi.uploadImage(image, this.token);
       }
+      const baseQuery: string = text !== ''
+        ? text
+        : (image !== '' ? IMAGE_ONLY_QUERY : DEFAULT_KNOWLEDGE_QUESTION);
       const body: AIChatRequest = {
-        query: text !== '' ? text : IMAGE_ONLY_QUERY,
+        query: ask !== null ? buildKnowledgePrompt(ask, baseQuery) : baseQuery,
         conversationId: this.conversationId,
         mode: this.selectedMode === 1 ? AI_MODE_PLAN : AI_MODE_SOLVE,
         imageUrl: imageUrl

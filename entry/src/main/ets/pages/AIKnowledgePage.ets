@@ -1,12 +1,15 @@
 import { KP_DOCS, KP_GROUPS, KpDoc, KpGroup, KpSection } from '../common/KnowledgeData';
 import { GoalModel, LEVEL_INTERMEDIATE, LEVEL_ADVANCED } from '../common/GoalModel';
 import { AppStorageV2 } from '@kit.ArkUI';
-import { signalPendingTab } from '../common/NavSignal';
+import { signalPendingAsk, signalPendingTab } from '../common/NavSignal';
+import { AIAskContext } from '../model/ChatModels';
 
 // 关键词命中条目
 interface SearchHit {
+  docId: string;
   docName: string;
   levelName: string;
+  sectionIndex: number;
   section: string;
   text: string;
 }
@@ -44,6 +47,7 @@ struct AIKnowledge {
   @Local openedId: string = '';         // 当前选中的分类 id
   @Local keyword: string = '';          // 搜索关键词
   @Local expandedGroups: string[] = []; // 左栏已展开的级别分组
+  @Local selectedSectionIndex: number = -1; // 右栏选中的小节下标；-1 = 整份分类
   // 我的备考级别：与新用户引导、首页共用一个真源
   @Local goal: GoalModel = AppStorageV2.connect(GoalModel, () => new GoalModel())!;
 
@@ -52,6 +56,49 @@ struct AIKnowledge {
     this.expandedGroups = [];
     // 初始不选中任何分类，右侧显示「选择分类」提示
     this.openedId = '';
+    this.selectedSectionIndex = -1;
+  }
+
+  // 当前选中的小节；未选或分类切换后为 undefined
+  private selectedSection(): KpSection | undefined {
+    const doc: KpDoc | undefined = this.openedDoc;
+    if (doc === undefined || this.selectedSectionIndex < 0
+      || this.selectedSectionIndex >= doc.sections.length) {
+      return undefined;
+    }
+    return doc.sections[this.selectedSectionIndex];
+  }
+
+  // 底部提问范围：选了小节显示小节，没选显示整份分类
+  private askScopeTitle(): string {
+    const sec: KpSection | undefined = this.selectedSection();
+    if (sec !== undefined) {
+      return (sec.no !== '' ? `${sec.no} ` : '') + sec.title;
+    }
+    const doc: KpDoc | undefined = this.openedDoc;
+    return doc !== undefined ? `${doc.funcName}（整个分类）` : '请选择知识点';
+  }
+
+  // 打包当前知识点 → 切到 AI 伴学。上下文必须比页签先写
+  private askAI(): void {
+    const doc: KpDoc | undefined = this.openedDoc;
+    if (doc === undefined) {
+      return;
+    }
+    const sec: KpSection | undefined = this.selectedSection();
+    const ctx: AIAskContext = new AIAskContext();
+    ctx.levelName = doc.levelName;
+    ctx.docId = doc.id;
+    ctx.docName = doc.funcName;
+    if (sec !== undefined) {
+      ctx.sectionNo = sec.no;
+      ctx.sectionTitle = sec.title;
+      ctx.skill = sec.skill.slice();
+      ctx.theory = sec.theory.slice();
+    }
+    signalPendingAsk(ctx);
+    signalPendingTab(1);
+    this.getUIContext().getRouter().back();
   }
 
   // 当前选中的分类文档
@@ -138,15 +185,22 @@ struct AIKnowledge {
       return out;
     }
     for (const d of KP_DOCS) {
-      for (const s of d.sections) {
+      for (let si = 0; si < d.sections.length; si++) {
+        const s: KpSection = d.sections[si];
         for (const it of s.skill) {
           if (it.includes(kw) && out.length < 60) {
-            out.push({ docName: d.funcName, levelName: d.levelName, section: s.title, text: it });
+            out.push({
+              docId: d.id, docName: d.funcName, levelName: d.levelName,
+              sectionIndex: si, section: s.title, text: it
+            });
           }
         }
         for (const it of s.theory) {
           if (it.includes(kw) && out.length < 60) {
-            out.push({ docName: d.funcName, levelName: d.levelName, section: s.title, text: it });
+            out.push({
+              docId: d.id, docName: d.funcName, levelName: d.levelName,
+              sectionIndex: si, section: s.title, text: it
+            });
           }
         }
       }
@@ -381,6 +435,7 @@ struct AIKnowledge {
     .alignItems(VerticalAlign.Center)
     .onClick(() => {
       this.openedId = d.id;
+      this.selectedSectionIndex = -1;
     })
   }
 
@@ -429,9 +484,10 @@ struct AIKnowledge {
     Column() {
       Scroll() {
         Column() {
-          ForEach(this.openedDoc !== undefined ? this.openedDoc.sections : [], (sec: KpSection) => {
-            this.SectionCard(sec)
-          }, (sec: KpSection, i: number) => this.openedId + '_' + sec.no + '_' + i)
+          ForEach(this.openedDoc !== undefined ? this.openedDoc.sections : [], (sec: KpSection, i: number) => {
+            this.SectionCard(sec, i)
+          }, (sec: KpSection, i: number) =>
+            this.openedId + '_' + sec.no + '_' + i + '_' + (this.selectedSectionIndex === i ? 'sel' : ''))
         }
         .width('100%')
         .padding({ left: 16, right: 16, top: 14, bottom: 24 })
@@ -444,33 +500,46 @@ struct AIKnowledge {
     .layoutWeight(1)
     .width('100%')
 
-    // 底部：去 AI 伴学提问
-    Row() {
-      Text('向 AI 提问这个知识点')
+    // 底部：显示提问范围，并把知识点带进 AI 伴学
+    Row({ space: 10 }) {
+      Column({ space: 3 }) {
+        Text('提问范围')
+          .fontSize(11.0)
+          .fontColor(TEXT_SUB)
+        Text(this.askScopeTitle())
+          .fontSize(13.5)
+          .fontWeight(FontWeight.Medium)
+          .fontColor(TEXT_MAIN)
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
+      .layoutWeight(1)
+      .alignItems(HorizontalAlign.Start)
+
+      Text('向 AI 提问')
         .fontSize(14.5)
         .fontWeight(FontWeight.Medium)
         .fontColor('#8A7A50')
         .height(42)
-        .padding({ left: 26, right: 26 })
+        .padding({ left: 22, right: 22 })
         .borderRadius(21)
         .backgroundColor(PRIMARY)
         .textAlign(TextAlign.Center)
         .shadow({ radius: 10, color: '#14000000', offsetY: 4 })
         .onClick(() => {
-          // 通知首页切到「AI 伴学」页签，再退回首页
-          signalPendingTab(1);
-          this.getUIContext().getRouter().back();
+          this.askAI();
         })
     }
     .width('100%')
     .padding({ left: 16, right: 16, top: 10, bottom: 14 })
     .backgroundColor(Color.White)
     .border({ width: { top: 1 }, color: '#F2ECD8' })
+    .alignItems(VerticalAlign.Center)
   }
 
-  // 小节卡片：技能要求 + 知识要求
+  // 小节卡片：技能要求 + 知识要求。整张卡片可点选，作为提问范围
   @Builder
-  SectionCard(sec: KpSection) {
+  SectionCard(sec: KpSection, index: number) {
     Column() {
       Row() {
         if (sec.no !== '') {
@@ -485,6 +554,14 @@ struct AIKnowledge {
           .fontWeight(FontWeight.Bold)
           .fontColor(TEXT_MAIN)
           .layoutWeight(1)
+
+        Text(this.selectedSectionIndex === index ? '✓ 已选' : '点选')
+          .fontSize(11.5)
+          .fontWeight(this.selectedSectionIndex === index ? FontWeight.Bold : FontWeight.Regular)
+          .fontColor(this.selectedSectionIndex === index ? ACCENT : TEXT_WEAK)
+          .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+          .borderRadius(10)
+          .backgroundColor(this.selectedSectionIndex === index ? '#FEF8E3' : Color.Transparent)
       }
       .width('100%')
       .alignItems(VerticalAlign.Center)
@@ -505,10 +582,17 @@ struct AIKnowledge {
     .width('100%')
     .padding(16)
     .borderRadius(16)
-    .backgroundColor(Color.White)
-    .border({ width: 1, color: CARD_BORDER })
+    .backgroundColor(this.selectedSectionIndex === index ? '#FFFCF2' : Color.White)
+    .border({
+      width: this.selectedSectionIndex === index ? 1.5 : 1,
+      color: this.selectedSectionIndex === index ? ACCENT : CARD_BORDER
+    })
     .alignItems(HorizontalAlign.Start)
     .margin({ bottom: 12 })
+    .onClick(() => {
+      // 再点一次取消选择，回到「整个分类」
+      this.selectedSectionIndex = this.selectedSectionIndex === index ? -1 : index;
+    })
   }
 
   // 一组考点：纯文字小标题 + 编号条目（不再使用彩色标签底，减少花哨感）
@@ -621,7 +705,10 @@ struct AIKnowledge {
               .alignItems(HorizontalAlign.Start)
               .margin({ bottom: 10 })
               .onClick(() => {
+                // 点搜索结果 = 直接选中该小节，底部按钮即可带着它去提问
                 this.keyword = '';
+                this.openedId = h.docId;
+                this.selectedSectionIndex = h.sectionIndex;
               })
             }, (h: SearchHit, i: number) => 'hititem_' + i)
           }

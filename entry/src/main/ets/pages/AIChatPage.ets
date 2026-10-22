@@ -3,6 +3,7 @@ import { ProfileModel } from '../common/ProfileModel';
 import { AppStorageV2 } from '@kit.ArkUI';
 import { ChatMessage } from '../model/ChatModels';
 import { AIChatViewModel } from '../viewmodel/AIChatViewModel';
+import { NavSignal, takePendingAsk } from '../common/NavSignal';
 
 @ComponentV2
 export struct AIView {
@@ -13,13 +14,35 @@ export struct AIView {
   @Local vm: AIChatViewModel = new AIChatViewModel();
   // 用户头像：与「我的」页同源（有自定义头像用头像，否则取昵称首字）
   @Local profile: ProfileModel = AppStorageV2.connect(ProfileModel, () => new ProfileModel())!;
+  // 知识库跨页带来的提问上下文。AIView 是 Tab 组件、不是路由页，
+  // 拿不到 pushUrl 参数，只能通过这个共享信号消费一次。
+  @Local nav: NavSignal = AppStorageV2.connect(NavSignal, () => new NavSignal())!;
 
   async aboutToAppear(): Promise<void> {
+    // 可能 AIView 是刚创建的：先把已经写好的知识点接住
+    this.consumePendingAsk();
     const ctx = this.getUIContext().getHostContext();
     if (ctx === undefined) {
       return;
     }
     await this.vm.init(ctx);
+  }
+
+  // AIView 已经存在时，知识库写入 pendingAsk 会触发这里；
+  // takePendingAsk 会把它清空，所以同一次提问只会被消费一次。
+  @Monitor('nav.pendingAsk')
+  onPendingAskChanged(): void {
+    this.consumePendingAsk();
+  }
+
+  private consumePendingAsk(): void {
+    if (this.nav.pendingAsk === null) {
+      return;
+    }
+    const ctx = takePendingAsk();
+    if (ctx !== null) {
+      this.vm.applyAskContext(ctx);
+    }
   }
 
   private toast(msg: string): void {
@@ -125,6 +148,42 @@ export struct AIView {
         .backgroundColor(Color.White)
         .border({ width: 1, color: '#F2ECD8' })
         .shadow({ radius: 10, color: '#0A000000', offsetY: 3 })
+
+        // 知识点上下文：从 AI 知识库选中知识点后显示，可随时关闭
+        if (this.vm.hasAskContext) {
+          Row({ space: 8 }) {
+            Text('知识点')
+              .fontSize(11.0)
+              .fontWeight(FontWeight.Bold)
+              .fontColor('#E4842A')
+              .padding({ left: 7, right: 7, top: 3, bottom: 3 })
+              .borderRadius(8)
+              .backgroundColor('#FEF8E3')
+
+            Text(this.vm.askContextLabel())
+              .fontSize(13.0)
+              .fontColor('#8A7A50')
+              .layoutWeight(1)
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+
+            Text('×')
+              .fontSize(21.0)
+              .fontWeight(FontWeight.Medium)
+              .fontColor('#8A7A50')
+              .padding({ left: 6, right: 4, top: 2, bottom: 2 })
+              .onClick(() => {
+                this.vm.clearAskContext();
+              })
+          }
+          .width('100%')
+          .padding({ left: 10, right: 6, top: 7, bottom: 7 })
+          .margin({ top: 10 })
+          .borderRadius(12)
+          .backgroundColor(Color.White)
+          .border({ width: 1, color: '#F2ECD8' })
+          .alignItems(VerticalAlign.Center)
+        }
 
         // 已选待发图片预览条
         if (this.vm.pendingImage !== '') {
@@ -250,6 +309,12 @@ export struct AIView {
     .width('100%')
     .height('100%')
     .backgroundColor('#FDFDED')
+    // 兜底：AIView 已存在但 @Monitor 没触发时，页签切到可见也能接住知识点
+    .onVisibleAreaChange([0.0, 0.01], (isVisible: boolean) => {
+      if (isVisible) {
+        this.consumePendingAsk();
+      }
+    })
     // 沉浸式：底色铺进状态栏，内容自动让出状态栏高度（适配各机型，不影响内容排版）
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP])
     .padding({ top: SafeArea.topVp })
