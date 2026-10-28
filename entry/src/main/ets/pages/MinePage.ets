@@ -392,6 +392,8 @@ export struct MineView {
             Divider().color('#F8F4E8').strokeWidth(1).margin({ left: 52 })
             this.FunctionListItem('study', '学习数据', 'pages/StudyDataPage')
             Divider().color('#F8F4E8').strokeWidth(1).margin({ left: 52 })
+            this.FunctionListItem('feedback', '意见反馈', 'pages/FeedbackPage')
+            Divider().color('#F8F4E8').strokeWidth(1).margin({ left: 52 })
             this.FunctionListItem('setting', '账号与设置', 'pages/SettingsPage')
           }
           .width('100%')
@@ -551,7 +553,7 @@ export struct MineView {
           .borderRadius(12)
           .backgroundColor('#FEF8E3')
 
-        // 图标来自 app.media 资源：收藏 shouc / 错题本 cuot / 学习数据 tubiao / 账号与设置 shez
+        // 图标来自 app.media 资源：收藏 shouc / 错题本 cuot / 学习数据 xuexsj / 意见反馈 diaoc / 账号与设置 shez
         if (iconType === 'fav') {
           Image($r('app.media.shouc'))
             .width(23)
@@ -566,6 +568,12 @@ export struct MineView {
             .fillColor('#E4842A')
         } else if (iconType === 'study') {
           Image($r('app.media.xuexsj'))
+            .width(23)
+            .height(23)
+            .objectFit(ImageFit.Contain)
+            .fillColor('#E4842A')
+        } else if (iconType === 'feedback') {
+          Image($r('app.media.diaoc'))
             .width(23)
             .height(23)
             .objectFit(ImageFit.Contain)

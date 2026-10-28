@@ -1,5 +1,7 @@
 import { photoAccessHelper } from '@kit.MediaLibraryKit';
 import { BusinessError } from '@kit.BasicServicesKit';
+import { AIPracticeHistoryStore, AIPracticeRecord } from '../common/AIPracticeHistoryStore';
+import { SafeArea } from '../common/SafeArea';
 
 // 场景选项：共 6 类保育实操场景（顺序与 SCENE_ICONS / DEMO_RESULTS 一一对应）
 const SCENES: string[] = ['进餐环节', '午睡环境', '玩具消毒', '盥洗如厕', '户外活动', '晨午健康检查'];
@@ -117,6 +119,19 @@ struct AIPractice {
   @Local stepDone: number = 0;        // 识别进度：0-3
   private timerIds: number[] = [];
 
+  // 历史记录半屏浮窗
+  @Local historyOpen: boolean = false;
+  @Local historyItems: AIPracticeRecord[] = [];
+
+  async aboutToAppear(): Promise<void> {
+    // 不依赖入口页先初始化：进来就按当前账号把历史读出来
+    const context = this.getUIContext().getHostContext();
+    if (context !== undefined) {
+      await AIPracticeHistoryStore.init(context);
+    }
+    this.historyItems = AIPracticeHistoryStore.getAll();
+  }
+
   aboutToDisappear(): void {
     for (const t of this.timerIds) {
       clearTimeout(t);
@@ -179,6 +194,10 @@ struct AIPractice {
       this.toast('请先上传一张保育现场照片');
       return;
     }
+    // 快照本次分析的入参：3 秒后归档时用，期间页面状态可能被「历史回看」改动
+    const snapScene: number = this.sceneIndex;
+    const snapUri: string = this.useDemo ? '' : this.imageUri;
+    const snapDemo: boolean = this.useDemo;
     this.step = 1;
     this.stepDone = 0;
     this.timerIds.push(setTimeout((): void => {
@@ -190,7 +209,48 @@ struct AIPractice {
     this.timerIds.push(setTimeout((): void => {
       this.stepDone = 3;
       this.step = 2;
+      // 分析完成即归档：只要用照片跑过一次功能，历史里就有记录
+      this.saveHistory(snapScene, snapUri, snapDemo);
     }, 3000));
+  }
+
+  // 归档本次分析
+  private async saveHistory(sceneIndex: number, imageUri: string, useDemo: boolean): Promise<void> {
+    await AIPracticeHistoryStore.add(
+      sceneIndex,
+      SCENES[sceneIndex],
+      imageUri,
+      useDemo,
+      DEMO_RESULTS[sceneIndex].score
+    );
+  }
+
+  // 打开历史：每次打开都重读，换号后不会看到上一个账号的记录
+  private async openHistory(): Promise<void> {
+    const context = this.getUIContext().getHostContext();
+    if (context !== undefined) {
+      await AIPracticeHistoryStore.init(context);
+    }
+    this.historyItems = AIPracticeHistoryStore.getAll();
+    this.historyOpen = true;
+  }
+
+  // 点历史条目：还原当时的照片与场景，直接进结果页（不重复分析、不再记一条）
+  private openRecord(r: AIPracticeRecord): void {
+    this.historyOpen = false;
+    let idx: number = r.sceneIndex;
+    if (idx < 0 || idx >= SCENES.length) {
+      // 场景常量调整过时按名字兜底，避免越界
+      idx = SCENES.indexOf(r.sceneName);
+      if (idx < 0) {
+        idx = 0;
+      }
+    }
+    this.sceneIndex = idx;
+    this.imageUri = r.imageUri;
+    this.useDemo = r.useDemo;
+    this.stepDone = 3;
+    this.step = 2;
   }
 
   // 回到上传页
@@ -226,20 +286,29 @@ struct AIPractice {
   }
 
   build() {
-    Column() {
-      this.TopBar()
+    Stack({ alignContent: Alignment.Bottom }) {
+      Column() {
+        this.TopBar()
 
-      if (this.step === 0) {
-        this.UploadView()
-      } else if (this.step === 1) {
-        this.AnalyzingView()
-      } else {
-        this.ResultView()
+        if (this.step === 0) {
+          this.UploadView()
+        } else if (this.step === 1) {
+          this.AnalyzingView()
+        } else {
+          this.ResultView()
+        }
+      }
+      .width('100%')
+      .height('100%')
+      .backgroundColor('#FDFDED')
+
+      // 历史记录半屏浮窗（叠在页面之上）
+      if (this.historyOpen) {
+        this.HistorySheet()
       }
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#FDFDED')
   }
 
   // ==================== 顶部返回栏 ====================
@@ -270,7 +339,7 @@ struct AIPractice {
         .border({ width: 1, color: '#FEF8E3' })
         .margin({ right: 16 })
         .onClick(() => {
-          this.toast('历史记录即将上线');
+          this.openHistory();
         })
     }
     .width('100%')
@@ -500,7 +569,8 @@ struct AIPractice {
           })
       }
       .width('100%')
-      .padding({ left: 16, right: 16, top: 10, bottom: 16 })
+      .padding({ left: 16, right: 16, top: 10, bottom: 16 + SafeArea.bottomVp })
+      .margin({bottom:5})
       .backgroundColor(Color.White)
       .border({ width: { top: 1 }, color: '#F2ECD8' })
     }
@@ -814,11 +884,146 @@ struct AIPractice {
           })
       }
       .width('100%')
-      .padding({ left: 16, right: 16, top: 10, bottom: 16 })
+      .padding({ left: 16, right: 16, top: 10, bottom: 16 + SafeArea.bottomVp })
       .backgroundColor(Color.White)
       .border({ width: { top: 1 }, color: '#F2ECD8' })
     }
     .width('100%')
     .height('100%')
+  }
+
+  // ==================== 历史记录半屏浮窗 ====================
+  // 结构与答题卡底部面板一致：全屏遮罩 + 底部圆角面板（叠在 Stack 里）
+  @Builder
+  HistorySheet() {
+    Stack({ alignContent: Alignment.Bottom }) {
+      // 遮罩：点击关闭
+      Column()
+        .width('100%')
+        .height('100%')
+        .backgroundColor('#29000000')
+        .onClick(() => {
+          this.historyOpen = false;
+        })
+
+      // 面板：有记录时高一些（列表可滚动），空态矮一些
+      Column() {
+        Row() {
+          Text('分析历史')
+            .fontSize(17.0)
+            .fontWeight(FontWeight.Bold)
+            .fontColor(TEXT_MAIN)
+
+          Blank()
+
+          Text('×')
+            .fontSize(25.0)
+            .fontWeight(FontWeight.Medium)
+            .fontColor(TEXT_SUB)
+            .onClick(() => {
+              this.historyOpen = false;
+            })
+        }
+        .width('100%')
+        .alignItems(VerticalAlign.Center)
+        .padding({ bottom: 6 })
+
+        Scroll() {
+          Column() {
+            if (this.historyItems.length === 0) {
+              // 空态
+              Column({ space: 8 }) {
+                Text('⏱')
+                  .fontSize(34.0)
+                Text('还没有历史记录')
+                  .fontSize(16.0)
+                  .fontWeight(FontWeight.Bold)
+                  .fontColor(TEXT_MAIN)
+                Text('完成一次 AI 分析后，记录会自动出现在这里')
+                  .fontSize(13.5)
+                  .fontColor(TEXT_SUB)
+              }
+              .width('100%')
+              .padding({ top: 60 })
+              .alignItems(HorizontalAlign.Center)
+            } else {
+              ForEach(this.historyItems, (r: AIPracticeRecord) => {
+                this.HistoryRow(r)
+              }, (r: AIPracticeRecord) => `${r.timestamp}_${r.sceneIndex}`)
+            }
+          }
+          .width('100%')
+        }
+        .layoutWeight(1)
+        .width('100%')
+        .scrollBar(BarState.Off)
+      }
+      .width('100%')
+      .height(this.historyItems.length > 0 ? '62%' : '40%')
+      .padding({ left: 18, right: 18, top: 16, bottom: 22 + SafeArea.bottomVp })
+      .borderRadius({ topLeft: 20, topRight: 20 })
+      .backgroundColor(Color.White)
+      .alignItems(HorizontalAlign.Start)
+      .shadow({ radius: 24, color: '#33000000', offsetY: 8 })
+    }
+    .width('100%')
+    .height('100%')
+  }
+
+  // 历史列表单行：缩略图 + 场景名/时间 + 达标度，点击回看该次结果
+  @Builder
+  HistoryRow(r: AIPracticeRecord) {
+    Row({ space: 12 }) {
+      // 照片缩略图：示例照片用内置图兜底，加载失败时底色兜底不至于空白
+      if (r.useDemo) {
+        Image($r('app.media.demo_scene'))
+          .width(52)
+          .height(52)
+          .borderRadius(10)
+          .objectFit(ImageFit.Cover)
+          .backgroundColor('#FEF8E3')
+      } else {
+        Image(r.imageUri)
+          .width(52)
+          .height(52)
+          .borderRadius(10)
+          .objectFit(ImageFit.Cover)
+          .backgroundColor('#FEF8E3')
+      }
+
+      Column({ space: 4 }) {
+        Text(r.sceneName)
+          .fontSize(16.0)
+          .fontWeight(FontWeight.Bold)
+          .fontColor(TEXT_MAIN)
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+        Text(r.date)
+          .fontSize(13.0)
+          .fontColor(TEXT_WEAK)
+      }
+      .layoutWeight(1)
+      .alignItems(HorizontalAlign.Start)
+
+      // 达标度徽标
+      Text(`${r.score} 分`)
+        .fontSize(13.0)
+        .fontWeight(FontWeight.Bold)
+        .fontColor(ACCENT)
+        .padding({ left: 9, right: 9, top: 4, bottom: 4 })
+        .borderRadius(10)
+        .backgroundColor('#FEF8E3')
+
+      Text('›')
+        .fontSize(20.0)
+        .fontColor(TEXT_WEAK)
+    }
+    .width('100%')
+    .padding({ top: 11, bottom: 11 })
+    .alignItems(VerticalAlign.Center)
+    .border({ width: { bottom: 1 }, color: '#F8F4E8' })
+    .onClick(() => {
+      this.openRecord(r);
+    })
   }
 }

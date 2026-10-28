@@ -304,22 +304,6 @@ struct ExamListPage {
           .height(56)
           .alignItems(VerticalAlign.Center)
 
-          Text('保育师 · 模拟试卷')
-            .fontSize(23.0)
-            .fontWeight(FontWeight.Bold)
-            .fontColor('#55402F')
-            .width('100%')
-            .padding({ left: 16, right: 16 })
-            .margin({ top: 6 })
-
-          Row({ space: 8 }) {
-            this.HeadPill(`${this.papers.length} 套试卷`)
-            this.HeadPill(`${this.totalDone} 人做过`)
-            this.HeadPill(`免费 ${this.freeCount} 套`)
-          }
-          .width('100%')
-          .padding({ left: 16, right: 16, top: 12, bottom: 20 })
-          .alignItems(VerticalAlign.Center)
         }
         .width('100%')
         .backgroundColor('#FEF8E3')
@@ -347,6 +331,10 @@ struct ExamListPage {
                 .height(this.progress !== null && !this.barHidden ? 90 : 20)
             }
             .width('100%')
+            // 撑满整个滚动区并显式顶对齐：只有一条试卷时也紧贴 Tab 下方，
+            // 不会在屏幕中间悬空（短内容被居中渲染的问题）
+            .constraintSize({ minHeight: '100%' })
+            .justifyContent(FlexAlign.Start)
             .padding({ top: 12 })
           }
           .layoutWeight(1)

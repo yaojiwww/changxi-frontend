@@ -263,7 +263,7 @@ struct HomeView {
   @Local collapsedKeys: string[] = [];   // 已收起的父分类 key（默认全部展开）
   // 环形进度百分比：一进页面显示 0，真实进度由后端 total_progress 下发后覆盖
   @Local completionPercentage: number = 0;
-  // 是否已开始学习：由后端真实进度驱动（进度>0 才算已开始），未开始主按钮显示「开始练习」
+  // 是否已开始学习：点过一次（本地 StudyCache）或后端进度>0 即为 true，按钮显示「继续练习」
   @Local started: boolean = false;
 
   async aboutToAppear(): Promise<void> {
@@ -273,6 +273,11 @@ struct HomeView {
     }
     await StudyCache.init(context);
     await TokenStore.init(context);
+    // 本地「点过一次」标记：点过就永远是「继续练习」，先于接口结果生效，
+    // 后面 fetchDashboard 里用 OR 合并，不会把这个标记覆盖回 false
+    if (await StudyCache.isStarted()) {
+      this.started = true;
+    }
     await this.fetchDashboard();
   }
 
@@ -285,8 +290,8 @@ struct HomeView {
       if (res.data !== null) {
         const progress = Math.round(res.data.total_progress);
         this.completionPercentage = Math.min(100, Math.max(0, progress));
-        // 已开始 = 真实做题进度 > 0：做过题才显示「继续练习」，否则一直显示「开始练习」
-        this.started = this.completionPercentage > 0;
+        // 已开始 = 点过一次（本地 StudyCache）或真实做题进度 > 0，两者取或
+        this.started = this.started || this.completionPercentage > 0;
         // res.data.exam_countdown 为后端倒计时天数，当前首页倒计时走本地考试日期（ExamDateModel），
         // 此字段预留，联调后如需切换数据源再在此处接入
       }
@@ -447,7 +452,7 @@ struct HomeView {
                 .fontColor('#55402F')
                 .lineHeight(20)
 
-              // 主 CTA 胶囊按钮：未开始（进度0%）显示「开始练习」，已开始显示「继续练习」
+              // 主 CTA 胶囊按钮：点过一次（本地 StudyCache）或进度>0 显示「继续练习」，否则「开始练习」
               Row({ space: 6 }) {
                 Text(this.started ? '继续练习' : '开始练习')
                   .fontSize(14.0)
@@ -795,7 +800,8 @@ struct HomeView {
 
   // 「开始练习」/「继续练习」：切到「基础知识」页签，并直接进入该页签第一个知识点练习
   private startStudy(): void {
-    // 按钮文案由后端进度驱动（fetchDashboard），此处不再提前置为已开始
+    // 点过一次立刻变「继续练习」（本地落盘，重启后仍生效），再跳练习页
+    this.started = true;
     StudyCache.markStarted();
     this.knowledgeTab = 0;   // 主按钮固定指向基础知识练习
     this.gotoPractice(firstLeafName(basicEntries));

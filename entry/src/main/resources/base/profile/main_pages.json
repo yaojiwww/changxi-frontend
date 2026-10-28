@@ -21,6 +21,7 @@
     "pages/ExamAnswerPage",
     "pages/ExamReportPage",
     "pages/StudyDataPage",
+    "pages/FeedbackPage",
     "pages/PrivacySettingsPage"
   ]
 }
