@@ -1,27 +1,16 @@
-// 本地题库：题目来源《知识点练习题》（4 章 13 题，含解析）。
+// 本地题库：原始《知识点练习题》4 章 20 题 + 补充题 30 章 100 题，
+// 覆盖首页全部知识点，每章不少于 5 题，均含解析。
 // 后端题库接口就绪前，PracticeApi 的 mock 分支用它兜底；后端接口失败时也退回这里。
 // 题目 ID 用业务码（kp-basic-law-q01），与后端种子数据同码，将来切真接口不会串数据。
 // 答案只存在本文件：页面拿到的对错与解析一律走 judge()，不在页面里比对答案。
 import { PracticeQuestion, JudgeResult } from '../model/QuestionModels';
 import { KpEntry, kpOf } from './KnowledgeCatalog';
+import { BankQuestion, BankChapter } from './QuestionBankTypes';
+import { BASIC_EXTRA_CHAPTERS } from './QuestionBankBasicExtra';
+import { PRO_EXTRA_CHAPTERS } from './QuestionBankProExtra';
 
-// 题库里的一道题（含答案）
-interface BankQuestion {
-  no: number;          // 章节内序号，从 1 开始，用于拼业务码
-  stem: string;
-  options: string[];   // 顺序即 A/B/C/D
-  answer: string;      // 正确选项字母
-  explanation: string; // 解析
-}
-
-// 一个章节的题目
-interface BankChapter {
-  kpId: string;
-  questions: BankQuestion[];
-}
-
-// 全部题目，按章节分组。新增题目只在这里加，页面与接口都不用动
-const CHAPTERS: BankChapter[] = [
+// 原始题库文档对应的四个章节
+const CORE_CHAPTERS: BankChapter[] = [
   // ===== 基础知识 · 相关法律法规 =====
   {
     kpId: 'kp-basic-law',
@@ -58,6 +47,20 @@ const CHAPTERS: BankChapter[] = [
         options: ['尊重儿童', '安全健康', '积极回应', '提前教学'],
         answer: 'D',
         explanation: '《托育机构保育指导大纲（试行）》规定四项基本原则：尊重儿童、安全健康、积极回应、科学规范。“提前教学”违背婴幼儿成长规律，托育的定位是照护与早期发展支持，不是提前教小学知识。'
+      },
+      {
+        no: 5,
+        stem: '依据《幼儿园工作规程》，正常情况下幼儿园每日户外活动时间不得少于（ ）',
+        options: ['1 小时', '2 小时', '3 小时', '4 小时'],
+        answer: 'B',
+        explanation: '《幼儿园工作规程》要求正常情况下每日户外活动不少于 2 小时，其中体育活动不少于 1 小时；寄宿制幼儿园户外活动不少于 3 小时。'
+      },
+      {
+        no: 6,
+        stem: '依据《托儿所幼儿园卫生保健工作规范》，3 岁以上幼儿每年健康检查的次数是（ ）',
+        options: ['1 次', '2 次', '3 次', '4 次'],
+        answer: 'A',
+        explanation: '卫生保健工作规范实行“4-2-1”体检：0～1 岁每年 4 次、1～2 岁每年 2 次、3 岁以上每年 1 次。'
       }
     ]
   },
@@ -85,6 +88,20 @@ const CHAPTERS: BankChapter[] = [
         options: ['用嘴直接抿一口试温', '将水滴在自己手腕内侧试温', '用手触摸杯壁外侧即可', '凭经验估计，无需试温'],
         answer: 'B',
         explanation: '手腕内侧皮肤娇嫩、敏感，是试温的标准部位。A项用嘴直接接触幼儿水杯不卫生，C项摸杯壁不能准确判断水温（尤其是保温杯），D项是失职行为。'
+      },
+      {
+        no: 4,
+        stem: '幼儿饮水杯的正确管理方式是（ ）',
+        options: ['全班共用一只大水壶直接喝', '每人专用杯，每日清洗消毒', '每周清洗一次', '用一次性纸杯替代日常饮水'],
+        answer: 'B',
+        explanation: '水杯必须专人专用、标记姓名，每日清洗并消毒（常用煮沸或蒸汽消毒），防止交叉感染。共用壶、周清洗、长期一次性纸杯都不符合卫生要求。'
+      },
+      {
+        no: 5,
+        stem: '组织幼儿饮水时，正确的做法是（ ）',
+        options: ['只在三餐时提供水', '限制饮水以防止尿床', '上下午各组织一次集体饮水，并允许随渴随喝', '让幼儿自己接水，保育员不作看护'],
+        answer: 'C',
+        explanation: '饮水要“定时与随时结合”：上下午各组织一次集体饮水，同时允许幼儿口渴时随时喝水。限制饮水会影响代谢、诱发便秘和尿路问题；幼儿接水时保育员必须在旁看护，防止烫伤和打翻。'
       }
     ]
   },
@@ -127,6 +144,20 @@ const CHAPTERS: BankChapter[] = [
         ],
         answer: 'B',
         explanation: '组织进餐不只是“喂饱”，更要培养自理能力：自取餐具、分发餐具、饭后参与收拾，都是适宜的独立性培养。C、D互相喂饭有卫生和安全问题，A剥夺锻炼机会。'
+      },
+      {
+        no: 4,
+        stem: '幼儿进餐时间一般控制在（ ）',
+        options: ['10～15 分钟', '20～30 分钟', '40～50 分钟', '越快越好'],
+        answer: 'B',
+        explanation: '每餐进餐时间以 20～30 分钟为宜：过短来不及细嚼，过长饭菜变凉、影响下一环节。进餐中不催食、不拖堂，是生活管理的基本要求。'
+      },
+      {
+        no: 5,
+        stem: '幼儿进餐中发生轻度呛噎，正确的处理是（ ）',
+        options: ['立即拍打后背', '鼓励幼儿咳嗽，同时密切观察', '立即喂水冲下', '让幼儿立刻平躺'],
+        answer: 'B',
+        explanation: '轻度呛噎时咳嗽是有效的自我保护，应鼓励咳嗽并密切观察，不要拍背或喂水（可能使异物移位或误吸）。若出现不能咳嗽、面色发绀等完全梗阻表现，立即使用海姆立克法并呼救。'
       }
     ]
   },
@@ -159,10 +190,27 @@ const CHAPTERS: BankChapter[] = [
         options: ['睡眠姿势与盖被情况', '面色、呼吸是否正常', '是否有遗尿、身体不适等异常', '幼儿入睡的快慢排名并记录名次'],
         answer: 'D',
         explanation: '巡视观察的内容：睡姿、盖被、面色、呼吸、有无遗尿/异常出汗/发热惊厥等，发现异常及时处理并报告保健员。给入睡快慢排名既无照护价值，还会造成心理压力，不是巡视内容。'
+      },
+      {
+        no: 4,
+        stem: '幼儿午睡时，保育员巡视的间隔时间一般不超过（ ）',
+        options: ['10 分钟', '20 分钟', '30 分钟', '1 小时'],
+        answer: 'B',
+        explanation: '午睡巡视应保持 10～20 分钟一次的频率，重点看睡姿、盖被、面色和呼吸。间隔过长，捂闷、发热惊厥等异常难以及时发现。'
+      },
+      {
+        no: 5,
+        stem: '幼儿床铺之间建议保持的间距是（ ）',
+        options: ['20cm', '30cm', '50cm', '100cm'],
+        answer: 'C',
+        explanation: '床铺间距不小于 50cm，既能减少呼吸道疾病交叉感染，也保证巡视和紧急疏散有足够通道。间距过密还容易相互碰撞、影响入睡。'
       }
     ]
   }
 ];
+
+// 全部题目 = 原始四节 + 基础知识补充 + 专业知识补充（每个知识点不少于 5 题）
+const CHAPTERS: BankChapter[] = CORE_CHAPTERS.concat(BASIC_EXTRA_CHAPTERS).concat(PRO_EXTRA_CHAPTERS);
 
 // 选项字母：与 options 数组下标一一对应
 const OPTION_LETTERS: string[] = ['A', 'B', 'C', 'D'];

@@ -74,7 +74,7 @@ struct Login {
           .fontWeight(FontWeight.Bold)
           .fontColor('#55402F')
 
-        Text('保育师备考助手 · 用心保育 陪伴成长')
+        Text('考证备考助手 · 用心陪伴成长')
           .fontSize(14.5)
           .fontColor('#9A8A6E')
       }

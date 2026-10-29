@@ -161,7 +161,7 @@ export struct MineView {
                   .fontWeight(FontWeight.Bold)
                   .fontColor('#8A7A50')
 
-                Text(`保育师${levelShortName(this.goal.levelIndex)}备考中`)
+                Text(`${levelShortName(this.goal.levelIndex)}备考中`)
                   .fontSize(14.0)
                   .fontColor('#55402F')
 
@@ -251,7 +251,7 @@ export struct MineView {
                   .fontWeight(FontWeight.Bold)
                   .fontColor('#E4842A')
 
-                Text('保育师职业技能等级认定')
+                Text('职业技能等级认定')
                   .fontSize(18.0)
                   .fontWeight(FontWeight.Bold)
                   .fontColor('#55402F')
@@ -392,7 +392,9 @@ export struct MineView {
             Divider().color('#F8F4E8').strokeWidth(1).margin({ left: 52 })
             this.FunctionListItem('study', '学习数据', 'pages/StudyDataPage')
             Divider().color('#F8F4E8').strokeWidth(1).margin({ left: 52 })
-            this.FunctionListItem('feedback', '意见反馈', 'pages/FeedbackPage')
+            this.FunctionListItem('history', '实操记录', 'pages/AIPracticePage')
+            Divider().color('#F8F4E8').strokeWidth(1).margin({ left: 52 })
+            this.FunctionListItem('feedback', '用户反馈', 'pages/FeedbackPage')
             Divider().color('#F8F4E8').strokeWidth(1).margin({ left: 52 })
             this.FunctionListItem('setting', '账号与设置', 'pages/SettingsPage')
           }
@@ -553,7 +555,7 @@ export struct MineView {
           .borderRadius(12)
           .backgroundColor('#FEF8E3')
 
-        // 图标来自 app.media 资源：收藏 shouc / 错题本 cuot / 学习数据 xuexsj / 意见反馈 diaoc / 账号与设置 shez
+        // 图标来自 app.media 资源：收藏 shouc / 错题本 cuot / 学习数据 xuexsj / 实操记录 shic / 意见反馈 diaoc / 账号与设置 shez
         if (iconType === 'fav') {
           Image($r('app.media.shouc'))
             .width(23)
@@ -568,6 +570,12 @@ export struct MineView {
             .fillColor('#E4842A')
         } else if (iconType === 'study') {
           Image($r('app.media.xuexsj'))
+            .width(23)
+            .height(23)
+            .objectFit(ImageFit.Contain)
+            .fillColor('#E4842A')
+        } else if (iconType === 'history') {
+          Image($r('app.media.shic'))
             .width(23)
             .height(23)
             .objectFit(ImageFit.Contain)
@@ -604,9 +612,18 @@ export struct MineView {
     .padding({ top: 12, bottom: 12 })
     .alignItems(VerticalAlign.Center)
     .onClick(() => {
-      if (routeUrl !== '') {
-        this.getUIContext().getRouter().pushUrl({ url: routeUrl });
+      if (routeUrl === '') {
+        return;
       }
+      // 实操记录：进 AI 实操页并直接展开历史列表
+      if (routeUrl === 'pages/AIPracticePage') {
+        this.getUIContext().getRouter().pushUrl({
+          url: routeUrl,
+          params: { openHistory: true }
+        });
+        return;
+      }
+      this.getUIContext().getRouter().pushUrl({ url: routeUrl });
     })
   }
 }

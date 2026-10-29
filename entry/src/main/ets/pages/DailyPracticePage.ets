@@ -3,6 +3,9 @@ import { TokenStore } from '../common/TokenStore';
 import { FavoritesStore, FavoriteItem } from '../common/FavoritesStore';
 import { WrongBookStore } from '../common/WrongBookStore';
 import { StudyRecordStore, StudyRecord } from '../common/StudyRecordStore';
+import { StudyCache } from '../common/StudyCache';
+import { signalPendingTab, signalPracticeStarted } from '../common/NavSignal';
+import { signalAskQuestion } from '../common/AIAsk';
 
 // ====== 接口结构（与 docs/api_spec.md #18 / #19 一致） ======
 
@@ -68,7 +71,7 @@ interface DemoQuestion {
 const DEMO_QUESTIONS: DemoQuestion[] = [
   {
     questionId: 'd1',
-    stem: '保育师在处理与婴幼儿的关系时，首先应做到（ ）。',
+    stem: '保育员在处理与婴幼儿的关系时，首先应做到（ ）。',
     options: ['尊重与爱护婴幼儿', '严格要求纪律', '以教学成绩为先', '一切听从家长安排'],
     answer: 'A',
     knowledgePoint: '保育员职业道德与职业守则'
@@ -82,7 +85,7 @@ const DEMO_QUESTIONS: DemoQuestion[] = [
   },
   {
     questionId: 'd3',
-    stem: '婴幼儿进餐时，保育师正确的做法是（ ）。',
+    stem: '婴幼儿进餐时，保育员正确的做法是（ ）。',
     options: ['催促幼儿加快速度', '允许幼儿边吃边玩', '营造安静愉快的进餐氛围', '先喂完再让幼儿自己吃'],
     answer: 'C',
     knowledgePoint: '婴幼儿卫生保健知识'
@@ -138,35 +141,35 @@ const DEMO_QUESTIONS: DemoQuestion[] = [
   },
   {
     questionId: 'd11',
-    stem: '保育师组织幼儿户外活动前，首要的工作是（ ）。',
+    stem: '保育员组织幼儿户外活动前，首要的工作是（ ）。',
     options: ['先让幼儿自由奔跑', '点名后各自活动', '检查活动场地与器械是否安全', '安排幼儿比赛奔跑速度'],
     answer: 'C',
     knowledgePoint: '婴幼儿安全知识'
   },
   {
     questionId: 'd12',
-    stem: '幼儿发生轻微擦伤时，保育师正确的处理顺序是（ ）。',
+    stem: '幼儿发生轻微擦伤时，保育员正确的处理顺序是（ ）。',
     options: ['直接贴上创可贴', '先用清水冲洗伤口，再用碘伏消毒', '用手揉搓伤口', '涂牙膏止血'],
     answer: 'B',
     knowledgePoint: '婴幼儿卫生保健知识'
   },
   {
     questionId: 'd13',
-    stem: '幼儿把小珠子塞进鼻孔后，保育师正确的做法是（ ）。',
+    stem: '幼儿把小珠子塞进鼻孔后，保育员正确的做法是（ ）。',
     options: ['用手伸进去掏出来', '让幼儿仰头等待', '喂水把异物冲下去', '不要自行取出，立即送医处理'],
     answer: 'D',
     knowledgePoint: '婴幼儿安全知识'
   },
   {
     questionId: 'd14',
-    stem: '幼儿午睡时出现发热、面色潮红，保育师首先应（ ）。',
+    stem: '幼儿午睡时出现发热、面色潮红，保育员首先应（ ）。',
     options: ['测量体温并及时通知保健医', '让他继续睡到起床', '自行喂服退烧药', '打开风扇对着直吹'],
     answer: 'A',
     knowledgePoint: '婴幼儿常见病及常见传染病防治基础知识'
   },
   {
     questionId: 'd15',
-    stem: '配制含氯消毒液擦拭桌椅时，保育师应（ ）。',
+    stem: '配制含氯消毒液擦拭桌椅时，保育员应（ ）。',
     options: ['徒手直接擦拭以提高效率', '与洁厕灵混合使用增强效果', '戴手套并在通风处配好即用', '配好后放置一周再使用'],
     answer: 'C',
     knowledgePoint: '相关环境知识'
@@ -180,7 +183,7 @@ const DEMO_QUESTIONS: DemoQuestion[] = [
   },
   {
     questionId: 'd17',
-    stem: '园内出现手足口病病例时，保育师应（ ）。',
+    stem: '园内出现手足口病病例时，保育员应（ ）。',
     options: ['继续正常开展集体活动', '配合做好隔离消毒并加强晨午检', '自行服用抗病毒药物预防', '暂不上报以免影响园所声誉'],
     answer: 'B',
     knowledgePoint: '婴幼儿常见病及常见传染病防治基础知识'
@@ -194,21 +197,21 @@ const DEMO_QUESTIONS: DemoQuestion[] = [
   },
   {
     questionId: 'd19',
-    stem: '为预防幼儿烫伤，保育师分餐时应（ ）。',
+    stem: '为预防幼儿烫伤，保育员分餐时应（ ）。',
     options: ['把热汤放在桌边靠幼儿一侧', '让幼儿自己端汤', '先盛热汤并放在远离幼儿处，再分餐具', '把热汤放在桌子中央让幼儿传递'],
     answer: 'C',
     knowledgePoint: '婴幼儿安全知识'
   },
   {
     questionId: 'd20',
-    stem: '幼儿在园突然呕吐，保育师处理呕吐物时正确的是（ ）。',
+    stem: '幼儿在园突然呕吐，保育员处理呕吐物时正确的是（ ）。',
     options: ['用拖把直接拖干净', '先疏散幼儿并开窗通风，再用含氯消毒液处理', '让幼儿自己清理干净', '用干抹布擦掉即可'],
     answer: 'B',
     knowledgePoint: '婴幼儿卫生保健知识'
   },
   {
     questionId: 'd21',
-    stem: '保育师给幼儿喂药时，正确的做法是（ ）。',
+    stem: '保育员给幼儿喂药时，正确的做法是（ ）。',
     options: ['按自己的经验适当加量', '把药混在饭菜里一起喂', '让幼儿自己看着说明书服用', '凭家长书面委托，按医嘱核对后喂服'],
     answer: 'D',
     knowledgePoint: '婴幼儿卫生保健知识'
@@ -250,28 +253,28 @@ const DEMO_QUESTIONS: DemoQuestion[] = [
   },
   {
     questionId: 'd27',
-    stem: '保育师使用消毒柜、电热水壶等设备时，应（ ）。',
+    stem: '保育员使用消毒柜、电热水壶等设备时，应（ ）。',
     options: ['边照看幼儿边操作设备', '严格按操作规程使用并做好幼儿防护', '让幼儿帮助插拔电源', '把设备放在幼儿随手可及处'],
     answer: 'B',
     knowledgePoint: '相关环境知识'
   },
   {
     questionId: 'd28',
-    stem: '保育师保证幼儿一日饮水时，正确的做法是（ ）。',
-    options: ['只在三餐时提供水', '限制饮水以防止尿床', '随渴随喝，上下午各组织一次集体饮水并允许随时饮水', '让幼儿自己接水，保育师不作看护'],
+    stem: '保育员保证幼儿一日饮水时，正确的做法是（ ）。',
+    options: ['只在三餐时提供水', '限制饮水以防止尿床', '随渴随喝，上下午各组织一次集体饮水并允许随时饮水', '让幼儿自己接水，保育员不作看护'],
     answer: 'C',
     knowledgePoint: '婴幼儿卫生保健知识'
   },
   {
     questionId: 'd29',
-    stem: '幼儿发生惊厥（抽风）时，保育师正确的处理是（ ）。',
+    stem: '幼儿发生惊厥（抽风）时，保育员正确的处理是（ ）。',
     options: ['就地侧卧、松开衣领并及时送医', '用力按压四肢制止抽搐', '往口中塞筷子或手指', '抱起幼儿摇晃唤醒'],
     answer: 'A',
     knowledgePoint: '婴幼儿常见病及常见传染病防治基础知识'
   },
   {
     questionId: 'd30',
-    stem: '依据《幼儿园工作规程》，保育师在班级中的职责是（ ）。',
+    stem: '依据《幼儿园工作规程》，保育员在班级中的职责是（ ）。',
     options: ['以教学为主、保育次之', '配合教师做好保育工作，关注幼儿个体差异', '只负责室内外清洁卫生', '对所有幼儿统一要求，不作区别对待'],
     answer: 'B',
     knowledgePoint: '相关法律法规及其它试题'
@@ -336,6 +339,7 @@ struct DailyPractice {
       await FavoritesStore.init(ctx);
       await WrongBookStore.init(ctx);
       await StudyRecordStore.init(ctx);
+      await StudyCache.init(ctx);
     }
     await this.loadDaily();
   }
@@ -471,6 +475,9 @@ struct DailyPractice {
       return;
     }
     q.selected = key;
+    // 答过题就算「已开始」：落盘 + 通知首页把主按钮切成「继续练习」
+    StudyCache.markStarted();
+    signalPracticeStarted();
   }
 
   private isLast(): boolean {
@@ -751,6 +758,46 @@ struct DailyPractice {
     this.reviewIndex = this.reviewIndex === i ? -1 : i;
   }
 
+  // 把当前题带进 AI 伴学（答题中可随时问，不自动发送）
+  private askCurrent(): void {
+    const q: DailyQuestion | undefined = this.questions[this.cur];
+    if (q === undefined) {
+      return;
+    }
+    signalAskQuestion({
+      questionId: q.questionId,
+      stem: q.stem,
+      options: q.options,
+      userAnswer: q.selected,
+      knowledgePoint: q.knowledgePoint
+    });
+    this.gotoAI();
+  }
+
+  // 把回看中的题带进 AI 伴学，带上正确答案与本次作答
+  private askReview(): void {
+    const q: DailyQuestion | undefined = this.questions[this.reviewIndex];
+    if (q === undefined) {
+      return;
+    }
+    const card: AnswerCardItem | undefined = this.findCard(q.questionId);
+    signalAskQuestion({
+      questionId: q.questionId,
+      stem: q.stem,
+      options: q.options,
+      userAnswer: card !== undefined ? card.userAnswer : q.selected,
+      correctAnswer: card !== undefined ? card.correctOption : '',
+      knowledgePoint: q.knowledgePoint
+    });
+    this.gotoAI();
+  }
+
+  // 返回首页并切到 AI 伴学页签（首页 onPageShow 消费 pendingTab）
+  private gotoAI(): void {
+    signalPendingTab(1);
+    this.getUIContext().getRouter().back({ url: 'pages/HomePage' });
+  }
+
   // 回看中：选项行配色（正确=绿；用户选错=红）
   private reviewOptColor(optKey: string): string {
     const r = this.report;
@@ -928,6 +975,26 @@ struct DailyPractice {
             ForEach(this.questions[this.cur].options, (opt: string, i: number) => {
               this.OptionRow(opt, i)
             }, (opt: string, i: number) => this.cur.toString() + '-' + i.toString() + '-' + opt)
+
+            // 答完这道题有疑问：直接带题干去 AI 伴学
+            Row({ space: 6 }) {
+              Text('对这道题有疑问？问 AI')
+                .fontSize(14.0)
+                .fontWeight(FontWeight.Medium)
+                .fontColor('#E4842A')
+              Text('›')
+                .fontSize(18.0)
+                .fontColor('#E4842A')
+            }
+            .width('100%')
+            .padding({ left: 12, right: 12, top: 10, bottom: 10 })
+            .borderRadius(11)
+            .backgroundColor('#FEF8E3')
+            .margin({ top: 4 })
+            .alignItems(VerticalAlign.Center)
+            .onClick(() => {
+              this.askCurrent();
+            })
           }
           .padding({ left: 16, right: 16, bottom: 20 })
           .width('100%')
@@ -1357,6 +1424,26 @@ struct DailyPractice {
                 .fontColor('#9A8A6E')
                 .width('100%')
                 .margin({ top: 6 })
+
+              // 这道题没懂：带着题干、我的答案和正确答案去问 AI
+              Row({ space: 6 }) {
+                Text('问 AI 讲解这道题')
+                  .fontSize(14.0)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor('#E4842A')
+                Text('›')
+                  .fontSize(18.0)
+                  .fontColor('#E4842A')
+              }
+              .width('100%')
+              .padding({ left: 12, right: 12, top: 10, bottom: 10 })
+              .borderRadius(11)
+              .backgroundColor('#FEF8E3')
+              .margin({ top: 10 })
+              .alignItems(VerticalAlign.Center)
+              .onClick(() => {
+                this.askReview();
+              })
             }
             .width('100%')
             .padding(16)

@@ -20,12 +20,12 @@ export interface ExamPaper {
 
 // 试卷列表
 const papers: ExamPaper[] = [
-  { id: 'exam-001', title: '保育师基础知识模拟试题(一)', doneCount: 53896, isFree: true },
-  { id: 'exam-002', title: '保育师基础知识模拟试题(二)', doneCount: 23168, isFree: false },
-  { id: 'exam-003', title: '保育师基础知识模拟试题(三)', doneCount: 10012, isFree: false },
-  { id: 'exam-004', title: '保育师基础知识模拟试题(四)', doneCount: 5973, isFree: false },
-  { id: 'exam-005', title: '保育师基础知识模拟试题(五)', doneCount: 4467, isFree: false },
-  { id: 'exam-006', title: '保育师基础知识试卷及答案', doneCount: 1584, isFree: false }
+  { id: 'exam-001', title: '基础知识模拟试题(一)', doneCount: 53896, isFree: true },
+  { id: 'exam-002', title: '基础知识模拟试题(二)', doneCount: 23168, isFree: false },
+  { id: 'exam-003', title: '基础知识模拟试题(三)', doneCount: 10012, isFree: false },
+  { id: 'exam-004', title: '基础知识模拟试题(四)', doneCount: 5973, isFree: false },
+  { id: 'exam-005', title: '基础知识模拟试题(五)', doneCount: 4467, isFree: false },
+  { id: 'exam-006', title: '基础知识模拟试题(六)', doneCount: 1584, isFree: false }
 ];
 
 // 各试卷题目（Mock：每套 6 道完整选择题）
@@ -35,17 +35,17 @@ const questionsMap: Map<string, ExamQuestion[]> = new Map<string, ExamQuestion[]
 questionsMap.set('exam-001', [
   {
     questionId: 'eq-001-1',
-    stem: '保育师给幼儿分发餐具时，相邻餐位间距应不少于？',
+    stem: '保育员给幼儿分发餐具时，相邻餐位间距应不少于？',
     options: ['5cm', '10cm', '15cm', '20cm'],
     answer: 1,
     explanation: '《托儿所、幼儿园卫生保健工作规范》要求进餐时相邻餐位间距不少于 10cm，避免幼儿相互碰撞发生呛噎。'
   },
   {
     questionId: 'eq-001-2',
-    stem: '幼儿午睡时，保育师巡视的间隔时间一般不超过？',
+    stem: '幼儿午睡时，保育员巡视的间隔时间一般不超过？',
     options: ['10 分钟', '20 分钟', '30 分钟', '1 小时'],
     answer: 1,
-    explanation: '午睡期间保育师应每 20 分钟巡视一次，观察幼儿睡姿、呼吸与面色，及时发现异常。'
+    explanation: '午睡期间保育员应每 20 分钟巡视一次，观察幼儿睡姿、呼吸与面色，及时发现异常。'
   },
   {
     questionId: 'eq-001-3',

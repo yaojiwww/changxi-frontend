@@ -3,7 +3,7 @@ import { ProfileModel } from '../common/ProfileModel';
 import { AppStorageV2 } from '@kit.ArkUI';
 import { ChatMessage, PendingImage } from '../model/ChatModels';
 import { AIChatViewModel } from '../viewmodel/AIChatViewModel';
-import { NavSignal, takePendingAsk } from '../common/NavSignal';
+import { NavSignal, takePendingAsk, takePendingQuestion } from '../common/NavSignal';
 
 @ComponentV2
 export struct AIView {
@@ -19,8 +19,9 @@ export struct AIView {
   @Local nav: NavSignal = AppStorageV2.connect(NavSignal, () => new NavSignal())!;
 
   async aboutToAppear(): Promise<void> {
-    // 可能 AIView 是刚创建的：先把已经写好的知识点接住
+    // 可能 AIView 是刚创建的：先把已经写好的知识点/题目接住
     this.consumePendingAsk();
+    this.consumePendingQuestion();
     const ctx = this.getUIContext().getHostContext();
     if (ctx === undefined) {
       return;
@@ -35,6 +36,12 @@ export struct AIView {
     this.consumePendingAsk();
   }
 
+  // 练习/报告页写入 pendingQuestion 时触发，同样只消费一次
+  @Monitor('nav.pendingQuestion')
+  onPendingQuestionChanged(): void {
+    this.consumePendingQuestion();
+  }
+
   private consumePendingAsk(): void {
     if (this.nav.pendingAsk === null) {
       return;
@@ -43,6 +50,14 @@ export struct AIView {
     if (ctx !== null) {
       this.vm.applyAskContext(ctx);
     }
+  }
+
+  private consumePendingQuestion(): void {
+    if (this.nav.pendingQuestion === '') {
+      return;
+    }
+    const text: string = takePendingQuestion();
+    this.vm.applyPendingQuestion(text);
   }
 
   private toast(msg: string): void {

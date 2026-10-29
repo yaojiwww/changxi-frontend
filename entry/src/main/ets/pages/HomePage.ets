@@ -8,7 +8,7 @@ import { DEFAULT_TOPIC_ID } from '../common/PracticeData';
 import { StudyCache } from '../common/StudyCache';
 import { TokenStore } from '../common/TokenStore';
 import { DashboardApi } from '../api/DashboardApi';
-import { takePendingTab } from '../common/NavSignal';
+import { NavSignal, takePendingTab } from '../common/NavSignal';
 import { SafeArea } from '../common/SafeArea';
 
 // 知识分类条目：name 为分类名，total 为题量，children 为可展开的子分类（可选）
@@ -173,11 +173,11 @@ struct Index {
           .objectFit(ImageFit.Contain)
           .fillColor(this.currentIndex === targetIndex ? '#E4842A' : '#9A8A6E')
       } else if (targetIndex === 1) {
-        Image($r('app.media.zhint'))
-          .width(22)
-          .height(22)
+        // AI 伴学：换成 IP 形象，尺寸放大并向上突出（见 AITabItem）
+        Image($r('app.media.ip_main'))
+          .width(24)
+          .height(24)
           .objectFit(ImageFit.Contain)
-          .fillColor(this.currentIndex === targetIndex ? '#E4842A' : '#9A8A6E')
       } else {
         Image($r('app.media.wo'))
           .width(22)
@@ -200,6 +200,44 @@ struct Index {
     .onClick(() => {
       this.currentIndex = targetIndex;
       this.tabsController.changeIndex(targetIndex);
+    })
+  }
+
+  // 底部中间项：IP 头像放在白色圆形容器里，向上突出导航栏并放大，作为主入口
+  @Builder
+  AITabItem() {
+    Column({ space: 0 }) {
+      Stack({ alignContent: Alignment.Center }) {
+        Column()
+          .width(54)
+          .height(54)
+          .borderRadius(27)
+          .backgroundColor(Color.White)
+          .border({ width: 3, color: this.currentIndex === 1 ? '#FBDE71' : '#FEF8E3' })
+          .shadow({ radius: 12, color: '#1F000000', offsetY: 3 })
+
+        Image($r('app.media.ip_main'))
+          .width(44)
+          .height(44)
+          .objectFit(ImageFit.Contain)
+      }
+      .width(54)
+      .height(54)
+      .translate({ y: -16 })
+
+      Text('AI 伴学')
+        .fontSize(12.5)
+        .fontWeight(this.currentIndex === 1 ? FontWeight.Bold : FontWeight.Medium)
+        .fontColor(this.currentIndex === 1 ? '#E4842A' : '#9A8A6E')
+        .margin({ top: -8 })
+    }
+    .width(80)
+    .height(62)
+    .justifyContent(FlexAlign.Center)
+    .alignItems(HorizontalAlign.Center)
+    .onClick(() => {
+      this.currentIndex = 1;
+      this.tabsController.changeIndex(1);
     })
   }
 
@@ -233,7 +271,7 @@ struct Index {
       // 底部悬浮/停靠导航栏
       Row() {
         this.NavItem('首页', 0)
-        this.NavItem('AI 伴学', 1)
+        this.AITabItem()
         this.NavItem('我的', 2)
       }
       .width('100%')
@@ -265,6 +303,16 @@ struct HomeView {
   @Local completionPercentage: number = 0;
   // 是否已开始学习：点过一次（本地 StudyCache）或后端进度>0 即为 true，按钮显示「继续练习」
   @Local started: boolean = false;
+  // 练习页答过题会写 practiceTick，本页收到后补查落盘标记
+  @Local nav: NavSignal = AppStorageV2.connect(NavSignal, () => new NavSignal())!;
+
+  @Monitor('nav.practiceTick')
+  onPracticeTick(): void {
+    if (this.started) {
+      return;
+    }
+    this.started = true;
+  }
 
   async aboutToAppear(): Promise<void> {
     const context = this.getUIContext().getHostContext();

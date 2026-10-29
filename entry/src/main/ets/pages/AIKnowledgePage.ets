@@ -568,7 +568,7 @@ struct AIKnowledge {
       .margin({ bottom: 12 })
 
       if (sec.skill.length > 0) {
-        this.PointBlock('技能要求 · 实操考点', sec.skill)
+        this.PointBlock('实操要求', sec.skill)
       }
       if (sec.skill.length > 0 && sec.theory.length > 0) {
         Divider()
@@ -576,7 +576,7 @@ struct AIKnowledge {
           .margin({ top: 13, bottom: 14 })
       }
       if (sec.theory.length > 0) {
-        this.PointBlock('知识要求 · 理论考点', sec.theory)
+        this.PointBlock('知识要点', sec.theory)
       }
     }
     .width('100%')
@@ -595,33 +595,47 @@ struct AIKnowledge {
     })
   }
 
-  // 一组考点：纯文字小标题 + 编号条目（不再使用彩色标签底，减少花哨感）
+  // 一组考点：细竖线小标题 + 圆点条目。
+  // 用「悬挂缩进 + 更松的行距」代替编号列表，读起来像讲义而不是生成式清单。
   @Builder
   PointBlock(label: string, items: string[]) {
     Column() {
-      Text(label)
-        .fontSize(12.0)
-        .fontWeight(FontWeight.Bold)
-        .fontColor(TEXT_SUB)
-        .letterSpacing(1)
-        .margin({ bottom: 10 })
+      Row({ space: 7 }) {
+        Row()
+          .width(3)
+          .height(12)
+          .borderRadius(2)
+          .backgroundColor(ACCENT)
+
+        Text(label)
+          .fontSize(12.5)
+          .fontWeight(FontWeight.Bold)
+          .fontColor(TEXT_SUB)
+          .letterSpacing(1.2)
+      }
+      .width('100%')
+      .alignItems(VerticalAlign.Center)
+      .margin({ bottom: 11 })
 
       ForEach(items, (it: string, i: number) => {
         Row() {
-          Text((i + 1).toString() + '.')
-            .fontSize(12.5)
-            .fontColor(TEXT_WEAK)
-            .margin({ right: 8, top: 2 })
+          Text('·')
+            .fontSize(17.0)
+            .fontWeight(FontWeight.Bold)
+            .fontColor(ACCENT)
+            .width(13)
+            .margin({ top: 1 })
 
           Text(it)
-            .fontSize(14.5)
-            .fontColor('#55402F')
-            .lineHeight(21)
+            .fontSize(15.0)
+            .fontColor('#4A3A2C')
+            .lineHeight(24)
+            .letterSpacing(0.2)
             .layoutWeight(1)
         }
         .width('100%')
         .alignItems(VerticalAlign.Top)
-        .margin({ bottom: 10 })
+        .margin({ bottom: 11 })
       }, (it: string, i: number) => label + '_' + i)
     }
     .width('100%')
