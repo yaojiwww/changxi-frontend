@@ -38,7 +38,8 @@ struct StudyDataPage {
       return '#E4842A';
     }
     if (type === 'exam') {
-      return '#FBDE71';
+      // 原来用浅黄 #FBDE71，落在浅米色底上几乎看不清，换成同色系的深琥珀
+      return '#8F5A0E';
     }
     return '#2E9E63';
   }
@@ -168,7 +169,8 @@ struct StudyDataPage {
       .height(56)
       .backgroundColor(Color.White)
       .alignItems(VerticalAlign.Center)
-      .border({ width: { bottom: 1 }, color: '#F2ECD8' })
+      // 顶部也补一条分隔线：把系统状态栏（米色）和标题栏（白色）分成两层
+      .border({ width: { top: 1, bottom: 1 }, color: '#F2ECD8' })
 
       if (this.records.length === 0) {
         // 空态

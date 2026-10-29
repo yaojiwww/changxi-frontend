@@ -247,6 +247,16 @@ struct FeedbackPage {
     .justifyContent(FlexAlign.Start)
   }
 
+  // 选项按两列分组：5 个选项排成 2+2+1，最后一行只有一项时居中，
+  // 避免内容宽度不一的 chip 自由换行后参差不齐
+  private optionRows(options: string[]): string[][] {
+    const rows: string[][] = [];
+    for (let i = 0; i < options.length; i += 2) {
+      rows.push(options.slice(i, i + 2));
+    }
+    return rows;
+  }
+
   // 单选题卡片：题号 + 题干 + 选项 chip（选中高亮，点选即答）
   @Builder
   ChoiceCard(q: ChoiceQuestion, index: number) {
@@ -269,24 +279,32 @@ struct FeedbackPage {
       .width('100%')
       .alignItems(VerticalAlign.Center)
 
-      Flex({ wrap: FlexWrap.Wrap }) {
-        ForEach(q.options, (opt: string) => {
-          Text(opt)
-            .fontSize(14.0)
-            .fontWeight(this.picks[index] === opt ? FontWeight.Medium : FontWeight.Normal)
-            .fontColor(this.picks[index] === opt ? '#8A7A50' : '#9A8A6E')
-            .padding({ left: 14, right: 14, top: 8, bottom: 8 })
-            .borderRadius(16)
-            .backgroundColor(this.picks[index] === opt ? '#FBDE71' : '#FDFDED')
-            .border({
-              width: 1,
-              color: this.picks[index] === opt ? '#FBDE71' : '#E8DCB8'
-            })
-            .margin({ right: 10, top: 8 })
-            .onClick(() => {
-              this.picks[index] = opt;
-            })
-        }, (opt: string) => `${index}_${opt}`)
+      // 两列等宽 chip：同尺寸、同行高，最后一行单项也居中
+      Column({ space: 10 }) {
+        ForEach(this.optionRows(q.options), (row: string[], ri: number) => {
+          Row({ space: 10 }) {
+            ForEach(row, (opt: string) => {
+              Text(opt)
+                .fontSize(14.0)
+                .fontWeight(this.picks[index] === opt ? FontWeight.Medium : FontWeight.Normal)
+                .fontColor(this.picks[index] === opt ? '#8A7A50' : '#9A8A6E')
+                .width('48%')
+                .padding({ top: 8, bottom: 8 })
+                .textAlign(TextAlign.Center)
+                .borderRadius(18)
+                .backgroundColor(this.picks[index] === opt ? '#FBDE71' : '#FDFDED')
+                .border({
+                  width: 1,
+                  color: this.picks[index] === opt ? '#FBDE71' : '#E8DCB8'
+                })
+                .onClick(() => {
+                  this.picks[index] = opt;
+                })
+            }, (opt: string) => `${index}_${opt}`)
+          }
+          .width('100%')
+          .justifyContent(FlexAlign.Center)
+        }, (row: string[], ri: number) => `${index}_row_${ri}`)
       }
       .width('100%')
     }

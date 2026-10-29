@@ -18,6 +18,12 @@ export struct AIView {
   // 拿不到 pushUrl 参数，只能通过这个共享信号消费一次。
   @Local nav: NavSignal = AppStorageV2.connect(NavSignal, () => new NavSignal())!;
 
+  // 聊天滚动控制：新消息 / 流式增量让内容变高时自动贴到底部
+  private chatScroller: Scroller = new Scroller();
+  private autoFollow: boolean = true;   // 用户往回翻看时暂停跟随，滚回底部再恢复
+  private contentHeight: number = 0;
+  private viewportHeight: number = 0;
+
   async aboutToAppear(): Promise<void> {
     // 可能 AIView 是刚创建的：先把已经写好的知识点/题目接住
     this.consumePendingAsk();
@@ -66,10 +72,25 @@ export struct AIView {
 
   // 发送：交给 ViewModel 发一轮流式提问，失败提示原因
   private async send(): Promise<void> {
+    // 用户主动提问时强制恢复跟随：哪怕刚才在翻旧消息，也要把新问题顶到眼前
+    this.autoFollow = true;
     try {
       await this.vm.send();
     } catch (err) {
       this.toast((err as Error).message);
+    }
+  }
+
+  // 距底部小于该距离就算"贴底"，留 48 的容差，避免回弹和像素误差误判
+  private isNearBottom(): boolean {
+    const offset: number = this.chatScroller.currentOffset().yOffset;
+    return this.contentHeight - offset - this.viewportHeight <= 48;
+  }
+
+  // 内容变高（新消息、流式增量、键盘顶起视口）时贴底；用户翻旧消息时不打扰
+  private keepAtBottom(): void {
+    if (this.autoFollow) {
+      this.chatScroller.scrollEdge(Edge.Bottom);
     }
   }
 
@@ -132,7 +153,7 @@ export struct AIView {
 
       // ============ 中部：聊天记录区（Tab 下方、输入框上方） ============
       if (this.vm.hasChat) {
-        Scroll() {
+        Scroll(this.chatScroller) {
           Column({ space: 12 }) {
             // key 里必须带 content：@Builder 按值传参不会触发刷新，
             // 只有换 key 让这一条整个重建，流式增量才画得出来。
@@ -144,11 +165,42 @@ export struct AIView {
           }
           .width('100%')
           .padding({ left: 16, right: 16, top: 12, bottom: 12 })
+          // 气泡长高（新消息 / 流式增量）后贴底，不用用户手动翻
+          .onAreaChange((_oldValue: Area, newValue: Area) => {
+            this.contentHeight = newValue.height as number;
+            this.keepAtBottom();
+          })
         }
         .scrollBar(BarState.Off)
         .edgeEffect(EdgeEffect.Spring)
         .layoutWeight(1)
         .width('100%')
+        // 视口变化（键盘顶起/收起）也保持贴底
+        .onAreaChange((_oldValue: Area, newValue: Area) => {
+          this.viewportHeight = newValue.height as number;
+          this.keepAtBottom();
+        })
+        // 用户一开始滚就立刻暂停跟随。不能等滚出容差再停：
+        // 流式增量帧率很高，用户还没滑开就会被下一次贴底拽回去
+        .onWillScroll((_xOffset: number, _yOffset: number, _scrollState: ScrollState,
+          source: ScrollSource) => {
+          if (source === ScrollSource.DRAG || source === ScrollSource.FLING ||
+            source === ScrollSource.SCROLL_BAR || source === ScrollSource.OTHER_USER_INPUT) {
+            this.autoFollow = false;
+          }
+        })
+        // 滚完再看停在哪：停在底部就恢复跟随，停在中间就保持暂停
+        .onScrollStop(() => {
+          this.autoFollow = this.isNearBottom();
+        })
+        // 兜底：手指一碰到聊天区就先让位，保证任何时候都能手动往上滑
+        .onTouch((event: TouchEvent) => {
+          if (event.type === TouchType.Down) {
+            this.autoFollow = false;
+          } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+            this.autoFollow = this.isNearBottom();
+          }
+        })
       }
 
       // ============ 下部：模式切换 + 输入框 + 免责声明 ============
