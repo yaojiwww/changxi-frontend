@@ -203,27 +203,14 @@ struct Index {
     })
   }
 
-  // 底部中间项：IP 头像放在白色圆形容器里，向上突出导航栏并放大，作为主入口
+  // 底部中间项的占位与文字：圆环已移到 AIFloatingAvatar 单独绘制，
+  // 这里用同尺寸空占位保持文字位置不变
   @Builder
   AITabItem() {
     Column({ space: 0 }) {
-      Stack({ alignContent: Alignment.Center }) {
-        Column()
-          .width(54)
-          .height(54)
-          .borderRadius(27)
-          .backgroundColor(Color.White)
-          .border({ width: 3, color: this.currentIndex === 1 ? '#FBDE71' : '#FEF8E3' })
-          .shadow({ radius: 12, color: '#1F000000', offsetY: 3 })
-
-        Image($r('app.media.ip_main'))
-          .width(44)
-          .height(44)
-          .objectFit(ImageFit.Contain)
-      }
-      .width(54)
-      .height(54)
-      .translate({ y: -16 })
+      Column()
+        .width(54)
+        .height(54)
 
       Text('AI 伴学')
         .fontSize(12.5)
@@ -235,6 +222,33 @@ struct Index {
     .height(62)
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
+    .onClick(() => {
+      this.currentIndex = 1;
+      this.tabsController.changeIndex(1);
+    })
+  }
+
+  // 浮动 IP 头像：作为 Stack 的独立子节点绘制，层级高于底部导航栏，
+  // 导航栏顶边的分隔线就不会穿过圆环
+  @Builder
+  AIFloatingAvatar() {
+    Stack({ alignContent: Alignment.Center }) {
+      Column()
+        .width(64)
+        .height(64)
+        .borderRadius(32)
+        .backgroundColor(Color.White)
+        .border({ width: 3, color: this.currentIndex === 1 ? '#FBDE71' : '#FEF8E3' })
+        .shadow({ radius: 14, color: '#1F000000', offsetY: 3 })
+
+      Image($r('app.media.ip_main'))
+        .width(52)
+        .height(52)
+        .objectFit(ImageFit.Contain)
+    }
+    .width(64)
+    .height(64)
+    .margin({ bottom: 22 })
     .onClick(() => {
       this.currentIndex = 1;
       this.tabsController.changeIndex(1);
@@ -283,6 +297,9 @@ struct Index {
       .justifyContent(FlexAlign.SpaceAround)
       .alignItems(VerticalAlign.Center)
       .padding({ left: 16, right: 16, bottom: 4 })
+
+      // 放在导航栏之后绘制：圆环盖住顶边线，不会被分隔线切断
+      this.AIFloatingAvatar()
     }
     .width('100%')
     .height('100%')
