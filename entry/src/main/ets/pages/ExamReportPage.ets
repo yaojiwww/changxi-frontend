@@ -3,7 +3,9 @@
 // 新增：AI 评估结果（前端根据得分/正确率/用时生成分档评语）+「向 AI 提问」跳首页 AI 伴学页签
 // 数据来源：交卷时生成的 ExamFinished 快照，或列表页「查看成绩」传入的已考记录
 import { ExamFinished, ExamParseItem, ExamAnswerCell } from '../common/ExamStore';
+import { ExamQuestion, questionsOf } from '../common/ExamData';
 import { signalPendingTab } from '../common/NavSignal';
+import { signalAskQuestion } from '../common/AIAsk';
 
 // 路由参数
 export interface ExamReportParams {
@@ -86,6 +88,36 @@ struct ExamReportPage {
     this.getUIContext().getRouter().back({ url: 'pages/HomePage' });
   }
 
+  // 按题号找回原题（题干/选项）；本地模拟卷直接查 ExamData，查不到时退回题号描述
+  private questionOf(questionId: string): ExamQuestion | null {
+    if (this.report === null) {
+      return null;
+    }
+    const list: ExamQuestion[] = questionsOf(this.report.paperId);
+    for (let i = 0; i < list.length; i++) {
+      if (list[i].questionId === questionId) {
+        return list[i];
+      }
+    }
+    return null;
+  }
+
+  // 点答题卡/解析条目：把这道题带进 AI 伴学输入框
+  private askAbout(questionId: string, index: number, userAnswer: string, correctOption: string): void {
+    if (this.report === null) {
+      return;
+    }
+    const q: ExamQuestion | null = this.questionOf(questionId);
+    signalAskQuestion({
+      stem: q !== null ? q.stem : `模拟试卷《${this.report.paperTitle}》第 ${index + 1} 题`,
+      options: q !== null ? q.options : [],
+      userAnswer: userAnswer,
+      correctAnswer: correctOption,
+      knowledgePoint: this.report.paperTitle
+    });
+    this.goAskAI();
+  }
+
   @Builder
   AnswerCell(cell: ExamAnswerCell, index: number) {
     Column({ space: 4 }) {
@@ -104,11 +136,14 @@ struct ExamReportPage {
     .backgroundColor(cell.correct ? '#2E9E63' : '#D9534F')
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
+    .onClick(() => {
+      this.askAbout(cell.questionId, index, cell.userAnswer, cell.correctOption);
+    })
   }
 
   // 试卷解析条目：答错题的题干 + 你的答案 + 正确答案 + 解析
   @Builder
-  ParseItem(item: ExamParseItem) {
+  ParseItem(item: ExamParseItem, index: number) {
     Column({ space: 8 }) {
       Text(item.stem)
         .fontSize(16.0)
@@ -138,6 +173,22 @@ struct ExamReportPage {
         .padding({ left: 12, right: 12, top: 10, bottom: 10 })
         .backgroundColor('#FFFFFF')
         .borderRadius(10)
+
+      // 整条可点：带着这道题去 AI 伴学
+      Row({ space: 5 }) {
+        Text('问 AI 讲解这道题')
+          .fontSize(13.5)
+          .fontWeight(FontWeight.Medium)
+          .fontColor('#E4842A')
+        Text('›')
+          .fontSize(17.0)
+          .fontColor('#E4842A')
+      }
+      .width('100%')
+      .margin({ top: 2 })
+      .onClick(() => {
+        this.askAbout(item.questionId, index, item.userAnswer, item.correctOption);
+      })
     }
     .width('100%')
     .padding({ top: 14, bottom: 14 })
@@ -376,7 +427,7 @@ struct ExamReportPage {
         } else {
           Column() {
             ForEach(this.report!.parses, (item: ExamParseItem, idx: number) => {
-              this.ParseItem(item)
+              this.ParseItem(item, idx)
               if (idx < this.report!.parses.length - 1) {
                 Divider().width('100%').height(1).color('#F8F4E8')
               }

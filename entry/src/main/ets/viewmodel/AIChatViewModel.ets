@@ -83,6 +83,15 @@ export class AIChatViewModel {
     }
   }
 
+  // 从练习/报告页带题目进入：清掉知识点背景，把整段题目填进输入框，不自动发送
+  applyPendingQuestion(text: string): void {
+    if (text.trim() === '') {
+      return;
+    }
+    this.askContext = null;
+    this.inputText = text;
+  }
+
   // 用户关掉上下文胶囊：回到普通提问；只清理未被改过的默认问题
   clearAskContext(): void {
     if (this.inputText === DEFAULT_KNOWLEDGE_QUESTION) {

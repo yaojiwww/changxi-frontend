@@ -136,7 +136,7 @@ struct SplashPage {
         .translate({ y: this.ready ? 0 : 12 })
         .animation({ duration: 600, delay: 300, curve: Curve.EaseOut })
 
-        Text('保育师 AI 备考助手')
+        Text('AI 备考助手')
           .fontSize(12.5)
           .fontColor('#B5A98D')
           .opacity(this.ready ? 1 : 0)

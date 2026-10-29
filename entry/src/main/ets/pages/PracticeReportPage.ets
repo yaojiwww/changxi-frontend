@@ -1,6 +1,8 @@
 // 练习报告页：数据全部来自 POST /practice/batch-submit 的返回，前端不自算
 // 答题页交卷成功后通过路由 params 传入报告；无数据时提示缺失，不做二次请求
 import { PracticeReport, AnswerCardCell, KnowledgeMastery } from '../api/PracticeApi';
+import { signalPendingTab } from '../common/NavSignal';
+import { AskQuestion, signalAskQuestion } from '../common/AIAsk';
 
 // 路由参数
 export interface PracticeReportParams {
@@ -8,6 +10,7 @@ export interface PracticeReportParams {
   itemName: string;
   report: PracticeReport;
   history?: boolean;  // 学习数据回看模式：隐藏再练一次等操作
+  askQuestions?: AskQuestion[];  // 本轮题目原文：答题卡点题时带进 AI
 }
 
 @Entry
@@ -17,6 +20,8 @@ struct PracticeReportPage {
   @Local itemName: string = '';
   @Local report: PracticeReport | null = null;
   @Local history: boolean = false;
+  // 本轮题目原文（题目 ID → 题干/选项）；历史回看页没有这份数据，仍可按题号提问
+  @Local askQuestions: AskQuestion[] = [];
 
   aboutToAppear(): void {
     const params = this.getUIContext().getRouter().getParams() as PracticeReportParams | undefined;
@@ -29,7 +34,35 @@ struct PracticeReportPage {
       if (params.history === true) {
         this.history = true;
       }
+      if (params.askQuestions !== undefined) {
+        this.askQuestions = params.askQuestions;
+      }
     }
+  }
+
+  // 点答题卡：找回原题带进 AI 伴学；找不到原文时退回题号 + 答案
+  private askAbout(cell: AnswerCardCell, index: number): void {
+    for (let i = 0; i < this.askQuestions.length; i++) {
+      const q: AskQuestion = this.askQuestions[i];
+      if (q.questionId !== undefined && q.questionId === cell.questionId) {
+        signalAskQuestion(q);
+        this.gotoAI();
+        return;
+      }
+    }
+    signalAskQuestion({
+      questionId: cell.questionId,
+      stem: `本次练习第 ${index + 1} 题`,
+      userAnswer: cell.userAnswer,
+      correctAnswer: cell.correctOption,
+      knowledgePoint: this.itemName
+    });
+    this.gotoAI();
+  }
+
+  private gotoAI(): void {
+    signalPendingTab(1);
+    this.getUIContext().getRouter().back({ url: 'pages/HomePage' });
   }
 
   private goBack(): void {
@@ -149,6 +182,9 @@ struct PracticeReportPage {
     .backgroundColor(cell.correct ? '#2E9E63' : '#D9534F')
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
+    .onClick(() => {
+      this.askAbout(cell, index);
+    })
   }
 
   // 知识点掌握行
@@ -319,6 +355,13 @@ struct PracticeReportPage {
           .fontSize(17.0)
           .fontWeight(FontWeight.Bold)
           .fontColor('#55402F')
+          .width('100%')
+          .margin({ bottom: 4 })
+
+        // 点题号去 AI：把题干和答案一起带过去
+        Text('点题号可让 AI 讲解这道题')
+          .fontSize(12.5)
+          .fontColor('#B5A98D')
           .width('100%')
           .margin({ bottom: 10 })
 

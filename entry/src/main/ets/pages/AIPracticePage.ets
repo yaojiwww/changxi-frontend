@@ -1,7 +1,14 @@
 import { photoAccessHelper } from '@kit.MediaLibraryKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { AIPracticeHistoryStore, AIPracticeRecord } from '../common/AIPracticeHistoryStore';
+import { AI_PRACTICE_CHECKLISTS } from '../common/AIPracticeChecklist';
 import { SafeArea } from '../common/SafeArea';
+import { signalPendingTab } from '../common/NavSignal';
+
+// 路由参数：从「我的 · 实操记录」进来时直接打开历史浮窗
+export interface AIPracticeParams {
+  openHistory?: boolean;
+}
 
 // 场景选项：共 6 类保育实操场景（顺序与 SCENE_ICONS / DEMO_RESULTS 一一对应）
 const SCENES: string[] = ['进餐环节', '午睡环境', '玩具消毒', '盥洗如厕', '户外活动', '晨午健康检查'];
@@ -30,7 +37,7 @@ const DEMO_RESULTS: SceneResult[] = [
     summary: '整体符合规范，有 3 处可优化。按建议调整后，进餐环节的安全性与规范性会更好。',
     advice: [
       { title: '餐具间距偏近', desc: '汤碗与饭碗建议间隔 10cm 以上，避免端送时洒溅烫伤。' },
-      { title: '保育师站位可优化', desc: '建议站在幼儿侧后方，能同时观察到两端幼儿的进餐情况。' },
+      { title: '看护站位可优化', desc: '建议站在幼儿侧后方，能同时观察到两端幼儿的进餐情况。' },
       { title: '进餐时长提示', desc: '单餐建议控制在 20–30 分钟，不催促、不训斥，允许幼儿细嚼慢咽。' }
     ],
     basis: ['《托儿所、幼儿园卫生保健工作规范》进餐管理', '《保育师国家职业技能标准》四级 · 生活照料']
@@ -63,7 +70,7 @@ const DEMO_RESULTS: SceneResult[] = [
     summary: '盥洗组织有序、地面干爽，仅需在提醒频次上做小幅优化。',
     advice: [
       { title: '提醒频次可加密', desc: '每隔 1.5–2 小时提醒如厕一次，避免幼儿憋便憋尿。' },
-      { title: '七步洗手要到位', desc: '洗手按七步法执行，保育师应在旁示范并逐个检查。' }
+      { title: '七步洗手要到位', desc: '洗手按七步法执行，保育员应在旁示范并逐个检查。' }
     ],
     basis: ['《托儿所、幼儿园卫生保健工作规范》盥洗如厕管理', '《保育师国家职业技能标准》五级 · 生活照料']
   },
@@ -117,6 +124,7 @@ struct AIPractice {
   @Local useDemo: boolean = false;    // 是否使用内置示例照片（相册为空时的兜底）
   @Local pickHint: string = '';       // 选图失败/空白时给出的一行提示
   @Local stepDone: number = 0;        // 识别进度：0-3
+  @Local checkedCount: number = 0;    // 已按清单检查的项数（逐项向上走）
   private timerIds: number[] = [];
 
   // 历史记录半屏浮窗
@@ -130,6 +138,11 @@ struct AIPractice {
       await AIPracticeHistoryStore.init(context);
     }
     this.historyItems = AIPracticeHistoryStore.getAll();
+    // 「我的 · 实操记录」进来：直接展开历史列表
+    const params = this.getUIContext().getRouter().getParams() as AIPracticeParams | undefined;
+    if (params !== undefined && params.openHistory === true) {
+      this.historyOpen = true;
+    }
   }
 
   aboutToDisappear(): void {
@@ -200,13 +213,17 @@ struct AIPractice {
     const snapDemo: boolean = this.useDemo;
     this.step = 1;
     this.stepDone = 0;
+    this.checkedCount = 0;
+    // 按清单逐项展示：每 420ms 勾掉一项，最后一项完成后出结果
+    const total: number = this.checklist().length;
+    for (let i = 0; i < total; i++) {
+      const n: number = i + 1;
+      this.timerIds.push(setTimeout((): void => {
+        this.checkedCount = n;
+      }, 420 * n));
+    }
     this.timerIds.push(setTimeout((): void => {
-      this.stepDone = 1;
-    }, 800));
-    this.timerIds.push(setTimeout((): void => {
-      this.stepDone = 2;
-    }, 1700));
-    this.timerIds.push(setTimeout((): void => {
+      this.checkedCount = total;
       this.stepDone = 3;
       this.step = 2;
       // 分析完成即归档：只要用照片跑过一次功能，历史里就有记录
@@ -257,6 +274,7 @@ struct AIPractice {
   private reset(): void {
     this.step = 0;
     this.stepDone = 0;
+    this.checkedCount = 0;
     this.imageUri = '';
     this.useDemo = false;
     this.pickHint = '';
@@ -283,6 +301,18 @@ struct AIPractice {
   // 当前结果
   private result(): SceneResult {
     return DEMO_RESULTS[this.sceneIndex];
+  }
+
+  // 当前场景的检查清单（场景常量调整过时按名称兜底）
+  private checklist(): string[] {
+    let idx: number = this.sceneIndex;
+    if (idx < 0 || idx >= AI_PRACTICE_CHECKLISTS.length) {
+      idx = SCENES.indexOf(this.result().name);
+    }
+    if (idx < 0 || idx >= AI_PRACTICE_CHECKLISTS.length) {
+      return [];
+    }
+    return AI_PRACTICE_CHECKLISTS[idx];
   }
 
   build() {
@@ -615,13 +645,46 @@ struct AIPractice {
           .width('100%')
           .margin({ bottom: 16 })
 
-          // 分析步骤卡
-          Column({ space: 4 }) {
-            this.StepRow('识别保育场景', this.stepDone >= 1 ? '完成' : '进行中', this.stepDone >= 1)
-            Divider().color('#F2ECD8').margin({ left: 42 })
-            this.StepRow('匹配保育规范', this.stepDone >= 2 ? '已比对 12 项' : '等待中', this.stepDone >= 2)
-            Divider().color('#F2ECD8').margin({ left: 42 })
-            this.StepRow('生成改进建议', this.stepDone >= 3 ? '完成' : '进行中', this.stepDone >= 3)
+          // 检查清单卡：按当前场景的清单逐项勾选，勾过的才展示
+          Column() {
+            Row() {
+              Text('对照检查清单')
+                .fontSize(17.0)
+                .fontWeight(FontWeight.Bold)
+                .fontColor(TEXT_MAIN)
+                .layoutWeight(1)
+
+              Text(this.checkedCount.toString() + ' / ' + this.checklist().length.toString())
+                .fontSize(13.5)
+                .fontWeight(FontWeight.Medium)
+                .fontColor(ACCENT)
+            }
+            .width('100%')
+            .alignItems(VerticalAlign.Center)
+            .margin({ bottom: 12 })
+
+            ForEach(this.checklist().slice(0, this.checkedCount), (item: string, i: number) => {
+              Row({ space: 10 }) {
+                Text('✓')
+                  .fontSize(13.0)
+                  .fontWeight(FontWeight.Bold)
+                  .fontColor('#2E9E63')
+                  .width(24)
+                  .height(24)
+                  .textAlign(TextAlign.Center)
+                  .borderRadius(12)
+                  .backgroundColor('#F0F6EC')
+
+                Text(item)
+                  .fontSize(14.5)
+                  .fontColor(TEXT_MAIN)
+                  .lineHeight(21)
+                  .layoutWeight(1)
+              }
+              .width('100%')
+              .alignItems(VerticalAlign.Center)
+              .margin({ bottom: 10 })
+            }, (item: string, i: number) => 'check_' + i)
           }
           .width('100%')
           .padding(14)
@@ -630,7 +693,7 @@ struct AIPractice {
           .border({ width: 1, color: CARD_BORDER })
           .alignItems(HorizontalAlign.Start)
 
-          Text('AI 正在分析，约需 3 秒…')
+          Text('AI 正在按清单分析，约需 3 秒…')
             .fontSize(13.0)
             .fontColor(TEXT_WEAK)
             .width('100%')
@@ -741,6 +804,52 @@ struct AIPractice {
           .shadow({ radius: 12, color: '#14000000', offsetY: 6 })
           .alignItems(VerticalAlign.Center)
           .margin({ bottom: 14 })
+
+          // 检查清单回执：本次逐项核对过哪些内容
+          Column() {
+            Row({ space: 7 }) {
+              Text('✓')
+                .fontSize(15.0)
+                .fontWeight(FontWeight.Bold)
+                .fontColor('#2E9E63')
+              Text('本次检查清单')
+                .fontSize(17.5)
+                .fontWeight(FontWeight.Bold)
+                .fontColor(TEXT_MAIN)
+            }
+            .width('100%')
+            .margin({ bottom: 13 })
+
+            ForEach(this.checklist(), (item: string, i: number) => {
+              Row({ space: 10 }) {
+                Text((i + 1).toString())
+                  .fontSize(12.5)
+                  .fontWeight(FontWeight.Bold)
+                  .fontColor('#2E9E63')
+                  .width(22)
+                  .height(22)
+                  .textAlign(TextAlign.Center)
+                  .borderRadius(11)
+                  .backgroundColor('#F0F6EC')
+
+                Text(item)
+                  .fontSize(14.5)
+                  .fontColor(TEXT_MAIN)
+                  .lineHeight(21)
+                  .layoutWeight(1)
+              }
+              .width('100%')
+              .alignItems(VerticalAlign.Top)
+              .margin({ bottom: 10 })
+            }, (item: string, i: number) => 'result_check_' + i)
+          }
+          .width('100%')
+          .padding(15)
+          .borderRadius(16)
+          .backgroundColor(Color.White)
+          .border({ width: 1, color: CARD_BORDER })
+          .alignItems(HorizontalAlign.Start)
+          .margin({ bottom: 12 })
 
           // 改进建议卡
           Column() {
@@ -880,7 +989,10 @@ struct AIPractice {
           .backgroundColor(PRIMARY)
           .shadow({ radius: 10, color: '#14000000', offsetY: 4 })
           .onClick(() => {
+            // 分析完成时已自动归档，这里只是把用户带到「我的 · 实操记录」
             this.toast('已保存到「我的 · 实操记录」');
+            signalPendingTab(2);
+            this.getUIContext().getRouter().back({ url: 'pages/HomePage' });
           })
       }
       .width('100%')

@@ -96,7 +96,7 @@ struct FeedbackPage {
             this.getUIContext().getRouter().back();
           })
 
-        Text('意见反馈')
+        Text('用户反馈')
           .fontSize(19.0)
           .fontWeight(FontWeight.Bold)
           .fontColor('#55402F')

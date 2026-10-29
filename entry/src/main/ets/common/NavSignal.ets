@@ -8,6 +8,16 @@ export class NavSignal {
   @Trace pendingTab: number = -1;
   // 从 AI 知识库带过来的提问上下文。AI 伴学页读取后立即清空，只消费一次
   @Trace pendingAsk: AIAskContext | null = null;
+  // 从练习/报告页带过来的整段提问文本（题目已拼好），AI 伴学页只填进输入框，不自动发送
+  @Trace pendingQuestion: string = '';
+  // 答题计数：练习/每日一练答下一题就 +1，首页据此把「开始练习」切成「继续练习」
+  @Trace practiceTick: number = 0;
+}
+
+// 答过一题：通知首页刷新「已开始学习」状态（落盘仍以 StudyCache 为准）
+export function signalPracticeStarted(): void {
+  const s = AppStorageV2.connect(NavSignal, () => new NavSignal())!;
+  s.practiceTick++;
 }
 
 // 写入待处理的页签跳转（1 = AI 伴学）
@@ -35,5 +45,19 @@ export function takePendingAsk(): AIAskContext | null {
   const s = AppStorageV2.connect(NavSignal, () => new NavSignal())!;
   const v: AIAskContext | null = s.pendingAsk;
   s.pendingAsk = null;
+  return v;
+}
+
+// 写入待填入输入框的整段提问文本（题目页 → AI 伴学）
+export function signalPendingQuestion(text: string): void {
+  const s = AppStorageV2.connect(NavSignal, () => new NavSignal())!;
+  s.pendingQuestion = text;
+}
+
+// 取出并复位待填提问，返回空串表示没有待处理题目
+export function takePendingQuestion(): string {
+  const s = AppStorageV2.connect(NavSignal, () => new NavSignal())!;
+  const v: string = s.pendingQuestion;
+  s.pendingQuestion = '';
   return v;
 }

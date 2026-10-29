@@ -4,7 +4,7 @@ import { ExamPaper, allPapers } from '../common/ExamData';
 import { ExamStore, ExamProgress } from '../common/ExamStore';
 
 // Tab 定义
-const TABS: string[] = ['全部', '免费', '未考', '已考'];
+const TABS: string[] = ['全部', '未考', '已考'];
 
 @Entry
 @ComponentV2
@@ -78,37 +78,15 @@ struct ExamListPage {
     const out: ExamPaper[] = [];
     for (let i = 0; i < this.papers.length; i++) {
       const p: ExamPaper = this.papers[i];
-      if (this.activeTab === 1 && !p.isFree) {
+      if (this.activeTab === 1 && ExamStore.isFinished(p.id)) {
         continue;
       }
-      if (this.activeTab === 2 && ExamStore.isFinished(p.id)) {
-        continue;
-      }
-      if (this.activeTab === 3 && !ExamStore.isFinished(p.id)) {
+      if (this.activeTab === 2 && !ExamStore.isFinished(p.id)) {
         continue;
       }
       out.push(p);
     }
     return out;
-  }
-
-  // 页头标签数据：共 x 套 / 累计 x 人做过 / 免费 x 套
-  private get freeCount(): number {
-    let n = 0;
-    for (let i = 0; i < this.papers.length; i++) {
-      if (this.papers[i].isFree) {
-        n++;
-      }
-    }
-    return n;
-  }
-
-  private get totalDone(): number {
-    let n = 0;
-    for (let i = 0; i < this.papers.length; i++) {
-      n += this.papers[i].doneCount;
-    }
-    return n;
   }
 
   // 已考成绩文案（getFinished 可能返回 null，需判空）
@@ -195,19 +173,7 @@ struct ExamListPage {
     .alignItems(VerticalAlign.Center)
   }
 
-  // 渐变页头上的半透明胶囊标签
-  @Builder
-  HeadPill(text: string) {
-    Text(text)
-      .fontSize(12.5)
-      .fontWeight(FontWeight.Medium)
-      .fontColor('#8A7A50')
-      .backgroundColor('#80FFFFFF')
-      .padding({ left: 10, right: 10, top: 4, bottom: 4 })
-      .borderRadius(9)
-  }
-
-  // 试卷卡片（参考图样式：标题行 + 统计行 + 右侧胶囊按钮）
+  // 试卷卡片（参考图样式：标题行 + 状态行 + 右侧胶囊按钮）
   @Builder
   PaperCard(paper: ExamPaper) {
     Column({ space: 12 }) {
@@ -219,27 +185,13 @@ struct ExamListPage {
         .maxLines(2)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
 
-      // 底部：统计 + 右侧按钮
+      // 底部：成绩状态 + 右侧按钮
       Row({ space: 10 }) {
-        Text(`${paper.doneCount}人做过`)
-          .fontSize(13.0)
-          .fontColor('#9A8A6E')
-
         if (ExamStore.isFinished(paper.id)) {
           Text(this.finishedScoreText(paper))
             .fontSize(13.0)
             .fontWeight(FontWeight.Bold)
             .fontColor('#2E9E63')
-        }
-
-        if (paper.isFree) {
-          Text('免费')
-            .fontSize(11.5)
-            .fontWeight(FontWeight.Medium)
-            .fontColor('#2E9E63')
-            .padding({ left: 7, right: 7, top: 2, bottom: 2 })
-            .borderRadius(5)
-            .border({ width: 1, color: '#2E9E63' })
         }
 
         Blank()

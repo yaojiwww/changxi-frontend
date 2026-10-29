@@ -6,8 +6,16 @@
 import { FavoritesStore, FavoriteItem } from '../common/FavoritesStore';
 import { WrongBookStore } from '../common/WrongBookStore';
 import { StudyRecordStore } from '../common/StudyRecordStore';
+import { StudyCache } from '../common/StudyCache';
 import { AnsweredQuestion, buildPracticeReport, archiveKnowledgePractice } from '../common/PracticeRecord';
 import { PracticeReport } from '../api/PracticeApi';
+import { AppStorageV2 } from '@kit.ArkUI';
+import { GoalModel } from '../common/GoalModel';
+import { resolveKp, KpEntry } from '../common/KnowledgeCatalog';
+import { questionsOf, judge } from '../common/QuestionBank';
+import { PracticeQuestion, JudgeResult } from '../model/QuestionModels';
+import { AskQuestion, signalAskQuestion } from '../common/AIAsk';
+import { signalPendingTab, signalPracticeStarted } from '../common/NavSignal';
 
 interface PracticeParams {
   topicId?: number;
@@ -20,6 +28,16 @@ interface LawQ {
   options: string[];
   answer: string;   // 正确选项字母
   tip: string;      // 解析一句话
+}
+
+// 答题页统一使用的题目：本地演示题与 QuestionBank 题库都转成这个结构
+interface PracticeItem {
+  id: string;             // 题目业务码（错题本/收藏/报告共用）
+  stem: string;
+  options: string[];
+  answer: string;         // 正确选项字母
+  tip: string;            // 解析
+  knowledgePoint: string; // 用于错题本分组
 }
 
 const KEYS: string[] = ['A', 'B', 'C', 'D'];
@@ -99,25 +117,19 @@ struct Practice {
   @Local pageTitle: string = '知识点练习';
   @Local topicId: number = 0;
   @Local isLaw: boolean = false;         // 是否为法律法规知识点（内置演示题）
-  @Local cur: number = 0;                // 当前演示题下标
-  @Local picks: string[] = [];           // 每道演示题的作答
-  @Local done: boolean = false;          // 演示题全部做完
+  @Local cur: number = 0;                // 当前题下标
+  @Local picks: string[] = [];           // 每道题的作答
+  @Local done: boolean = false;          // 全部做完
   @Local starred: boolean = false;       // 当前题收藏状态
+  @Local items: PracticeItem[] = [];     // 当前知识点的题目（演示题或本地题库）
+  @Local kpId: string = '';              // 题库知识点 ID
+  @Local kpLabel: string = '';           // 答题页/错题本展示的分类名
+  @Local topicTotal: number = 0;         // 该知识点真实题库总题量（进度条按它算）
+  @Local ready: boolean = false;         // 是否有可作答的题目
+  @Local goal: GoalModel = AppStorageV2.connect(GoalModel, () => new GoalModel())!;
 
   private startTime: number = 0;          // 本轮开始时间，用于报告里的练习时长
   private openingReport: boolean = false; // 防止连点重复提交/重复归档
-
-  // 演示题稳定 ID：law_1 ~ law_10（错题本/收藏共用）
-  private qid(i: number): string {
-    return 'law_' + (i + 1).toString();
-  }
-
-  private plans: string[] = [
-    '按知识点分类刷题',
-    '题目由后端题库按 kp_id 抽取',
-    '作答后即时判题并展示解析',
-    '练完自动生成练习报告'
-  ];
 
   async aboutToAppear(): Promise<void> {
     const params = this.getUIContext().getRouter().getParams() as PracticeParams | undefined;
@@ -129,35 +141,98 @@ struct Practice {
         this.pageTitle = params.topicName;
       }
     }
-    // 相关法律法规 → 进入演示答题模式
     this.isLaw = this.pageTitle.indexOf('法律法规') >= 0;
-    if (this.isLaw) {
-      this.picks = LAW_DEMO.map((): string => '');
+    this.loadQuestions();
+    if (this.ready) {
+      this.picks = this.items.map((): string => '');
       this.startTime = Date.now();
       const ctx = this.getUIContext().getHostContext();
       if (ctx !== undefined) {
         await FavoritesStore.init(ctx);
         await WrongBookStore.init(ctx);
         await StudyRecordStore.init(ctx);
+        await StudyCache.init(ctx);
       }
       this.refreshStar();
     }
   }
 
+  // 题目来源：法律法规用内置演示题（保持原有题目 ID）；其余知识点查本地题库
+  private loadQuestions(): void {
+    if (this.isLaw) {
+      this.kpId = 'kp-basic-law';
+      this.kpLabel = '相关法律法规及其它试题';
+      this.topicTotal = LAW_TOTAL;
+      this.items = LAW_DEMO.map((q: LawQ, i: number): PracticeItem => {
+        return {
+          id: 'law_' + (i + 1).toString(),
+          stem: q.stem,
+          options: q.options,
+          answer: q.answer,
+          tip: q.tip,
+          knowledgePoint: this.kpLabel
+        };
+      });
+      this.ready = true;
+      return;
+    }
+
+    const entry: KpEntry | undefined = resolveKp(this.pageTitle, this.goal.levelIndex);
+    if (entry === undefined) {
+      return;
+    }
+    const list: PracticeQuestion[] = questionsOf(entry.kpId);
+    if (list.length === 0) {
+      return;
+    }
+    const out: PracticeItem[] = [];
+    for (let i = 0; i < list.length; i++) {
+      const p: PracticeQuestion = list[i];
+      // 判题接口同时给出正确答案与解析；本地题库没有答案泄漏问题
+      const j: JudgeResult | undefined = judge(entry.kpId, p.questionId, '');
+      if (j === undefined) {
+        continue;
+      }
+      out.push({
+        id: p.questionId,
+        stem: p.stem,
+        options: p.options,
+        answer: j.correctOption,
+        tip: j.explanation,
+        knowledgePoint: p.knowledgePoint
+      });
+    }
+    this.kpId = entry.kpId;
+    this.kpLabel = entry.label;
+    this.topicTotal = entry.total;
+    this.items = out;
+    this.ready = out.length > 0;
+  }
+
+  // 当前题
+  private current(): PracticeItem | undefined {
+    return this.items[this.cur];
+  }
+
+  // 当前题（视图内专用：调用前已确认 ready，cur 一定在范围内）
+  private curItem(): PracticeItem {
+    return this.items[this.cur];
+  }
+
   // 当前题是否已判定
   private judged(): boolean {
-    return this.isLaw && this.picks[this.cur] !== undefined && this.picks[this.cur] !== '';
+    return this.ready && this.picks[this.cur] !== undefined && this.picks[this.cur] !== '';
   }
 
   private isLast(): boolean {
-    return this.cur === LAW_DEMO.length - 1;
+    return this.cur === this.items.length - 1;
   }
 
   // 本轮答对题数
   private correctCount(): number {
     let n = 0;
-    for (let i = 0; i < LAW_DEMO.length; i++) {
-      if (this.picks[i] === LAW_DEMO[i].answer) {
+    for (let i = 0; i < this.items.length; i++) {
+      if (this.picks[i] === this.items[i].answer) {
         n++;
       }
     }
@@ -169,6 +244,9 @@ struct Practice {
       return;
     }
     this.picks[this.cur] = key;
+    // 答过题就算「已开始」：落盘 + 通知首页把主按钮切成「继续练习」
+    StudyCache.markStarted();
+    signalPracticeStarted();
   }
 
   private async onNext(): Promise<void> {
@@ -176,11 +254,15 @@ struct Practice {
       this.toast('请先选择答案');
       return;
     }
+    const q: PracticeItem | undefined = this.current();
+    if (q === undefined) {
+      return;
+    }
     // 离开本题前终判：最终答案错误 → 静默写入错题本（await 保证落库后再离开）
-    if (this.picks[this.cur] !== LAW_DEMO[this.cur].answer) {
-      await WrongBookStore.markWrong(this.qid(this.cur), LAW_DEMO[this.cur].stem,
-        LAW_DEMO[this.cur].options.slice(), KEYS.indexOf(LAW_DEMO[this.cur].answer),
-        '相关法律法规及其它试题', 'practice');
+    if (this.picks[this.cur] !== q.answer) {
+      await WrongBookStore.markWrong(q.id, q.stem,
+        q.options.slice(), KEYS.indexOf(q.answer),
+        q.knowledgePoint, 'practice');
     }
     if (this.isLast()) {
       this.done = true;
@@ -191,6 +273,25 @@ struct Practice {
     }
   }
 
+  // 把当前题带进 AI 伴学（不自动发送，只在输入框里预填）
+  private askCurrent(): void {
+    const q: PracticeItem | undefined = this.current();
+    if (q === undefined) {
+      return;
+    }
+    signalAskQuestion({
+      questionId: q.id,
+      stem: q.stem,
+      options: q.options,
+      userAnswer: this.picks[this.cur],
+      correctAnswer: q.answer,
+      knowledgePoint: q.knowledgePoint
+    });
+    // 返回首页并切到 AI 伴学页签（首页 onPageShow 消费 pendingTab）
+    signalPendingTab(1);
+    this.getUIContext().getRouter().back({ url: 'pages/HomePage' });
+  }
+
   // 完成后生成练习报告：先归档到学习数据，再用报告页替换当前页（返回直达首页）
   private async openReport(): Promise<void> {
     if (this.openingReport) {
@@ -199,19 +300,29 @@ struct Practice {
     this.openingReport = true;
 
     const answers: AnsweredQuestion[] = [];
-    for (let i = 0; i < LAW_DEMO.length; i++) {
-      const q: LawQ = LAW_DEMO[i];
+    const askQuestions: AskQuestion[] = [];
+    for (let i = 0; i < this.items.length; i++) {
+      const q: PracticeItem = this.items[i];
+      const userAnswer: string = this.picks[i] === undefined ? '' : this.picks[i];
       answers.push({
-        questionId: this.qid(i),
-        userAnswer: this.picks[i] === undefined ? '' : this.picks[i],
+        questionId: q.id,
+        userAnswer: userAnswer,
         correctOption: q.answer,
-        knowledgePoint: '相关法律法规及其它试题'
+        knowledgePoint: q.knowledgePoint
+      });
+      askQuestions.push({
+        questionId: q.id,
+        stem: q.stem,
+        options: q.options,
+        userAnswer: userAnswer,
+        correctAnswer: q.answer,
+        knowledgePoint: q.knowledgePoint
       });
     }
-    const itemName: string = this.pageTitle !== '' ? this.pageTitle : '相关法律法规及其它试题';
+    const itemName: string = this.pageTitle !== '' ? this.pageTitle : this.kpLabel;
     const duration: number = Math.max(1, Math.floor((Date.now() - this.startTime) / 1000));
-    const report: PracticeReport = buildPracticeReport('kp-basic-law', itemName,
-      '基础知识 · 单选练习', answers, duration);
+    const report: PracticeReport = buildPracticeReport(this.kpId, itemName,
+      this.kpLabel + ' · 单选练习', answers, duration);
 
     try {
       await archiveKnowledgePractice(report);
@@ -221,21 +332,27 @@ struct Practice {
 
     this.getUIContext().getRouter().replaceUrl({
       url: 'pages/PracticeReportPage',
-      params: { itemId: report.itemId, itemName: report.itemName, report: report }
+      params: {
+        itemId: report.itemId,
+        itemName: report.itemName,
+        report: report,
+        askQuestions: askQuestions
+      }
     });
   }
 
   // ===== 收藏星标 =====
   private refreshStar(): void {
-    this.starred = this.isLaw && FavoritesStore.isFavorited(this.qid(this.cur));
+    const q: PracticeItem | undefined = this.current();
+    this.starred = q !== undefined && FavoritesStore.isFavorited(q.id);
   }
 
   private async toggleStar(): Promise<void> {
-    const q = LAW_DEMO[this.cur];
+    const q: PracticeItem | undefined = this.current();
     if (q === undefined) {
       return;
     }
-    const id = this.qid(this.cur);
+    const id: string = q.id;
     if (this.starred) {
       await FavoritesStore.remove(id);
       this.starred = false;
@@ -246,7 +363,7 @@ struct Practice {
         stem: q.stem,
         options: q.options.slice(),
         answer: KEYS.indexOf(q.answer),
-        knowledgePoint: '相关法律法规及其它试题',
+        knowledgePoint: q.knowledgePoint,
         source: 'practice',
         favoritedAt: Date.now()
       };
@@ -266,9 +383,9 @@ struct Practice {
     }
   }
 
-  // 进度条宽度：按真实题库总数计算（演示题号/358）
+  // 进度条宽度：按该知识点真实题库总数计算（演示题号/总数）
   private progressPct(): number {
-    return (this.cur + 1) / LAW_TOTAL * 100;
+    return this.topicTotal > 0 ? (this.cur + 1) / this.topicTotal * 100 : 0;
   }
 
   private toast(msg: string): void {
@@ -296,7 +413,7 @@ struct Practice {
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
 
-        if (this.isLaw) {
+        if (this.ready) {
           // 收藏星标
           Text(this.starred ? '★' : '☆')
             .fontSize(24.0)
@@ -306,7 +423,7 @@ struct Practice {
               this.toggleStar();
             })
 
-          Text((this.cur + 1).toString() + '/' + LAW_TOTAL.toString())
+          Text((this.cur + 1).toString() + '/' + this.topicTotal.toString())
             .fontSize(14.0)
             .fontColor('#9A8A6E')
             .padding({ right: 16 })
@@ -320,7 +437,7 @@ struct Practice {
       .alignItems(VerticalAlign.Center)
       .border({ width: { bottom: 1 }, color: '#F2ECD8' })
 
-      if (this.isLaw) {
+      if (this.ready) {
         this.QuizView()
       } else {
         this.PlaceholderView()
@@ -355,14 +472,14 @@ struct Practice {
           } else {
             // 题干卡
             Column({ space: 10 }) {
-              Text('相关法律法规及其它试题')
+              Text(this.kpLabel)
                 .fontSize(12.0)
                 .fontColor('#E4842A')
                 .backgroundColor('#FEF8E3')
                 .padding({ left: 8, right: 8, top: 3, bottom: 3 })
                 .borderRadius(6)
 
-              Text(LAW_DEMO[this.cur].stem)
+              Text(this.curItem().stem)
                 .fontSize(17.5)
                 .fontWeight(FontWeight.Medium)
                 .fontColor('#55402F')
@@ -377,7 +494,7 @@ struct Practice {
             .margin({ bottom: 12 })
 
             // 选项列表
-            ForEach(LAW_DEMO[this.cur].options, (opt: string, i: number) => {
+            ForEach(this.curItem().options, (opt: string, i: number) => {
               this.OptionRow(opt, i)
             }, (opt: string, i: number) => this.cur.toString() + '-' + i.toString() + '-' + opt)
 
@@ -436,7 +553,7 @@ struct Practice {
   OptionRow(opt: string, i: number) {
     Row({ space: 12 }) {
       // 圆圈字母（参考题库答题页样式）
-      if (this.judged() && KEYS[i] === LAW_DEMO[this.cur].answer) {
+      if (this.judged() && KEYS[i] === this.curItem().answer) {
         // 正确项：绿色圆圈白对勾
         Text('✓')
           .fontSize(16.0)
@@ -480,11 +597,11 @@ struct Practice {
     .width('100%')
     .padding(13)
     .borderRadius(14)
-    .backgroundColor(this.judged() && KEYS[i] === LAW_DEMO[this.cur].answer ? '#F0F6EC'
+    .backgroundColor(this.judged() && KEYS[i] === this.curItem().answer ? '#F0F6EC'
       : (this.judged() && this.picks[this.cur] === KEYS[i] ? '#FDF3DC' : Color.White))
     .border({
       width: 1.5,
-      color: this.judged() && KEYS[i] === LAW_DEMO[this.cur].answer ? '#F0F6EC'
+      color: this.judged() && KEYS[i] === this.curItem().answer ? '#F0F6EC'
         : (this.judged() && this.picks[this.cur] === KEYS[i] ? '#FEF8E3' : '#F2ECD8')
     })
     .margin({ bottom: 10 })
@@ -503,7 +620,7 @@ struct Practice {
           .fontSize(15.0)
           .fontColor('#9A8A6E')
 
-        Text(LAW_DEMO[this.cur].answer)
+        Text(this.curItem().answer)
           .fontSize(19.0)
           .fontWeight(FontWeight.Bold)
           .fontColor('#2E9E63')
@@ -516,7 +633,7 @@ struct Practice {
         Text(this.picks[this.cur])
           .fontSize(19.0)
           .fontWeight(FontWeight.Bold)
-          .fontColor(this.picks[this.cur] === LAW_DEMO[this.cur].answer ? '#2E9E63' : '#D9534F')
+          .fontColor(this.picks[this.cur] === this.curItem().answer ? '#2E9E63' : '#D9534F')
 
         Blank()
       }
@@ -526,12 +643,32 @@ struct Practice {
 
       Divider().color('#F8F4E8').strokeWidth(1)
 
-      Text('解析：' + LAW_DEMO[this.cur].tip)
+      Text('解析：' + this.curItem().tip)
         .fontSize(14.5)
         .fontColor('#55402F')
         .lineHeight(21)
         .width('100%')
         .margin({ top: 12 })
+
+      // 本题仍有疑问：带着题干和答案去 AI 伴学
+      Row({ space: 6 }) {
+        Text('还有疑问？问 AI 讲解这道题')
+          .fontSize(14.0)
+          .fontWeight(FontWeight.Medium)
+          .fontColor('#E4842A')
+        Text('›')
+          .fontSize(18.0)
+          .fontColor('#E4842A')
+      }
+      .width('100%')
+      .padding({ left: 12, right: 12, top: 10, bottom: 10 })
+      .borderRadius(11)
+      .backgroundColor('#FEF8E3')
+      .margin({ top: 12 })
+      .alignItems(VerticalAlign.Center)
+      .onClick(() => {
+        this.askCurrent();
+      })
     }
     .width('100%')
     .padding(16)
@@ -551,12 +688,12 @@ struct Practice {
         .fontWeight(FontWeight.Bold)
         .fontColor('#55402F')
 
-      Text('答对 ' + this.correctCount().toString() + ' / ' + LAW_DEMO.length.toString() + ' 题')
+      Text('答对 ' + this.correctCount().toString() + ' / ' + this.items.length.toString() + ' 题')
         .fontSize(17.0)
         .fontWeight(FontWeight.Medium)
         .fontColor('#E4842A')
 
-      Text('完成本知识点全部 ' + LAW_TOTAL.toString() + ' 题需继续练习，题目会按掌握度智能推送。')
+      Text('完成本知识点全部 ' + this.topicTotal.toString() + ' 题需继续练习，题目会按掌握度智能推送。')
         .fontSize(14.0)
         .fontColor('#9A8A6E')
         .lineHeight(21)
@@ -570,12 +707,12 @@ struct Practice {
     .alignItems(HorizontalAlign.Center)
   }
 
-  // ==================== 占位视图（其它知识点） ====================
+  // ==================== 空题库提示（该知识点题目筹备中） ====================
   @Builder
   PlaceholderView() {
     Column() {
       Column() {
-        Text('🚧')
+        Text('📚')
           .fontSize(41.0)
       }
       .width(84)
@@ -585,63 +722,34 @@ struct Practice {
       .justifyContent(FlexAlign.Center)
       .margin({ bottom: 16 })
 
-      Text('功能开发中')
+      Text('这个知识点的题目还在整理')
         .fontSize(18.0)
         .fontWeight(FontWeight.Bold)
         .fontColor('#55402F')
         .margin({ bottom: 8 })
 
-      Text('本页为占位页面，路由与入口都已接通，功能开发完成后替换此文件内容即可。')
+      Text('先做其他知识点练手，题目更新后会出现在这里。')
         .fontSize(14.0)
         .fontColor('#9A8A6E')
         .lineHeight(21)
         .textAlign(TextAlign.Center)
         .margin({ bottom: 24 })
 
-      Column() {
-        Text('本页规划内容')
-          .fontSize(14.5)
-          .fontWeight(FontWeight.Bold)
-          .fontColor('#55402F')
-          .width('100%')
-          .margin({ bottom: 12 })
-
-        ForEach(this.plans, (item: string, i: number) => {
-          Row() {
-            Text('•')
-              .fontSize(14.0)
-              .fontColor('#E4842A')
-              .margin({ right: 8 })
-            Text(item)
-              .fontSize(14.0)
-              .fontColor('#55402F')
-              .lineHeight(20)
-              .layoutWeight(1)
-          }
-          .width('100%')
-          .alignItems(VerticalAlign.Top)
-          .margin({ bottom: 9 })
-        }, (item: string, i: number) => item + '_' + i)
-      }
-      .width('100%')
-      .padding(16)
-      .borderRadius(14)
-      .backgroundColor(Color.White)
-      .border({ width: 1, color: '#F2ECD8' })
-      .alignItems(HorizontalAlign.Start)
-      .margin({ bottom: 14 })
-
-      if (this.topicId > 0) {
-        Text('已收到知识点 ID：' + this.topicId)
-          .fontSize(13.0)
-          .fontColor('#9A8A6E')
-          .width('100%')
-          .textAlign(TextAlign.Center)
-      }
+      Text('返回题库')
+        .fontSize(15.0)
+        .fontWeight(FontWeight.Medium)
+        .fontColor('#55402F')
+        .padding({ left: 24, right: 24, top: 10, bottom: 10 })
+        .borderRadius(20)
+        .backgroundColor('#FBDE71')
+        .onClick(() => {
+          this.getUIContext().getRouter().back();
+        })
     }
     .width('100%')
     .layoutWeight(1)
-    .padding({ left: 20, right: 20, top: 48 })
+    .padding({ left: 32, right: 32, top: 56 })
     .justifyContent(FlexAlign.Start)
+    .alignItems(HorizontalAlign.Center)
   }
 }
